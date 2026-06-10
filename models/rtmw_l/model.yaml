@@ -1,0 +1,39 @@
+schema_version: 1
+model:
+  id: rtmw_l
+  name: RTMW-l
+  family: OpenMMLab RTMW
+  role: primary_candidate
+  framework: mmpose
+  skeleton: coco_wholebody_133
+  input_size:
+  - 384
+  - 288
+  checkpoint: models/rtmw_l/weights/rtmw-dw-x-l_simcc-cocktail14_270e-384x288-20231122.pth
+  config: external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-l_8xb320-270e_cocktail14-384x288.py
+  export_targets:
+  - onnx
+  - tensorrt
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: candidate
+  expected_strengths:
+  - Real-time whole-body candidate
+  - Strong public COCO-WholeBody result
+  - Deployment-friendly OpenMMLab ecosystem
+  expected_risks:
+  - Needs local TensorRT validation on target GPU
+  - Cricket equipment occlusions must be measured before fine-tuning
+  sources:
+  - https://arxiv.org/abs/2407.08634
+  - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
+environment:
+  env_name: cricket-rtmw-l
+  profile: mmpose_v1
+  smoke_profile: mmpose
+  config: external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-l_8xb320-270e_cocktail14-384x288.py
+  checkpoint: models/rtmw_l/weights/rtmw-dw-x-l_simcc-cocktail14_270e-384x288-20231122.pth
+  assets:
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmw/rtmw-dw-x-l_simcc-cocktail14_270e-384x288-20231122.pth
+    path: models/rtmw_l/weights/rtmw-dw-x-l_simcc-cocktail14_270e-384x288-20231122.pth
+    required_for_smoke: true

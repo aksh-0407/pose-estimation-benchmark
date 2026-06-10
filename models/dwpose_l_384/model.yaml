@@ -1,0 +1,41 @@
+schema_version: 1
+model:
+  id: dwpose_l_384
+  name: DWPose-l 384x288
+  family: DWPose
+  role: primary_candidate
+  framework: mmpose_onnx
+  skeleton: coco_wholebody_133
+  input_size:
+  - 384
+  - 288
+  checkpoint: models/dwpose_l_384/weights/dw-ll_ucoco_384.onnx
+  config: external/DWPose/mmpose/configs/wholebody_2d_keypoint/rtmpose/ubody/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py
+  export_targets:
+  - onnx
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: candidate
+  expected_strengths:
+  - Distilled whole-body performance
+  - Strong hands/face/feet coverage for UE retargeting context
+  expected_risks:
+  - Integration path may be less standard than RTMW in current MMPose
+  sources:
+  - https://arxiv.org/abs/2307.15880
+  - https://github.com/IDEA-Research/DWPose
+environment:
+  env_name: cricket-dwpose-l-384
+  profile: dwpose_onnx
+  smoke_profile: dwpose
+  config: external/DWPose/mmpose/configs/wholebody_2d_keypoint/rtmpose/ubody/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py
+  checkpoint: models/dwpose_l_384/weights/dw-ll_ucoco_384.onnx
+  smoke_image: external/DWPose/ControlNet-v1-1-nightly/test_imgs/pose1.png
+  assets:
+  - kind: url
+    url: https://huggingface.co/yzd-v/DWPose/resolve/main/dw-ll_ucoco_384.onnx
+    path: models/dwpose_l_384/weights/dw-ll_ucoco_384.onnx
+    required_for_smoke: true
+  - kind: url
+    url: https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx
+    path: models/dwpose_l_384/weights/yolox_l.onnx
+    required_for_smoke: true

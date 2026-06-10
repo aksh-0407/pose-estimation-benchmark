@@ -1,0 +1,48 @@
+schema_version: 1
+model:
+  id: sapiens2_1b_pose
+  name: Sapiens2-1B Pose
+  family: Meta Sapiens2
+  role: offline_teacher
+  framework: sapiens2
+  skeleton: wholebody_308
+  input_size:
+  - 1024
+  - 768
+  checkpoint: models/sapiens2_1b_pose/weights/sapiens2_1b_pose.safetensors
+  config: external/sapiens2/sapiens/pose/configs/keypoints308/shutterstock_goliath_3po/sapiens2_1b_keypoints308_shutterstock_goliath_3po-1024x768.py
+  export_targets:
+  - safetensors
+  license: Sapiens2 license; verify commercial terms
+  status: offline_teacher_candidate
+  expected_strengths:
+  - Latest high-fidelity human-centric foundation baseline
+  - Useful for pseudo-labeling hard cricket occlusions
+  expected_risks:
+  - Very large model family; not default real-time path
+  sources:
+  - https://arxiv.org/abs/2604.21681
+  - https://github.com/facebookresearch/sapiens2
+environment:
+  env_name: cricket-sapiens2-1b-pose
+  profile: sapiens2_pose
+  smoke_profile: sapiens2
+  config: external/sapiens2/sapiens/pose/configs/keypoints308/shutterstock_goliath_3po/sapiens2_1b_keypoints308_shutterstock_goliath_3po-1024x768.py
+  checkpoint: models/sapiens2_1b_pose/weights/sapiens2_1b_pose.safetensors
+  detector: models/sapiens2_1b_pose/weights/detr-resnet-101-dc5
+  smoke_image: external/sapiens2/demo/data/000001.png
+  assets:
+  - kind: hf
+    repo_id: facebook/sapiens2-pose-1b
+    filename: sapiens2_1b_pose.safetensors
+    path: models/sapiens2_1b_pose/weights/sapiens2_1b_pose.safetensors
+    large: true
+    required_for_smoke: true
+  - kind: hf_repo
+    repo_id: facebook/detr-resnet-101-dc5
+    path: models/sapiens2_1b_pose/weights/detr-resnet-101-dc5
+    large: true
+    required_for_smoke: true
+  notes:
+  - The 1B model is an offline teacher candidate and may exceed this laptop's practical
+    VRAM budget.

@@ -1,0 +1,12 @@
+schema_version: 1
+model_id: openpose_body25
+framework: openpose
+model_pose: BODY_25
+expected_binary: external/openpose/build/examples/openpose/openpose.bin
+model_folder: models/openpose_body25/weights
+checkpoint: models/openpose_body25/weights/pose/body_25/pose_iter_584000.caffemodel
+deploy_prototxt: models/openpose_body25/weights/pose/body_25/pose_deploy.prototxt
+output_format: openpose_json
+notes:
+  - Official CMU OpenPose expects model assets under a model_folder with pose/body_25 files.
+  - The smoke runner calls the OpenPose CLI and reads *_keypoints.json output.

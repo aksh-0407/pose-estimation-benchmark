@@ -1,0 +1,16 @@
+{
+  "coco17_val2017": {
+    "annotation_file": "data/raw/coco/annotations/person_keypoints_val2017.json",
+    "annotations": 11004,
+    "dataset_hash": "788e2dae83c86bd547be7fab269d6399df5671063d29a61360cdb2cc370d2b14",
+    "dataset_id": "coco17_val2017",
+    "image_count": 5000,
+    "images_in_annotation": 5000,
+    "keypoint_mapping": "configs/keypoint_mappings.yaml",
+    "missing": [],
+    "name": "COCO 2017 validation keypoints",
+    "ready": true,
+    "split": "val2017",
+    "target_skeleton": "coco_17"
+  }
+}

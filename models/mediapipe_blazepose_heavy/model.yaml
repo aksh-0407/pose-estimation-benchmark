@@ -1,0 +1,35 @@
+schema_version: 1
+model:
+  id: mediapipe_blazepose_heavy
+  name: MediaPipe BlazePose GHUM Heavy
+  family: MediaPipe Pose
+  role: legacy_reference
+  framework: mediapipe
+  skeleton: mediapipe_33
+  input_size: dynamic
+  checkpoint: models/mediapipe_blazepose_heavy/weights/pose_landmarker_heavy.task
+  config: model_complexity=2
+  export_targets:
+  - tflite
+  license: Apache-2.0 for code; verify model terms
+  status: reference_only
+  expected_strengths:
+  - Real-time single-person baseline
+  - Emits visibility and approximate world landmarks
+  expected_risks:
+  - Not designed for multi-person stadium scenes
+  - Not WholeBody 133
+  sources:
+  - https://chuoling.github.io/mediapipe/solutions/pose
+environment:
+  env_name: cricket-mediapipe-blazepose-heavy
+  profile: mediapipe_pose
+  smoke_profile: mediapipe
+  config: model_complexity=2
+  checkpoint: models/mediapipe_blazepose_heavy/weights/pose_landmarker_heavy.task
+  smoke_image: external/mmpose/projects/rtmpose/examples/onnxruntime/human-pose.jpeg
+  assets:
+  - kind: url
+    url: https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task
+    path: models/mediapipe_blazepose_heavy/weights/pose_landmarker_heavy.task
+    required_for_smoke: true

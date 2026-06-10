@@ -1,0 +1,39 @@
+schema_version: 1
+model:
+  id: vitpose_h
+  name: ViTPose-H
+  family: ViTPose
+  role: accuracy_teacher
+  framework: mmpose
+  skeleton: coco_17
+  input_size:
+  - 256
+  - 192
+  checkpoint: models/vitpose_h/weights/td-hm_ViTPose-huge_8xb64-210e_coco-256x192-e32adcd4_20230314.pth
+  config: external/mmpose/configs/body_2d_keypoint/topdown_heatmap/coco/td-hm_ViTPose-huge_8xb64-210e_coco-256x192.py
+  export_targets:
+  - onnx
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: teacher_candidate
+  expected_strengths:
+  - High public benchmark accuracy
+  - Useful pseudo-label and distillation teacher
+  expected_risks:
+  - Not first choice for real-time multi-camera production
+  sources:
+  - https://arxiv.org/abs/2204.12484
+  - https://github.com/ViTAE-Transformer/ViTPose
+  - https://download.openmmlab.com/mmpose/v1/body_2d_keypoint/topdown_heatmap/coco/td-hm_ViTPose-huge_8xb64-210e_coco-256x192-e32adcd4_20230314.pth
+environment:
+  env_name: cricket-vitpose-h-mmpose-v1
+  profile: mmpose_v1
+  smoke_profile: mmpose
+  config: external/mmpose/configs/body_2d_keypoint/topdown_heatmap/coco/td-hm_ViTPose-huge_8xb64-210e_coco-256x192.py
+  checkpoint: models/vitpose_h/weights/td-hm_ViTPose-huge_8xb64-210e_coco-256x192-e32adcd4_20230314.pth
+  smoke_image: external/mmpose/projects/rtmpose/examples/onnxruntime/human-pose.jpeg
+  heavy_runtime: true
+  assets:
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/body_2d_keypoint/topdown_heatmap/coco/td-hm_ViTPose-huge_8xb64-210e_coco-256x192-e32adcd4_20230314.pth
+    path: models/vitpose_h/weights/td-hm_ViTPose-huge_8xb64-210e_coco-256x192-e32adcd4_20230314.pth
+    required_for_smoke: true

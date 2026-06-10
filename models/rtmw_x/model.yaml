@@ -1,0 +1,36 @@
+schema_version: 1
+model:
+  id: rtmw_x
+  name: RTMW-x
+  family: OpenMMLab RTMW
+  role: primary_candidate
+  framework: mmpose
+  skeleton: coco_wholebody_133
+  input_size:
+  - 384
+  - 288
+  checkpoint: models/rtmw_x/weights/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth
+  config: external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py
+  export_targets:
+  - onnx
+  - tensorrt
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: candidate
+  expected_strengths:
+  - High-accuracy whole-body candidate
+  - Useful upper bound for RTMW family
+  expected_risks:
+  - Higher latency and memory than RTMW-l
+  sources:
+  - https://arxiv.org/abs/2407.08634
+environment:
+  env_name: cricket-rtmw-x
+  profile: mmpose_v1
+  smoke_profile: mmpose
+  config: external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py
+  checkpoint: models/rtmw_x/weights/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth
+  assets:
+  - kind: url
+    url: https://huggingface.co/KlingTeam/X-Dub/resolve/main/dwpose_tools/models/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth
+    path: models/rtmw_x/weights/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth
+    required_for_smoke: true
