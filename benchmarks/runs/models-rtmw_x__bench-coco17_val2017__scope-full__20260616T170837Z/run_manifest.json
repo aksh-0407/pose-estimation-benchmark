@@ -1,0 +1,16 @@
+{
+  "backend": "framework_native",
+  "command": "scripts/benchmark.py run --models rtmw_x --datasets coco17_val2017 --device cpu",
+  "created_at": "2026-06-16T17:08:37.424201+00:00",
+  "datasets": [
+    "coco17_val2017"
+  ],
+  "dry_run": false,
+  "limit": null,
+  "models": [
+    "rtmw_x"
+  ],
+  "precision": "fp32",
+  "run_id": "models-rtmw_x__bench-coco17_val2017__scope-full__20260616T170837Z",
+  "schema_version": "pose_benchmark_run/v1"
+}

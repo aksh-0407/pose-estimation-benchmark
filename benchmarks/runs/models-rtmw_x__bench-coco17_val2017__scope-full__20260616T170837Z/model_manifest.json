@@ -1,0 +1,32 @@
+{
+  "rtmw_x": {
+    "checkpoint": "models/rtmw_x/weights/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth",
+    "config": "external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py",
+    "expected_risks": [
+      "Higher latency and memory than RTMW-l"
+    ],
+    "expected_strengths": [
+      "High-accuracy whole-body candidate",
+      "Useful upper bound for RTMW family"
+    ],
+    "export_targets": [
+      "onnx",
+      "tensorrt"
+    ],
+    "family": "OpenMMLab RTMW",
+    "framework": "mmpose",
+    "id": "rtmw_x",
+    "input_size": [
+      384,
+      288
+    ],
+    "license": "Apache-2.0 for code; verify checkpoint terms",
+    "name": "RTMW-x",
+    "role": "primary_candidate",
+    "skeleton": "coco_wholebody_133",
+    "sources": [
+      "https://arxiv.org/abs/2407.08634"
+    ],
+    "status": "candidate"
+  }
+}
