@@ -1,0 +1,30 @@
+{
+  "run_id": "smoke-rtmpose-l",
+  "model_id": "rtmpose_l_wholebody",
+  "device": "cuda:0",
+  "pose_config": "/home/aksh/quidich/Pose_Estimation/external/mmpose/configs/wholebody_2d_keypoint/rtmpose/coco-wholebody/rtmpose-l_8xb32-270e_coco-wholebody-384x288.py",
+  "pose_checkpoint": "/home/aksh/quidich/Pose_Estimation/models/rtmpose_l_wholebody/weights/rtmpose-l_simcc-coco-wholebody_pt-aic-coco_270e-384x288-eaeb96c8_20230125.pth",
+  "det_config": "/home/aksh/quidich/Pose_Estimation/external/mmpose/demo/mmdetection_cfg/rtmdet_m_640-8xb32_coco-person.py",
+  "det_checkpoint": "/home/aksh/quidich/Pose_Estimation/models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth",
+  "skeleton": "coco_wholebody_133",
+  "started_at": "2026-06-23T10:52:26Z",
+  "cameras": [
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_01",
+      "frames_processed": 5,
+      "frames_skipped": 0,
+      "people": 25,
+      "failed": 0,
+      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/smoke-rtmpose-l/predictions/bt_01__CCPL080626M1_1_14_1__cam_01.jsonl"
+    }
+  ],
+  "frames_processed": 5,
+  "frames_skipped": 0,
+  "total_people": 25,
+  "failed_frames": 0,
+  "finished_at": "2026-06-23T10:52:27Z",
+  "elapsed_seconds": 1.57,
+  "fps": 3.18
+}

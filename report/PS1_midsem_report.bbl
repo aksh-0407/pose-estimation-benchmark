@@ -1,0 +1,150 @@
+\begin{thebibliography}{10}
+
+\bibitem{aharon2022botsort}
+Nir Aharon, Roy Orfaig, and Ben-Zion Bobrovsky.
+\newblock {BoT-SORT}: Robust associations multi-pedestrian tracking.
+\newblock {\em arXiv preprint arXiv:2206.14651}, 2022.
+
+\bibitem{bazarevsky2020blazepose}
+Valentin Bazarevsky, Ivan Grishchenko, Karthik Raveendran, Tyler Zhu, Fan
+  Zhang, and Matthias Grundmann.
+\newblock {BlazePose}: On-device real-time body pose tracking.
+\newblock In {\em CVPR Workshop on Computer Vision for Augmented and Virtual
+  Reality}, 2020.
+
+\bibitem{casiez2012oneeuro}
+G{\'e}ry Casiez, Nicolas Roussel, and Daniel Vogel.
+\newblock 1 euro filter: A simple speed-based low-pass filter for noisy input
+  in interactive systems.
+\newblock In {\em ACM Conference on Human Factors in Computing Systems (CHI)},
+  2012.
+
+\bibitem{posereview2025}
+Yingying Chen, Zhenan Feng, Daniel Paes, Daniel Nilsson, and Ruggiero
+  Lovreglio.
+\newblock Real-time human pose estimation and tracking on monocular videos: A
+  systematic literature review.
+\newblock {\em Neurocomputing}, 655:131309, 2025.
+
+\bibitem{fischler1981ransac}
+Martin~A. Fischler and Robert~C. Bolles.
+\newblock Random sample consensus: A paradigm for model fitting with
+  applications to image analysis and automated cartography.
+\newblock {\em Communications of the ACM}, 24(6):381--395, 1981.
+
+\bibitem{hartley2004multiview}
+Richard Hartley and Andrew Zisserman.
+\newblock Multiple view geometry in computer vision.
+\newblock 2004.
+
+\bibitem{jiang2023rtmpose}
+Tao Jiang, Peng Lu, Li~Zhang, Ningsheng Ma, Rui Han, Chengqi Lyu, Yining Li,
+  and Kai Chen.
+\newblock {RTMPose}: Real-time multi-person pose estimation based on {MMPose}.
+\newblock {\em arXiv preprint arXiv:2303.07399}, 2023.
+
+\bibitem{jiang2024rtmw}
+Tao Jiang, Xinchen Xie, and Yining Li.
+\newblock {RTMW}: Real-time multi-person 2d and 3d whole-body pose estimation.
+\newblock {\em arXiv preprint arXiv:2407.08634}, 2024.
+
+\bibitem{jin2020wholebody}
+Sheng Jin, Lumin Xu, Jin Xu, Can Wang, Wentao Liu, Chen Qian, Wanli Ouyang, and
+  Ping Luo.
+\newblock Whole-body human pose estimation in the wild.
+\newblock In {\em European Conference on Computer Vision (ECCV)}, 2020.
+
+\bibitem{ultralytics_pose}
+Glenn Jocher, Jing Qiu, and Ayush Chaurasia.
+\newblock Ultralytics {YOLO} pose estimation (yolo11 and yolo26).
+\newblock \url{https://docs.ultralytics.com/tasks/pose}, 2025.
+
+\bibitem{kalman1960}
+Rudolph~E. Kalman.
+\newblock A new approach to linear filtering and prediction problems.
+\newblock {\em Journal of Basic Engineering}, 82(1):35--45, 1960.
+
+\bibitem{khirodkar2024sapiens}
+Rawal Khirodkar, Timur Bagautdinov, Julieta Martinez, Su~Zhaoen, Austin James,
+  Peter Selednik, Stuart Anderson, and Shunsuke Saito.
+\newblock Sapiens: Foundation for human vision models.
+\newblock {\em arXiv preprint arXiv:2408.12569}, 2024.
+
+\bibitem{lin2014coco}
+Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays, Pietro Perona, Deva
+  Ramanan, Piotr Doll{\'a}r, and C.~Lawrence Zitnick.
+\newblock Microsoft {COCO}: Common objects in context.
+\newblock In {\em European Conference on Computer Vision (ECCV)}, 2014.
+
+\bibitem{lu2023rtmo}
+Peng Lu, Tao Jiang, Yining Li, Xiangtai Li, Kai Chen, and Wenming Yang.
+\newblock {RTMO}: Towards high-performance one-stage real-time multi-person
+  pose estimation.
+\newblock {\em arXiv preprint arXiv:2312.07526}, 2023.
+
+\bibitem{maji2022yolopose}
+Debapriya Maji, Soyeb Nagori, Manu Mathew, and Deepak Poddar.
+\newblock {YOLO-Pose}: Enhancing {YOLO} for multi-person pose estimation using
+  object keypoint similarity loss.
+\newblock In {\em IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition Workshops (CVPRW)}, 2022.
+
+\bibitem{sapiens2repo}
+{Meta AI Research}.
+\newblock Sapiens2: Foundation human vision models (source repository and model
+  collection).
+\newblock \url{https://github.com/facebookresearch/sapiens2}, 2026.
+
+\bibitem{savitzky1964golay}
+Abraham Savitzky and Marcel J.~E. Golay.
+\newblock Smoothing and differentiation of data by simplified least squares
+  procedures.
+\newblock {\em Analytical Chemistry}, 36(8):1627--1639, 1964.
+
+\bibitem{prodreview_centric}
+Aksh Shah.
+\newblock Production-centric deep research review of real-time human pose
+  estimation for sports analytics and cricket.
+\newblock Technical report, Quidich Innovation Labs (internal project review),
+  2026.
+
+\bibitem{prodreview_comparative}
+Aksh Shah.
+\newblock Production-focused comparative analysis of human pose estimation
+  models for sports analytics and cricket.
+\newblock Technical report, Quidich Innovation Labs (internal project review),
+  2026.
+
+\bibitem{shoemake1985slerp}
+Ken Shoemake.
+\newblock Animating rotation with quaternion curves.
+\newblock In {\em ACM SIGGRAPH Computer Graphics}, 1985.
+
+\bibitem{wojke2017deepsort}
+Nicolai Wojke, Alex Bewley, and Dietrich Paulus.
+\newblock Simple online and realtime tracking with a deep association metric
+  ({DeepSORT}).
+\newblock In {\em IEEE International Conference on Image Processing (ICIP)},
+  2017.
+
+\bibitem{xu2022vitpose}
+Yufei Xu, Jing Zhang, Qiming Zhang, and Dacheng Tao.
+\newblock {ViTPose}: Simple vision transformer baselines for human pose
+  estimation.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  2022.
+
+\bibitem{yang2023dwpose}
+Zhendong Yang, Ailing Zeng, Chun Yuan, and Yu~Li.
+\newblock Effective whole-body pose estimation with two-stages distillation
+  ({DWPose}).
+\newblock {\em arXiv preprint arXiv:2307.15880}, 2023.
+
+\bibitem{zhang2022bytetrack}
+Yifu Zhang, Peize Sun, Yi~Jiang, Dongdong Yu, Fucheng Weng, Zehuan Yuan, Ping
+  Luo, Wenyu Liu, and Xinggang Wang.
+\newblock {ByteTrack}: Multi-object tracking by associating every detection
+  box.
+\newblock In {\em European Conference on Computer Vision (ECCV)}, 2022.
+
+\end{thebibliography}

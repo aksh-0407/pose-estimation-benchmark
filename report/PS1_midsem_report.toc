@@ -1,0 +1,36 @@
+\contentsline {chapter}{\numberline {1}Introduction}{9}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Organisation and project context}{9}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Why body pose matters: events and stories}{9}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Team structure and individual scope}{10}{section.1.3}%
+\contentsline {section}{\numberline {1.4}The capture setup and the core challenge}{11}{section.1.4}%
+\contentsline {chapter}{\numberline {2}Literature Review}{12}{chapter.2}%
+\contentsline {section}{\numberline {2.1}From 2D images to 3D pose}{12}{section.2.1}%
+\contentsline {section}{\numberline {2.2}The speed against accuracy trade-off}{12}{section.2.2}%
+\contentsline {section}{\numberline {2.3}How the metrics are read}{13}{section.2.3}%
+\contentsline {section}{\numberline {2.4}The surveyed models}{14}{section.2.4}%
+\contentsline {chapter}{\numberline {3}Methodology}{15}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The benchmarking repository (Week 3)}{15}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Group 1 pipeline design (Week 4)}{16}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Phase 0: foundation readiness}{17}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Phase 1: per-camera perception}{17}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Results and Discussions}{18}{chapter.4}%
+\contentsline {section}{\numberline {4.1}The cricket dataset}{18}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Phase 0 result: technically complete, externally blocked}{18}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Phase 1 result: per-camera detection and 2D pose}{19}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Supporting evidence: public-dataset benchmark}{20}{section.4.4}%
+\contentsline {section}{\numberline {4.5}The honest gap}{20}{section.4.5}%
+\contentsline {chapter}{\numberline {5}Conclusions and Future Work}{22}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Summary of the first four weeks}{22}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Phase 2: per-camera tracking (immediate next work)}{22}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Roadmap: Phases 3 to 7}{23}{section.5.3}%
+\contentsline {section}{\numberline {5.4}The smoothness problem (Phase 6 preview)}{23}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Concluding remarks}{24}{section.5.5}%
+\contentsline {chapter}{\numberline {6}Recommendations}{25}{chapter.6}%
+\contentsline {paragraph}{Match the model to the use case.}{25}{section*.26}%
+\contentsline {paragraph}{Lead with geometry, not appearance.}{25}{section*.28}%
+\contentsline {paragraph}{Keep every experiment reproducible.}{25}{section*.29}%
+\contentsline {paragraph}{Escalate the open management decisions early.}{25}{section*.30}%
+\contentsline {chapter}{Bibliography}{28}{chapter*.31}%
+\contentsline {chapter}{Appendices}{29}{section*.32}%
+\contentsline {chapter}{\numberline {A}Group 1 output contract schema}{30}{appendix.1.A}%
+\contentsline {chapter}{\numberline {B}Extended model comparison}{31}{appendix.1.B}%
