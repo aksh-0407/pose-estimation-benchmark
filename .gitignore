@@ -3,7 +3,7 @@
 #   Commit SOURCE (code, configs, docs) and compact EVIDENCE
 #   (benchmarks/runs/<id>/). Keep ASSETS (weights, datasets, clones), RAW
 #   artifacts, and DERIVED aggregates local. Full policy: docs/collaboration.md
-# Anything ignored below is enforced by: python3 scripts/audit_repo.py --fail
+# Anything ignored below is enforced by: python3 scripts/setup/audit_repo.py --fail
 # =============================================================================
 
 # --- Python / cache artifacts ---

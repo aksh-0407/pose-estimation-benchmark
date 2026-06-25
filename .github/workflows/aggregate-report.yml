@@ -40,8 +40,8 @@ jobs:
 
       - name: Aggregate run metrics and render the report
         run: |
-          python3 scripts/benchmark.py aggregate
-          python3 scripts/benchmark.py report
+          python3 scripts/benchmark/benchmark.py aggregate
+          python3 scripts/benchmark/benchmark.py report
 
       # Assemble a small static site: the HTML report at the root, the CSVs alongside.
       - name: Assemble Pages site

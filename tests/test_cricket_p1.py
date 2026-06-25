@@ -5,14 +5,14 @@ import cv2
 import numpy as np
 
 from pose_estimation.cricket.contract import validate_group1_frame
-from pose_estimation.cricket.p1_outputs import (
+from pose_estimation.cricket.phase1_outputs import (
     build_phase1_frame_record,
     nms_predictions,
     offset_prediction,
     scale_prediction,
     xyxy_to_xywh,
 )
-from pose_estimation.cricket.p1_runner import P1RunConfig, read_batch_images, run_phase1_delivery
+from pose_estimation.cricket.phase1_runner import P1RunConfig, read_batch_images, run_phase1_delivery
 
 
 class FakeAdapter:

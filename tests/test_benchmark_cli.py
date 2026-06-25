@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def load_benchmark_module():
-    spec = importlib.util.spec_from_file_location("benchmark_cli", Path("scripts/benchmark.py"))
+    spec = importlib.util.spec_from_file_location("benchmark_cli", Path("scripts/benchmark/benchmark.py"))
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)

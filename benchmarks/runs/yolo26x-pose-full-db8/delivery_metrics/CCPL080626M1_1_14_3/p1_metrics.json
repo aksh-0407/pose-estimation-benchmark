@@ -18,7 +18,7 @@
   "per_camera": {
     "cam_01": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_01/CCPL080626M1_1_14_3/camera01",
+      "camera_dir": "drive/dataset/bt_01/CCPL080626M1_1_14_3/camera01",
       "camera_id": "cam_01",
       "capture_group": "bt_01",
       "decode_latency": {
@@ -38,7 +38,7 @@
         "p95_ms": 29.788166624712176
       },
       "players_per_frame_mean": 4.498333333333333,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_3__cam_01.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_3__cam_01.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -54,7 +54,7 @@
     },
     "cam_02": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_3/camera02",
+      "camera_dir": "drive/dataset/bt_02/CCPL080626M1_1_14_3/camera02",
       "camera_id": "cam_02",
       "capture_group": "bt_02",
       "decode_latency": {
@@ -74,7 +74,7 @@
         "p95_ms": 26.84967700042762
       },
       "players_per_frame_mean": 3.3116666666666665,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_02.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_02.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -90,7 +90,7 @@
     },
     "cam_03": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_03/CCPL080626M1_1_14_3/camera03",
+      "camera_dir": "drive/dataset/bt_03/CCPL080626M1_1_14_3/camera03",
       "camera_id": "cam_03",
       "capture_group": "bt_03",
       "decode_latency": {
@@ -110,7 +110,7 @@
         "p95_ms": 26.85697849983626
       },
       "players_per_frame_mean": 2.868333333333333,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_3__cam_03.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_3__cam_03.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -126,7 +126,7 @@
     },
     "cam_04": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_01/CCPL080626M1_1_14_3/camera04",
+      "camera_dir": "drive/dataset/bt_01/CCPL080626M1_1_14_3/camera04",
       "camera_id": "cam_04",
       "capture_group": "bt_01",
       "decode_latency": {
@@ -146,7 +146,7 @@
         "p95_ms": 28.108424749916594
       },
       "players_per_frame_mean": 5.025,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_3__cam_04.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_3__cam_04.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -162,7 +162,7 @@
     },
     "cam_05": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_3/camera05",
+      "camera_dir": "drive/dataset/bt_02/CCPL080626M1_1_14_3/camera05",
       "camera_id": "cam_05",
       "capture_group": "bt_02",
       "decode_latency": {
@@ -182,7 +182,7 @@
         "p95_ms": 26.148125999952754
       },
       "players_per_frame_mean": 2.881666666666667,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_05.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_05.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -198,7 +198,7 @@
     },
     "cam_06": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_03/CCPL080626M1_1_14_3/camera06",
+      "camera_dir": "drive/dataset/bt_03/CCPL080626M1_1_14_3/camera06",
       "camera_id": "cam_06",
       "capture_group": "bt_03",
       "decode_latency": {
@@ -218,7 +218,7 @@
         "p95_ms": 29.188362999775563
       },
       "players_per_frame_mean": 3.0,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_3__cam_06.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_3__cam_06.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -234,7 +234,7 @@
     },
     "cam_07": {
       "append_mode": false,
-      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_3/camera07",
+      "camera_dir": "drive/dataset/bt_02/CCPL080626M1_1_14_3/camera07",
       "camera_id": "cam_07",
       "capture_group": "bt_02",
       "decode_latency": {
@@ -254,7 +254,7 @@
         "p95_ms": 23.76674937477219
       },
       "players_per_frame_mean": 0.7166666666666667,
-      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_07.jsonl",
+      "prediction_jsonl": "benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_3__cam_07.jsonl",
       "records_reused": 0,
       "records_written": 600,
       "records_written_this_run": 600,
@@ -269,7 +269,7 @@
       "total_players_detected": 430
     }
   },
-  "prediction_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions",
+  "prediction_dir": "benchmarks/runs/yolo26x-pose-full-db8/predictions",
   "prediction_schema_version": "g1_player_frame/v0",
   "preload_full_frame": true,
   "resize_long_side": 640,
@@ -304,7 +304,7 @@
     "total_players_detected": 13381,
     "wall_clock_s": 411.2450515269993
   },
-  "visual_qa_manifest": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/visualizations/visual_qa_manifest.json",
+  "visual_qa_manifest": "benchmarks/runs/yolo26x-pose-full-db8/visualizations/visual_qa_manifest.json",
   "visual_qa_overlay_count": 35,
-  "visualizations": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/visualizations"
+  "visualizations": "benchmarks/runs/yolo26x-pose-full-db8/visualizations"
 }

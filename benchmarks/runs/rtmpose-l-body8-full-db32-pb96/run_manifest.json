@@ -10,7 +10,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2969,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_1__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_1__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -21,7 +21,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 3001,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_1__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_1__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -32,7 +32,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2913,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_2__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_2__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -43,7 +43,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2944,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_2__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_2__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -54,7 +54,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2980,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_3__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_3__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -65,7 +65,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2966,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_3__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_3__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -76,7 +76,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2877,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_4__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_4__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -87,7 +87,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2997,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_4__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_4__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -98,7 +98,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2534,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_5__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_5__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -109,7 +109,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 3002,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_5__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_5__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -120,7 +120,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2731,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_6__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_6__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -131,7 +131,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2966,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_6__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_6__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -142,7 +142,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2886,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_7__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_7__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -153,7 +153,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 3547,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_7__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M1_1_14_7__cam_04.jsonl"
     },
     {
       "camera_id": "cam_01",
@@ -164,7 +164,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2398,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M2_1_12_1__cam_01.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M2_1_12_1__cam_01.jsonl"
     },
     {
       "camera_id": "cam_04",
@@ -175,7 +175,7 @@
       "group": "bt_01",
       "overlays": 0,
       "people": 2400,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M2_1_12_1__cam_04.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_01__CCPL080626M2_1_12_1__cam_04.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -186,7 +186,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -197,7 +197,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1552,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -208,7 +208,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 662,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_1__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -219,7 +219,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -230,7 +230,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1778,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -241,7 +241,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 718,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_2__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -252,7 +252,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -263,7 +263,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1607,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -274,7 +274,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 437,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_3__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -285,7 +285,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -296,7 +296,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1778,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -307,7 +307,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 766,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_4__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -318,7 +318,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -329,7 +329,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1433,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -340,7 +340,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 600,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_5__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -351,7 +351,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -362,7 +362,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1506,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -373,7 +373,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 582,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_6__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -384,7 +384,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1200,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -395,7 +395,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1245,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -406,7 +406,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 624,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M1_1_14_7__cam_07.jsonl"
     },
     {
       "camera_id": "cam_02",
@@ -417,7 +417,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1267,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_02.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_02.jsonl"
     },
     {
       "camera_id": "cam_05",
@@ -428,7 +428,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 530,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_05.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_05.jsonl"
     },
     {
       "camera_id": "cam_07",
@@ -439,7 +439,7 @@
       "group": "bt_02",
       "overlays": 0,
       "people": 1618,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_07.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_02__CCPL080626M2_1_12_1__cam_07.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -450,7 +450,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1709,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_1__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_1__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -461,7 +461,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_1__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_1__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -472,7 +472,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_2__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_2__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -483,7 +483,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_2__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_2__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -494,7 +494,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1631,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_3__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_3__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -505,7 +505,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_3__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_3__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -516,7 +516,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_4__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_4__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -527,7 +527,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_4__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_4__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -538,7 +538,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1577,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_5__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_5__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -549,7 +549,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_5__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_5__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -560,7 +560,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1579,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_6__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_6__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -571,7 +571,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_6__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_6__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -582,7 +582,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1625,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_7__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_7__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -593,7 +593,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1800,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_7__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M1_1_14_7__cam_06.jsonl"
     },
     {
       "camera_id": "cam_03",
@@ -604,7 +604,7 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1151,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M2_1_12_1__cam_03.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M2_1_12_1__cam_03.jsonl"
     },
     {
       "camera_id": "cam_06",
@@ -615,13 +615,13 @@
       "group": "bt_03",
       "overlays": 0,
       "people": 1979,
-      "predictions": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M2_1_12_1__cam_06.jsonl"
+      "predictions": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions/bt_03__CCPL080626M2_1_12_1__cam_06.jsonl"
     }
   ],
-  "delivery_metrics_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/delivery_metrics",
+  "delivery_metrics_dir": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/delivery_metrics",
   "det_batch_size": 32,
-  "det_checkpoint": "/home/aksh/quidich/Pose_Estimation/models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth",
-  "det_config": "/home/aksh/quidich/Pose_Estimation/external/mmpose/demo/mmdetection_cfg/rtmdet_m_640-8xb32_coco-person.py",
+  "det_checkpoint": "models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth",
+  "det_config": "external/mmpose/demo/mmdetection_cfg/rtmdet_m_640-8xb32_coco-person.py",
   "device": "cuda:0",
   "elapsed_seconds": 2.14,
   "failed_frames": 0,
@@ -646,9 +646,9 @@
     600
   ],
   "pose_batch_size": 96,
-  "pose_checkpoint": "/home/aksh/quidich/Pose_Estimation/models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth",
-  "pose_config": "/home/aksh/quidich/Pose_Estimation/external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py",
-  "prediction_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions",
+  "pose_checkpoint": "models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth",
+  "pose_config": "external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py",
+  "prediction_dir": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions",
   "prediction_schema_version": "g1_player_frame/v0",
   "run_id": "rtmpose-l-body8-full-db32-pb96",
   "schema_version": "cricket_phase1_run/v2",
@@ -676,7 +676,7 @@
     "write_seconds": 0.0
   },
   "total_people": 104265,
-  "visual_qa_manifest": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations/visual_qa_manifest.json",
+  "visual_qa_manifest": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations/visual_qa_manifest.json",
   "visual_qa_overlay_count": 280,
-  "visualizations": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations"
+  "visualizations": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations"
 }

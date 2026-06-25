@@ -273,6 +273,6 @@ models:
         path: models/openpose_body25/weights/pose/body_25/pose_deploy.prototxt
         required_for_smoke: true
     notes:
-      - Official CMU OpenPose is a C++/Caffe application; this repo builds a CPU-only validation binary at external/openpose/build/examples/openpose/openpose.bin with scripts/setup_openpose.py.
+      - Official CMU OpenPose is a C++/Caffe application; this repo builds a CPU-only validation binary at external/openpose/build/examples/openpose/openpose.bin with scripts/setup/setup_openpose.py.
       - Build GPU/CUDA OpenPose separately on benchmark machines when speed matters.
       - The CMU model host is tried first; a Hugging Face mirror is configured only as a fallback because the original host is often unavailable.

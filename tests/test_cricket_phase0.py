@@ -186,7 +186,7 @@ def test_phase0_cli_writes_compact_evidence(tmp_path: Path):
     completed = subprocess.run(
         [
             sys.executable,
-            "scripts/phase0_audit.py",
+            "scripts/setup/phase0_audit.py",
             "--drive-root",
             str(drive_root),
             "--run-id",

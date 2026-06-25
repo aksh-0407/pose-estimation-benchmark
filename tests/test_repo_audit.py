@@ -1,4 +1,4 @@
-from scripts.audit_repo import violations
+from scripts.setup.audit_repo import violations
 
 
 def test_repo_audit_allows_placeholders_and_flags_artifacts():

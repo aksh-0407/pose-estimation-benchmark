@@ -127,6 +127,9 @@ def validate_player(player: Any, *, final_handoff: bool) -> None:
     track_confidence = player.get("track_confidence")
     if track_confidence is not None and not is_finite_number(track_confidence):
         raise ValueError("track_confidence must be numeric or null")
+    detection_confidence = player.get("detection_confidence")
+    if detection_confidence is not None and not is_finite_number(detection_confidence):
+        raise ValueError("detection_confidence must be numeric or null")
     validate_pose_2d(player.get("pose_2d"))
     validate_pose_3d(player.get("pose_3d"))
 
@@ -169,7 +172,8 @@ def example_group1_frame(*, final_handoff: bool = True) -> dict[str, Any]:
         "role": "unknown",
         "bbox_xywh_px": [100.0, 200.0, 80.0, 240.0],
         "bbox_xywh_norm": [0.0390625, 0.1388889, 0.03125, 0.1666667],
-        "track_confidence": 0.94,
+        "detection_confidence": 0.94,
+        "track_confidence": None,
         "pose_2d": {
             "skeleton": SKELETON,
             "keypoints_px": keypoints_px,
@@ -217,4 +221,3 @@ def contract_report() -> dict[str, Any]:
         "errors": [],
         "warnings": [],
     }
-

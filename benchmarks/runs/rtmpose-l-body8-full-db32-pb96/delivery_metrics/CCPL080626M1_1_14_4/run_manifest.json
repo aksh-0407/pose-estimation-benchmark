@@ -3,13 +3,13 @@
   "delivery_id": "CCPL080626M1_1_14_4",
   "det_batch_size": 32,
   "device": "cuda:0",
-  "drive_root": "/home/aksh/quidich/Pose_Estimation/drive",
+  "drive_root": "drive",
   "inference_mode": "topdown_detector_pose",
   "input_mode": "opencv_bgr_mmdet_mmpose_batch",
   "io_workers": 8,
   "model_id": "rtmpose_l_body8",
   "pose_batch_size": 96,
-  "prediction_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions",
+  "prediction_dir": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/predictions",
   "prediction_schema_version": "g1_player_frame/v0",
   "run_id": "rtmpose-l-body8-full-db32-pb96",
   "schema_version": "cricket_phase1_delivery_run/v1",
@@ -22,7 +22,7 @@
     "status": "pass",
     "total_players_detected": 13818
   },
-  "visual_qa_manifest": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations/visual_qa_manifest.json",
+  "visual_qa_manifest": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations/visual_qa_manifest.json",
   "visual_qa_overlay_count": 35,
-  "visualizations": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations"
+  "visualizations": "benchmarks/runs/rtmpose-l-body8-full-db32-pb96/visualizations"
 }

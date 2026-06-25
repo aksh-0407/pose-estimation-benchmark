@@ -30,6 +30,36 @@ def parse_frame_id(path: Path) -> int | None:
     return int(match.group("frame"))
 
 
+def repo_relative(path: str | Path, root: str | Path) -> str:
+    """Return ``path`` as a string relative to ``root`` when possible.
+
+    Keeps run artifacts portable by storing repo-root-relative paths instead of
+    machine-specific absolute ones. Falls back to the absolute path if ``path``
+    lives outside ``root``.
+    """
+    resolved = Path(path).resolve()
+    root = Path(root).resolve()
+    try:
+        return str(resolved.relative_to(root))
+    except ValueError:
+        return str(resolved)
+
+
+def parse_prediction_filename(path: str | Path) -> tuple[str, str, str] | None:
+    """Parse a canonical prediction JSONL name into ``(group, delivery_id, camera_id)``.
+
+    Prediction files are named ``<group>__<delivery>__<cam_NN>.jsonl`` by the inference
+    runners. Returns ``None`` for names that do not match that convention.
+    """
+    parts = Path(path).stem.split("__")
+    if len(parts) != 3:
+        return None
+    group, delivery_id, camera_id = parts
+    if not group or not delivery_id or not camera_id.startswith("cam_"):
+        return None
+    return group, delivery_id, camera_id
+
+
 def read_image_dimensions(path: Path) -> list[int] | None:
     image = cv2.imread(str(path))
     if image is None:
