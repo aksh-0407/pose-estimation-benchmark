@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -62,6 +63,7 @@ class P1RunConfig:
     show_progress: bool = True
     preload_full_frame: bool = True
     resize_long_side: int | None = None
+    decode_workers: int = 1
 
 
 class NullProgress:
@@ -180,6 +182,7 @@ def read_batch_images(
     frame_paths: list[Path],
     *,
     resize_long_side: int | None = None,
+    decode_workers: int = 1,
 ) -> tuple[list[DecodedFrame], list[dict[str, Any]], float]:
     """Decode a batch with OpenCV before inference.
 
@@ -191,14 +194,13 @@ def read_batch_images(
     start = time.perf_counter()
     decoded_frames: list[DecodedFrame] = []
     read_failures: list[dict[str, Any]] = []
-    for frame_path in frame_paths:
+    workers = max(1, int(decode_workers))
+
+    def decode_one(frame_path: Path) -> tuple[DecodedFrame | None, dict[str, Any] | None]:
         frame_start = time.perf_counter()
         frame = cv2.imread(str(frame_path))
         if frame is None:
-            read_failures.append(
-                {"frame_name": frame_path.name, "error": "cv2.imread failed"}
-            )
-            continue
+            return None, {"frame_name": frame_path.name, "error": "cv2.imread failed"}
         height, width = frame.shape[:2]
         input_frame = frame
         input_width = int(width)
@@ -214,7 +216,7 @@ def read_batch_images(
                     (input_width, input_height),
                     interpolation=interpolation,
                 )
-        decoded_frames.append(
+        return (
             DecodedFrame(
                 path=frame_path,
                 image=input_frame,
@@ -222,8 +224,21 @@ def read_batch_images(
                 input_size=(input_width, input_height),
                 scale_xy=(float(width) / input_width, float(height) / input_height),
                 decode_ms=(time.perf_counter() - frame_start) * 1000,
-            )
+            ),
+            None,
         )
+
+    if workers == 1 or len(frame_paths) <= 1:
+        results = [decode_one(frame_path) for frame_path in frame_paths]
+    else:
+        with ThreadPoolExecutor(max_workers=min(workers, len(frame_paths))) as executor:
+            results = list(executor.map(decode_one, frame_paths))
+
+    for decoded, failure in results:
+        if decoded is not None:
+            decoded_frames.append(decoded)
+        if failure is not None:
+            read_failures.append(failure)
     decode_ms = (time.perf_counter() - start) * 1000
     return decoded_frames, read_failures, decode_ms
 
@@ -511,6 +526,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                         decoded_batch, read_failures, _ = read_batch_images(
                             batch_paths,
                             resize_long_side=resize_long_side,
+                            decode_workers=config.decode_workers,
                         )
                         decoded_frames.extend(decoded_batch)
                         for decoded in decoded_batch:
@@ -535,6 +551,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                         decoded_batch, read_failures, _ = read_batch_images(
                             batch_paths,
                             resize_long_side=resize_long_side,
+                            decode_workers=config.decode_workers,
                         )
                         for decoded in decoded_batch:
                             camera_decode_latencies.append(decoded.decode_ms)
@@ -777,6 +794,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
         "input_mode": input_mode,
         "preload_full_frame": config.preload_full_frame,
         "resize_long_side": config.resize_long_side,
+        "decode_workers": config.decode_workers,
         "git_sha": git_sha(Path(__file__).resolve().parents[2]),
         "summary": {
             "camera_count": len(per_camera),
@@ -818,6 +836,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                 "input_mode": input_mode,
                 "preload_full_frame": config.preload_full_frame,
                 "resize_long_side": config.resize_long_side,
+                "decode_workers": config.decode_workers,
                 "prediction_dir": str(prediction_dir),
             },
             handle,

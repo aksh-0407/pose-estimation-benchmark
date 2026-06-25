@@ -53,6 +53,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Resize decoded full frames to this long side before inference; defaults to --imgsz",
     )
+    parser.add_argument(
+        "--decode-workers",
+        type=int,
+        default=1,
+        help="OpenCV image decode worker threads per batch/camera preload",
+    )
     parser.add_argument("--no-progress", dest="show_progress", action="store_false")
     parser.set_defaults(show_progress=True)
     return parser.parse_args()
@@ -100,6 +106,10 @@ def main() -> int:
             "run_cricket_p1_inference.py currently supports yolo26x_pose for full delivery inference. "
             "Use smoke/shortlist tooling for other model candidates."
         )
+    if args.batch_size < 1:
+        raise SystemExit("--batch-size must be positive")
+    if args.decode_workers < 1:
+        raise SystemExit("--decode-workers must be positive")
     drive_root = (ROOT / args.drive_root).resolve() if not Path(args.drive_root).is_absolute() else Path(args.drive_root)
     run_dir = (
         Path(args.run_dir).resolve()
@@ -121,7 +131,8 @@ def main() -> int:
     print(
         "Phase 1 runtime: "
         f"device={device} imgsz={args.imgsz} batch_size={args.batch_size} "
-        f"half={half} input_mode={input_mode} resize_long_side={resize_long_side}",
+        f"half={half} input_mode={input_mode} resize_long_side={resize_long_side} "
+        f"decode_workers={args.decode_workers}",
         flush=True,
     )
     adapter = YOLOPoseAdapter(
@@ -155,6 +166,7 @@ def main() -> int:
             show_progress=args.show_progress,
             preload_full_frame=args.preload_full_frame,
             resize_long_side=resize_long_side,
+            decode_workers=args.decode_workers,
         ),
         adapter,
     )

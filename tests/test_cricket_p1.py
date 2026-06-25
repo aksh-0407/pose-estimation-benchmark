@@ -12,7 +12,7 @@ from pose_estimation.cricket.p1_outputs import (
     scale_prediction,
     xyxy_to_xywh,
 )
-from pose_estimation.cricket.p1_runner import P1RunConfig, run_phase1_delivery
+from pose_estimation.cricket.p1_runner import P1RunConfig, read_batch_images, run_phase1_delivery
 
 
 class FakeAdapter:
@@ -145,6 +145,21 @@ def test_phase1_runner_processes_tiny_delivery(tmp_path: Path):
     assert rows[0]["metadata"]["input_mode"] == "opencv_resized_preload"
     assert rows[0]["metadata"]["inference_image_size_px"] == [64, 48]
     assert rows[0]["metadata"]["coordinate_scale_xy"] == [2.0, 2.0]
+
+
+def test_read_batch_images_parallel_decode_preserves_order(tmp_path: Path):
+    frames = []
+    for frame_id in range(1, 4):
+        path = tmp_path / f"frame_camera01_{frame_id:06d}.jpg"
+        write_image(path, width=128, height=96)
+        frames.append(path)
+
+    decoded, failures, _ = read_batch_images(frames, resize_long_side=64, decode_workers=2)
+
+    assert failures == []
+    assert [frame.path.name for frame in decoded] == [frame.name for frame in frames]
+    assert [frame.input_size for frame in decoded] == [(64, 48), (64, 48), (64, 48)]
+    assert [frame.scale_xy for frame in decoded] == [(2.0, 2.0), (2.0, 2.0), (2.0, 2.0)]
 
 
 def test_phase1_runner_appends_from_partial_resume(tmp_path: Path):

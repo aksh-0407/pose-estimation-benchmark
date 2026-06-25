@@ -116,6 +116,8 @@ def parse_args() -> argparse.Namespace:
     ov.add_argument("--no-smoke-overlay", dest="smoke_overlay", action="store_false",
                     help="Do not auto-enable overlays when --run-id contains 'smoke'")
     ov.add_argument("--overlay-every", type=int, default=1, help="Render every Nth processed frame (default: 1)")
+    ov.add_argument("--overlay-frame-ids", nargs="+", type=int, default=None,
+                    help="Render overlays only for these exact frame IDs from filenames, e.g. 1 150 300")
     ov.add_argument("--overlay-limit", type=int, default=30, help="Max overlays per camera (default: 30)")
     ov.set_defaults(smoke_overlay=True)
 
@@ -541,6 +543,14 @@ def render_overlay(visualizer, image_path: str, results, out_path: Path, kpt_thr
     mmcv.imwrite(visualizer.get_image()[..., ::-1], str(out_path))
 
 
+def should_render_overlay(args: argparse.Namespace, entry: dict[str, Any], overlays: int) -> bool:
+    if overlays >= args.overlay_limit:
+        return False
+    if args.overlay_frame_ids is not None:
+        return parse_frame_id(entry["frame_path"]) in args.overlay_frame_ids
+    return entry["idx"] % args.overlay_every == 0
+
+
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
@@ -558,6 +568,14 @@ def main() -> int:
         raise SystemExit("--pose-batch-size must be positive")
     if args.io_workers < 0:
         raise SystemExit("--io-workers must be >= 0")
+    if args.overlay_every <= 0:
+        raise SystemExit("--overlay-every must be positive")
+    if args.overlay_limit < 0:
+        raise SystemExit("--overlay-limit must be >= 0")
+    if args.overlay_frame_ids is not None:
+        if any(frame_id < 0 for frame_id in args.overlay_frame_ids):
+            raise SystemExit("--overlay-frame-ids must be non-negative")
+        args.overlay_frame_ids = set(args.overlay_frame_ids)
     targets = discover_targets(args)
     if not targets:
         raise SystemExit("No frames matched the given filters. Try --list to inspect selection.")
@@ -603,6 +621,7 @@ def main() -> int:
         "io_workers": args.io_workers, "benchmark_only": args.benchmark_only,
         "sync_cuda_timing": args.sync_cuda_timing,
         "overlay_enabled": args.overlay, "overlay_limit_per_camera": args.overlay_limit,
+        "overlay_frame_ids": sorted(args.overlay_frame_ids) if args.overlay_frame_ids is not None else None,
         "visualizations": str(run_dir / "visualizations") if args.overlay else None,
         "cameras": [], "frames_processed": 0, "frames_skipped": 0,
         "total_people": 0, "failed_frames": 0,
@@ -744,7 +763,7 @@ def main() -> int:
                     cam_people += len(players)
                     cam_processed += 1
 
-                    if visualizer is not None and overlays < args.overlay_limit and entry["idx"] % args.overlay_every == 0:
+                    if visualizer is not None and should_render_overlay(args, entry, overlays):
                         vis_path = run_dir / "visualizations" / t["group"] / delivery_id / cam_id / f"{frame_path.stem}.jpg"
                         try:
                             start = time.perf_counter()
