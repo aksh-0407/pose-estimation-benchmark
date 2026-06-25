@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -41,6 +43,61 @@ def expand_path(path: str | Path) -> Path:
     return Path(os.path.expandvars(os.path.expanduser(str(path)))).resolve()
 
 
+def parse_version(version: str) -> tuple[int, ...]:
+    parts = re.findall(r"\d+", version)
+    return tuple(int(part) for part in parts)
+
+
+def query_nvidia_driver_version() -> str | None:
+    if shutil.which("nvidia-smi") is None:
+        return None
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env={**os.environ, "PYTHONNOUSERSITE": "1"},
+        )
+    except Exception:
+        return None
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if line:
+            return line.split(",", 1)[0].strip()
+    return None
+
+
+def select_torch_channel(index_urls: dict[str, str]) -> tuple[str, str]:
+    override = os.environ.get("POSE_BENCHMARK_TORCH_CHANNEL")
+    if override:
+        channel = override.strip()
+        if channel in index_urls:
+            return channel, index_urls[channel]
+        raise SystemExit(
+            f"Unsupported POSE_BENCHMARK_TORCH_CHANNEL={channel!r}; expected one of {', '.join(sorted(index_urls))}"
+        )
+
+    driver_version = query_nvidia_driver_version()
+    if driver_version is None:
+        return "cpu", index_urls["cpu"]
+
+    major = parse_version(driver_version)
+    if major >= (560,):
+        channel = "cu126"
+    elif major >= (550,):
+        channel = "cu124"
+    elif major >= (530,):
+        channel = "cu121"
+    else:
+        channel = "cpu"
+
+    if channel not in index_urls:
+        channel = "cpu"
+    return channel, index_urls[channel]
+
+
 def run(command: list[str], *, dry_run: bool, cwd: Path = ROOT) -> None:
     printable = " ".join(shlex.quote(part) for part in command)
     print(f"+ {printable}")
@@ -66,7 +123,10 @@ def create_env(conda: str, env_name: str, python_version: str, *, dry_run: bool)
     if not dry_run and conda_env_exists(conda, env_name):
         print(f"{env_name}: Conda env already exists")
         return
-    run([conda, "create", "-y", "-n", env_name, f"python={python_version}", "pip"], dry_run=dry_run)
+    run(
+        [conda, "create", "-y", "--override-channels", "-c", "conda-forge", "-n", env_name, f"python={python_version}", "pip"],
+        dry_run=dry_run,
+    )
 
 
 def install_profile(conda: str, env_name: str, profile: dict[str, Any], model_id: str, *, dry_run: bool, force: bool) -> None:
@@ -78,13 +138,37 @@ def install_profile(conda: str, env_name: str, profile: dict[str, Any], model_id
         return
 
     install = profile.get("install", {})
+    torch_install = install.get("torch")
+    if torch_install:
+        index_urls = torch_install.get("index_urls", {})
+        if not index_urls:
+            raise SystemExit(f"{model_id}: install.torch requires index_urls")
+        channel, index_url = select_torch_channel(index_urls)
+        print(f"{model_id}: selected torch channel {channel} ({index_url})")
+        packages = list(torch_install.get("packages", ["torch", "torchvision"]))
+        run(
+            [conda, "run", "-n", env_name, "python", "-m", "pip", "install", "--index-url", index_url, *packages],
+            dry_run=dry_run,
+        )
+
     conda_install = install.get("conda")
     if conda_install:
         channels = []
         for channel in conda_install.get("channels", []):
             channels.extend(["-c", channel])
-        packages = list(conda_install.get("packages", []))
-        run([conda, "install", "-y", "-n", env_name, *channels, *packages], dry_run=dry_run)
+        raw_packages = list(conda_install.get("packages", []))
+        # Filter out packages that we now install via pip wheels to avoid solver conflicts
+        forbidden = ("pytorch", "torchvision", "pytorch-cuda", "mkl", "intel-openmp")
+        packages = [p for p in raw_packages if not any(p.startswith(f) for f in forbidden)]
+        # Also drop pytorch/nvidia channels if they only served torch packages
+        channel_names = [c for c in conda_install.get("channels", [])]
+        if packages:
+            channel_args: list[str] = []
+            for ch in channel_names:
+                channel_args.extend(["-c", ch])
+            run([conda, "install", "-y", "--override-channels", "-n", env_name, *channel_args, *packages], dry_run=dry_run)
+        else:
+            print(f"{model_id}: skipping conda install of filtered packages: {raw_packages}")
 
     for pip_args in install.get("pip", []):
         run([conda, "run", "-n", env_name, "python", "-m", "pip", "install", *shlex.split(pip_args)], dry_run=dry_run)
@@ -105,13 +189,21 @@ def download_url(url: str, dest: Path, *, dry_run: bool) -> None:
         return
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".tmp")
-    try:
-        with urllib.request.urlopen(url, timeout=60) as response, tmp.open("wb") as handle:
-            shutil.copyfileobj(response, handle)
-        tmp.replace(dest)
-    except Exception:
-        tmp.unlink(missing_ok=True)
-        raise
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response, tmp.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+            tmp.replace(dest)
+            return
+        except Exception as exc:
+            last_error = exc
+            tmp.unlink(missing_ok=True)
+            if attempt == 2:
+                raise
+            time.sleep(2**attempt)
+    if last_error is not None:
+        raise last_error
 
 
 def download_url_with_fallbacks(asset: dict[str, Any], dest: Path, *, dry_run: bool) -> None:

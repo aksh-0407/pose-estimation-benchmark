@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ssl
 import shutil
 import time
 import urllib.request
@@ -14,9 +15,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
+COCO_SSL_CONTEXT = ssl._create_unverified_context()
+
 COCO_URLS = {
-    "val2017": "http://images.cocodataset.org/zips/val2017.zip",
-    "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+    "val2017": "https://images.cocodataset.org/zips/val2017.zip",
+    "annotations": "https://images.cocodataset.org/annotations/annotations_trainval2017.zip",
 }
 
 
@@ -45,9 +48,21 @@ def download(url: str, dest: Path, *, force: bool) -> None:
     tmp = dest.with_suffix(dest.suffix + ".tmp")
     print(f"+ download {url} -> {dest}")
     started = time.perf_counter()
-    with urllib.request.urlopen(url, timeout=60) as response, tmp.open("wb") as handle:
-        shutil.copyfileobj(response, handle, length=1024 * 1024)
-    tmp.replace(dest)
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=60, context=COCO_SSL_CONTEXT) as response, tmp.open("wb") as handle:
+                shutil.copyfileobj(response, handle, length=1024 * 1024)
+            tmp.replace(dest)
+            break
+        except Exception as exc:
+            last_error = exc
+            tmp.unlink(missing_ok=True)
+            if attempt == 2:
+                raise
+            time.sleep(2**attempt)
+    if last_error is not None and not dest.exists():
+        raise last_error
     elapsed = time.perf_counter() - started
     size_mb = dest.stat().st_size / (1024 * 1024)
     print(f"{dest}: {size_mb:.1f} MB in {elapsed:.1f}s")

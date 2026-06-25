@@ -9,14 +9,13 @@ profiles:
   mmpose_v1:
     python: "3.10"
     install:
-      conda:
-        channels: [pytorch, nvidia]
-        packages:
-          - pytorch==2.1.2
-          - torchvision==0.16.2
-          - pytorch-cuda=12.1
-          - mkl=2023.1.0
-          - intel-openmp=2023.1.0
+      torch:
+        packages: [torch, torchvision]
+        index_urls:
+          cpu: https://download.pytorch.org/whl/cpu
+          cu121: https://download.pytorch.org/whl/cu121
+          cu124: https://download.pytorch.org/whl/cu124
+          cu126: https://download.pytorch.org/whl/cu126
       pip:
         - --upgrade pip wheel setuptools<80 PyYAML numpy<2
         - xtcocotools json_tricks scipy pandas tqdm opencv-python<4.12 munkres matplotlib pillow pycocotools shapely terminaltables
@@ -38,14 +37,13 @@ profiles:
   ultralytics_pose:
     python: "3.10"
     install:
-      conda:
-        channels: [pytorch, nvidia]
-        packages:
-          - pytorch==2.1.2
-          - torchvision==0.16.2
-          - pytorch-cuda=12.1
-          - mkl=2023.1.0
-          - intel-openmp=2023.1.0
+      torch:
+        packages: [torch, torchvision]
+        index_urls:
+          cpu: https://download.pytorch.org/whl/cpu
+          cu121: https://download.pytorch.org/whl/cu121
+          cu124: https://download.pytorch.org/whl/cu124
+          cu126: https://download.pytorch.org/whl/cu126
       pip:
         - --upgrade pip wheel setuptools PyYAML numpy<2
         - ultralytics onnx onnxruntime-gpu pandas tqdm opencv-python<4.12 pycocotools
@@ -123,6 +121,19 @@ models:
         path: models/rtmpose_l_wholebody/weights/rtmpose-l_simcc-coco-wholebody_pt-aic-coco_270e-384x288-eaeb96c8_20230125.pth
         required_for_smoke: true
 
+  rtmpose_l:
+    env_name: cricket-rtmpose-l
+    profile: mmpose_v1
+    smoke_profile: mmpose
+    benchmark_runner: mmpose_topdown
+    config: external/mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-l_8xb32-270e_coco-384x288.py
+    checkpoint: models/rtmpose_l/weights/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
+    assets:
+      - kind: url
+        url: https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
+        path: models/rtmpose_l/weights/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
+        required_for_smoke: true
+
   dwpose_l_384:
     env_name: cricket-dwpose-l-384
     profile: dwpose_onnx
@@ -160,8 +171,13 @@ models:
     checkpoint: models/yolo26x_pose/weights/yolo26x-pose.pt
     model_name: models/yolo26x_pose/weights/yolo26x-pose.pt
     smoke_image: external/mmpose/projects/rtmpose/examples/onnxruntime/human-pose.jpeg
+    assets:
+      - kind: url
+        url: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26x-pose.pt
+        path: models/yolo26x_pose/weights/yolo26x-pose.pt
+        required_for_smoke: true
     notes:
-      - Ultralytics downloads official weights on first use.
+      - Ultralytics pose weights are mirrored from the official assets release so setup can prefetch them.
 
   vitpose_h:
     env_name: cricket-vitpose-h-mmpose-v1
