@@ -90,7 +90,10 @@ def parse_args() -> argparse.Namespace:
     rt.add_argument("--run-dir", default=None, help="Output dir (default: benchmarks/runs/<run-id>)")
     rt.add_argument("--no-resume", dest="resume", action="store_false",
                     help="Recompute frames already present in the camera JSONL")
+    rt.add_argument("--no-progress", dest="show_progress", action="store_false",
+                    help="Disable the tqdm progress bar")
     rt.set_defaults(resume=True)
+    rt.set_defaults(show_progress=True)
 
     # Overlays
     ov = parser.add_argument_group("overlays")
@@ -144,6 +147,57 @@ def resolve_model_paths(args: argparse.Namespace) -> tuple[Path, Path]:
 def abspath(path: str | Path) -> Path:
     path = Path(path)
     return path if path.is_absolute() else (ROOT / path).resolve()
+
+
+def build_progress_bar(total: int, enabled: bool):
+    if not enabled:
+        return None
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        print("WARN: tqdm is not installed; progress bar disabled.", flush=True)
+        return None
+
+    return tqdm(
+        total=total,
+        desc="rtmpose",
+        unit="frame",
+        dynamic_ncols=True,
+        smoothing=0.05,
+        mininterval=0.5,
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}] {postfix}",
+    )
+
+
+def progress_write(progress, message: str) -> None:
+    if progress is None:
+        print(message, flush=True)
+    else:
+        progress.write(message)
+
+
+def progress_step(
+    progress,
+    *,
+    camera: str,
+    cam_processed: int,
+    cam_skipped: int,
+    cam_failed: int,
+    cam_people: int,
+    overlays: int,
+) -> None:
+    if progress is None:
+        return
+    progress.set_description_str(camera, refresh=False)
+    progress.set_postfix(
+        ok=cam_processed,
+        skip=cam_skipped,
+        fail=cam_failed,
+        people=cam_people,
+        overlays=overlays,
+        refresh=False,
+    )
+    progress.update(1)
 
 
 def normalize_camera_filters(values: list[str] | None) -> set[str] | None:
@@ -374,8 +428,10 @@ def main() -> int:
     }
 
     t0 = time.perf_counter()
+    progress = build_progress_bar(total_frames, args.show_progress)
     for t in targets:
         cam_id, delivery_id = t["camera_id"], t["delivery_id"]
+        camera_name = f"{t['group']}/{delivery_id}/{cam_id}"
         out_jsonl = pred_dir / f"{t['group']}__{delivery_id}__{cam_id}.jsonl"
         done: set[str] = set()
         if args.resume and out_jsonl.exists():
@@ -392,6 +448,15 @@ def main() -> int:
             for idx, frame_path in enumerate(t["frames"]):
                 if frame_path.name in done:
                     cam_skipped += 1
+                    progress_step(
+                        progress,
+                        camera=camera_name,
+                        cam_processed=cam_processed,
+                        cam_skipped=cam_skipped,
+                        cam_failed=cam_failed,
+                        cam_people=cam_people,
+                        overlays=overlays,
+                    )
                     continue
                 try:
                     import cv2
@@ -406,7 +471,16 @@ def main() -> int:
                     players = player_records(results, source_skeleton, width, height, coco17_indices)
                 except Exception as exc:  # noqa: BLE001
                     cam_failed += 1
-                    print(f"  ! {frame_path.name}: {exc}", flush=True)
+                    progress_write(progress, f"  ! {camera_name}/{frame_path.name}: {exc}")
+                    progress_step(
+                        progress,
+                        camera=camera_name,
+                        cam_processed=cam_processed,
+                        cam_skipped=cam_skipped,
+                        cam_failed=cam_failed,
+                        cam_people=cam_people,
+                        overlays=overlays,
+                    )
                     continue
 
                 record = {
@@ -435,13 +509,23 @@ def main() -> int:
                         render_overlay(visualizer, str(frame_path), results, vis_path, args.kpt_thr)
                         overlays += 1
                     except Exception as exc:  # noqa: BLE001
-                        print(f"  ! overlay {frame_path.name}: {exc}", flush=True)
+                        progress_write(progress, f"  ! overlay {camera_name}/{frame_path.name}: {exc}")
 
-                if cam_processed % 100 == 0:
+                progress_step(
+                    progress,
+                    camera=camera_name,
+                    cam_processed=cam_processed,
+                    cam_skipped=cam_skipped,
+                    cam_failed=cam_failed,
+                    cam_people=cam_people,
+                    overlays=overlays,
+                )
+
+                if progress is None and cam_processed % 100 == 0:
                     print(f"  {t['group']}/{delivery_id}/{cam_id}: {cam_processed} frames", flush=True)
 
-        print(f"+ {t['group']}/{delivery_id}/{cam_id}: processed={cam_processed} skipped={cam_skipped} "
-              f"people={cam_people} failed={cam_failed} -> {out_jsonl.name}", flush=True)
+        progress_write(progress, f"+ {t['group']}/{delivery_id}/{cam_id}: processed={cam_processed} "
+                       f"skipped={cam_skipped} people={cam_people} failed={cam_failed} -> {out_jsonl.name}")
         summary["cameras"].append({
             "group": t["group"], "delivery_id": delivery_id, "camera_id": cam_id,
             "frames_processed": cam_processed, "frames_skipped": cam_skipped,
@@ -451,6 +535,9 @@ def main() -> int:
         summary["frames_skipped"] += cam_skipped
         summary["total_people"] += cam_people
         summary["failed_frames"] += cam_failed
+
+    if progress is not None:
+        progress.close()
 
     elapsed = time.perf_counter() - t0
     summary["finished_at"] = utc_now()
