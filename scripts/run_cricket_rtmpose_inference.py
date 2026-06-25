@@ -271,9 +271,17 @@ def match_id_from_delivery(delivery_id: str) -> str:
 # Inference
 # --------------------------------------------------------------------------- #
 def build_models(args: argparse.Namespace, device: str):
-    from mmdet.apis import inference_detector, init_detector
-    from mmpose.apis import inference_topdown, init_model
-    from mmpose.utils import adapt_mmdet_pipeline
+    try:
+        from mmdet.apis import inference_detector, init_detector
+        from mmpose.apis import inference_topdown, init_model
+        from mmpose.utils import adapt_mmdet_pipeline
+    except ModuleNotFoundError as exc:
+        missing = exc.name or "required OpenMMLab package"
+        raise SystemExit(
+            f"Missing {missing!r} in the active environment. Rebuild/repair this model env with:\n"
+            f"  python3 scripts/setup_model_envs.py --models {args.model_id} --force-install --download-assets\n"
+            f"Then activate the configured Conda env and rerun this script."
+        ) from exc
 
     pose_config, pose_checkpoint = resolve_model_paths(args)
     pose_config, pose_checkpoint = abspath(pose_config), abspath(pose_checkpoint)

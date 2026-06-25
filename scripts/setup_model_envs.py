@@ -94,7 +94,13 @@ def select_torch_channel(index_urls: dict[str, str]) -> tuple[str, str]:
         channel = "cpu"
 
     if channel not in index_urls:
-        channel = "cpu"
+        preferred = parse_version(channel)
+        cuda_channels = sorted(
+            (name for name in index_urls if name.startswith("cu")),
+            key=parse_version,
+        )
+        compatible = [name for name in cuda_channels if parse_version(name) <= preferred]
+        channel = compatible[-1] if compatible else "cpu"
     return channel, index_urls[channel]
 
 
@@ -105,6 +111,18 @@ def run(command: list[str], *, dry_run: bool, cwd: Path = ROOT) -> None:
         return
     env = {**os.environ, "PYTHONNOUSERSITE": "1"}
     subprocess.run(command, cwd=cwd, check=True, env=env)
+
+
+def validate_profile_paths(profile: dict[str, Any], model_id: str) -> None:
+    for command in profile.get("install", {}).get("commands", []):
+        for match in re.finditer(r"(?:^|\s)-e\s+([^\s;&|]+)", command):
+            path = expand_path(match.group(1))
+            if not path.exists():
+                raise SystemExit(
+                    f"{model_id}: editable install path is missing: {path}\n"
+                    "Populate the external dependency first, for example:\n"
+                    "  git clone https://github.com/open-mmlab/mmpose.git external/mmpose"
+                )
 
 
 def conda_env_exists(conda: str, env_name: str) -> bool:
@@ -295,6 +313,7 @@ def main() -> int:
         profile = config["profiles"][model["profile"]]
         print(f"\n== {model_id} -> {model['env_name']} ==")
         if not args.skip_envs:
+            validate_profile_paths(profile, model_id)
             create_env(conda, model["env_name"], str(profile["python"]), dry_run=args.dry_run)
             install_profile(
                 conda,

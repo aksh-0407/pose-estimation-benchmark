@@ -10,18 +10,16 @@ profiles:
     python: "3.10"
     install:
       torch:
-        packages: [torch, torchvision]
+        packages: [torch==2.1.0, torchvision==0.16.0]
         index_urls:
           cpu: https://download.pytorch.org/whl/cpu
           cu121: https://download.pytorch.org/whl/cu121
-          cu124: https://download.pytorch.org/whl/cu124
-          cu126: https://download.pytorch.org/whl/cu126
       pip:
         - --upgrade pip wheel setuptools<80 PyYAML numpy<2
         - xtcocotools json_tricks scipy pandas tqdm opencv-python<4.12 munkres matplotlib pillow pycocotools shapely terminaltables
       commands:
         - python -m pip install "mmengine>=0.4.0,<1.0.0"
-        - python -m pip install --force-reinstall --no-deps wheels/mmcv/mmcv-2.1.0-cp310-cp310-linux_x86_64.whl
+        - if [ -f wheels/mmcv/mmcv-2.1.0-cp310-cp310-linux_x86_64.whl ]; then python -m pip install --force-reinstall --no-deps wheels/mmcv/mmcv-2.1.0-cp310-cp310-linux_x86_64.whl; else python -m pip install --no-cache-dir --force-reinstall --no-deps https://download.openmmlab.com/mmcv/dist/cu121/torch2.1.0/mmcv-2.1.0-cp310-cp310-manylinux1_x86_64.whl; fi
         - python -m pip install "mmdet>=3.0.0,<3.3.0" --no-deps
         - python -m pip install "mmpretrain>=1.0.0,<1.3.0" --no-deps
         - python -m pip install -v -e external/mmpose --no-deps
