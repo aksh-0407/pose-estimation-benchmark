@@ -171,6 +171,19 @@ def default_crop_config_path(drive_root: Path) -> Path:
     )
 
 
+def capture_group_from_camera_dir(camera_dir: Path) -> str:
+    """Return bt_XX from .../dataset/bt_XX/<delivery>/cameraNN."""
+    return camera_dir.parent.parent.name
+
+
+def prediction_filename(capture_group: str, delivery_id: str, camera_id: str) -> str:
+    return f"{capture_group}__{delivery_id}__{camera_id}.jsonl"
+
+
+def camera_metric_key(capture_group: str, delivery_id: str, camera_id: str) -> str:
+    return f"{capture_group}/{delivery_id}/{camera_id}"
+
+
 def select_frames(paths: list[Path], *, start_index: int, frame_limit: int | None) -> list[Path]:
     selected = paths[start_index:]
     if frame_limit is not None:
@@ -396,6 +409,121 @@ def predict_crops(
     }
 
 
+def write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+
+
+def aggregate_phase1_run(config: P1RunConfig) -> dict[str, Any]:
+    """Aggregate delivery-level metrics into top-level RTMPose-style run files."""
+
+    delivery_metrics_root = config.run_dir / "delivery_metrics"
+    metrics_files = sorted(delivery_metrics_root.glob("*/p1_metrics.json"))
+    delivery_metrics: list[dict[str, Any]] = []
+    for metrics_file in metrics_files:
+        with metrics_file.open("r", encoding="utf-8") as handle:
+            delivery_metrics.append(json.load(handle))
+
+    per_camera: dict[str, Any] = {}
+    failures: list[dict[str, Any]] = []
+    batch_fallbacks: list[dict[str, Any]] = []
+    delivery_ids: list[str] = []
+    records_written = records_written_this_run = records_reused = 0
+    total_players = failed_frames = camera_count = 0
+    wall_clock_s = 0.0
+
+    for metrics in delivery_metrics:
+        delivery_id = metrics["delivery_id"]
+        delivery_ids.append(delivery_id)
+        summary = metrics.get("summary", {})
+        records_written += int(summary.get("records_written") or 0)
+        records_written_this_run += int(summary.get("records_written_this_run") or 0)
+        records_reused += int(summary.get("records_reused") or 0)
+        total_players += int(summary.get("total_players_detected") or 0)
+        failed_frames += int(summary.get("failed_frames") or 0)
+        camera_count += int(summary.get("camera_count") or 0)
+        wall_clock_s += float(summary.get("wall_clock_s") or 0.0)
+        failures.extend(metrics.get("failures", []))
+        batch_fallbacks.extend(metrics.get("batch_fallbacks", []))
+        for camera_id, camera_metrics in metrics.get("per_camera", {}).items():
+            capture_group = camera_metrics.get("capture_group")
+            key = (
+                camera_metric_key(capture_group, delivery_id, camera_id)
+                if capture_group
+                else f"{delivery_id}/{camera_id}"
+            )
+            per_camera[key] = camera_metrics
+
+    created_at = utc_now()
+    status = "pass" if failed_frames == 0 else "partial"
+    prediction_dir = config.run_dir / "predictions"
+    input_mode = configured_input_mode(config)
+    aggregate_metrics = {
+        "schema_version": "cricket_phase1_metrics/v2",
+        "run_id": config.run_id,
+        "created_at": created_at,
+        "delivery_ids": sorted(delivery_ids),
+        "match_id": config.match_id,
+        "model_id": config.model_id,
+        "device": config.device,
+        "inference_mode": config.inference_mode,
+        "batch_size": config.batch_size,
+        "imgsz": config.imgsz,
+        "conf": config.conf,
+        "iou": config.iou,
+        "half": config.half,
+        "input_mode": input_mode,
+        "preload_full_frame": config.preload_full_frame,
+        "resize_long_side": config.resize_long_side,
+        "decode_workers": config.decode_workers,
+        "git_sha": git_sha(Path(__file__).resolve().parents[2]),
+        "prediction_dir": str(prediction_dir),
+        "delivery_metrics_dir": str(delivery_metrics_root),
+        "summary": {
+            "delivery_count": len(delivery_metrics),
+            "camera_count": camera_count,
+            "records_written": records_written,
+            "records_written_this_run": records_written_this_run,
+            "records_reused": records_reused,
+            "total_players_detected": total_players,
+            "failed_frames": failed_frames,
+            "wall_clock_s": wall_clock_s,
+            "fps_overall": (records_written / wall_clock_s) if wall_clock_s > 0 else None,
+            "status": status,
+        },
+        "per_camera": per_camera,
+        "failures": failures[:500],
+        "batch_fallbacks": batch_fallbacks,
+    }
+    aggregate_manifest = {
+        "schema_version": "cricket_phase1_run/v2",
+        "run_id": config.run_id,
+        "created_at": created_at,
+        "drive_root": str(config.drive_root),
+        "delivery_ids": sorted(delivery_ids),
+        "model_id": config.model_id,
+        "device": config.device,
+        "inference_mode": config.inference_mode,
+        "batch_size": config.batch_size,
+        "imgsz": config.imgsz,
+        "conf": config.conf,
+        "iou": config.iou,
+        "half": config.half,
+        "input_mode": input_mode,
+        "preload_full_frame": config.preload_full_frame,
+        "resize_long_side": config.resize_long_side,
+        "decode_workers": config.decode_workers,
+        "prediction_dir": str(prediction_dir),
+        "delivery_metrics_dir": str(delivery_metrics_root),
+        "summary": aggregate_metrics["summary"],
+    }
+    write_json(config.run_dir / "p1_metrics.json", aggregate_metrics)
+    write_json(config.run_dir / "run_manifest.json", aggregate_manifest)
+    return aggregate_metrics
+
+
 def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, Any]:
     """Run Phase 1 inference for one delivery and write JSONL predictions."""
 
@@ -412,6 +540,13 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
         camera_dirs = {camera_id: path for camera_id, path in camera_dirs.items() if camera_id in wanted}
     if not camera_dirs:
         raise RuntimeError(f"no camera directories found for {config.delivery_id}")
+    camera_contexts = {
+        camera_id: {
+            "capture_group": capture_group_from_camera_dir(camera_dir),
+            "camera_dir": camera_dir,
+        }
+        for camera_id, camera_dir in camera_dirs.items()
+    }
 
     selected_frames_by_camera = {
         camera_id: select_frames(
@@ -424,7 +559,8 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
     resume_state_by_camera: dict[str, ResumeState] = {}
     progress_total = 0
     for camera_id, frames in selected_frames_by_camera.items():
-        prediction_path = prediction_dir / f"{camera_id}.jsonl"
+        capture_group = camera_contexts[camera_id]["capture_group"]
+        prediction_path = prediction_dir / prediction_filename(capture_group, config.delivery_id, camera_id)
         if config.resume:
             resume_state = inspect_existing_jsonl(prediction_path, frames)
             if not resume_state.can_append:
@@ -461,9 +597,10 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
     )
 
     for camera_id, camera_dir in camera_dirs.items():
+        capture_group = camera_contexts[camera_id]["capture_group"]
         frames = selected_frames_by_camera[camera_id]
         camera_number = camera_id.replace("cam_", "")
-        camera_prediction_path = prediction_dir / f"{camera_id}.jsonl"
+        camera_prediction_path = prediction_dir / prediction_filename(capture_group, config.delivery_id, camera_id)
         camera_latencies: list[float] = []
         camera_inference_latencies: list[float] = []
         camera_decode_latencies: list[float] = []
@@ -475,6 +612,9 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
 
         if config.resume and resume_state.is_complete:
             per_camera[camera_id] = {
+                "capture_group": capture_group,
+                "delivery_id": config.delivery_id,
+                "camera_id": camera_id,
                 "camera_dir": str(camera_dir),
                 "prediction_jsonl": str(camera_prediction_path),
                 "frames_selected": len(frames),
@@ -605,6 +745,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                         record = build_phase1_frame_record(
                             match_id=config.match_id,
                             delivery_id=config.delivery_id,
+                            capture_group=capture_group,
                             camera_id=camera_id,
                             frame_index=frame_id,
                             frame_name=decoded.path.name,
@@ -614,6 +755,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                             metadata={
                                 "model_id": config.model_id,
                                 "run_id": config.run_id,
+                                "capture_group": capture_group,
                                 "inference_mode": config.inference_mode,
                                 "image_size_px": [image_width, image_height],
                                 "inference_image_size_px": [input_width, input_height],
@@ -651,6 +793,9 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                     )
                     index += len(decoded_batch)
                 per_camera[camera_id] = {
+                    "capture_group": capture_group,
+                    "delivery_id": config.delivery_id,
+                    "camera_id": camera_id,
                     "camera_dir": str(camera_dir),
                     "prediction_jsonl": str(camera_prediction_path),
                     "frames_selected": len(frames),
@@ -706,6 +851,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                     record = build_phase1_frame_record(
                         match_id=config.match_id,
                         delivery_id=config.delivery_id,
+                        capture_group=capture_group,
                         camera_id=camera_id,
                         frame_index=frame_id,
                         frame_name=frame_path.name,
@@ -715,6 +861,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                         metadata={
                             "model_id": config.model_id,
                             "run_id": config.run_id,
+                            "capture_group": capture_group,
                             "inference_mode": config.inference_mode,
                             "image_size_px": [image_width, image_height],
                             "batch_size_requested": config.batch_size,
@@ -751,6 +898,9 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
                 )
 
         per_camera[camera_id] = {
+            "capture_group": capture_group,
+            "delivery_id": config.delivery_id,
+            "camera_id": camera_id,
             "camera_dir": str(camera_dir),
             "prediction_jsonl": str(camera_prediction_path),
             "frames_selected": len(frames),
@@ -814,34 +964,30 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
         "failures": failures[:200],
         "batch_fallbacks": batch_fallbacks,
     }
-    with (config.run_dir / "p1_metrics.json").open("w", encoding="utf-8") as handle:
-        json.dump(metrics, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    with (config.run_dir / "run_manifest.json").open("w", encoding="utf-8") as handle:
-        json.dump(
-            {
-                "schema_version": "cricket_phase1_run/v1",
-                "run_id": config.run_id,
-                "created_at": metrics["created_at"],
-                "drive_root": str(config.drive_root),
-                "delivery_id": config.delivery_id,
-                "model_id": config.model_id,
-                "device": config.device,
-                "inference_mode": config.inference_mode,
-                "batch_size": config.batch_size,
-                "imgsz": config.imgsz,
-                "conf": config.conf,
-                "iou": config.iou,
-                "half": config.half,
-                "input_mode": input_mode,
-                "preload_full_frame": config.preload_full_frame,
-                "resize_long_side": config.resize_long_side,
-                "decode_workers": config.decode_workers,
-                "prediction_dir": str(prediction_dir),
-            },
-            handle,
-            indent=2,
-            sort_keys=True,
-        )
-        handle.write("\n")
+    delivery_metrics_dir = config.run_dir / "delivery_metrics" / config.delivery_id
+    write_json(delivery_metrics_dir / "p1_metrics.json", metrics)
+    write_json(
+        delivery_metrics_dir / "run_manifest.json",
+        {
+            "schema_version": "cricket_phase1_delivery_run/v1",
+            "run_id": config.run_id,
+            "created_at": metrics["created_at"],
+            "drive_root": str(config.drive_root),
+            "delivery_id": config.delivery_id,
+            "model_id": config.model_id,
+            "device": config.device,
+            "inference_mode": config.inference_mode,
+            "batch_size": config.batch_size,
+            "imgsz": config.imgsz,
+            "conf": config.conf,
+            "iou": config.iou,
+            "half": config.half,
+            "input_mode": input_mode,
+            "preload_full_frame": config.preload_full_frame,
+            "resize_long_side": config.resize_long_side,
+            "decode_workers": config.decode_workers,
+            "prediction_dir": str(prediction_dir),
+        },
+    )
+    aggregate_phase1_run(config)
     return metrics

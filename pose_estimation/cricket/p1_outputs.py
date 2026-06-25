@@ -181,6 +181,7 @@ def build_phase1_frame_record(
     *,
     match_id: str,
     delivery_id: str,
+    capture_group: str | None = None,
     camera_id: str,
     frame_index: int,
     frame_name: str,
@@ -207,6 +208,8 @@ def build_phase1_frame_record(
         "frame_name": frame_name,
         "players": players,
     }
+    if capture_group:
+        record["capture_group"] = capture_group
     if metadata:
         record["metadata"] = metadata
     validate_group1_frame(record, final_handoff=False)

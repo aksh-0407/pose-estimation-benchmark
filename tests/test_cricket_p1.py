@@ -138,13 +138,16 @@ def test_phase1_runner_processes_tiny_delivery(tmp_path: Path):
     assert metrics["input_mode"] == "opencv_resized_preload"
     assert metrics["imgsz"] == 640
     assert metrics["summary"]["decode_latency"]["count"] == 1
-    prediction_path = run_dir / "predictions" / "cam_01.jsonl"
+    prediction_path = run_dir / "predictions" / "bt_01__DELIVERY_001__cam_01.jsonl"
     rows = [json.loads(line) for line in prediction_path.read_text().splitlines()]
     assert len(rows) == 1
     validate_group1_frame(rows[0], final_handoff=False)
+    assert rows[0]["capture_group"] == "bt_01"
     assert rows[0]["metadata"]["input_mode"] == "opencv_resized_preload"
     assert rows[0]["metadata"]["inference_image_size_px"] == [64, 48]
     assert rows[0]["metadata"]["coordinate_scale_xy"] == [2.0, 2.0]
+    assert (run_dir / "delivery_metrics" / "DELIVERY_001" / "p1_metrics.json").exists()
+    assert (run_dir / "p1_metrics.json").exists()
 
 
 def test_read_batch_images_parallel_decode_preserves_order(tmp_path: Path):
@@ -192,7 +195,7 @@ def test_phase1_runner_appends_from_partial_resume(tmp_path: Path):
     )
     assert first_metrics["summary"]["records_written"] == 1
 
-    prediction_path = run_dir / "predictions" / "cam_01.jsonl"
+    prediction_path = run_dir / "predictions" / "bt_01__DELIVERY_001__cam_01.jsonl"
     first_line = prediction_path.read_text().splitlines()[0]
 
     second_metrics = run_phase1_delivery(

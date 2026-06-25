@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 import warnings
@@ -346,6 +347,21 @@ def match_id_from_delivery(delivery_id: str) -> str:
     return head[:-2] if head[-2:].startswith("M") else head
 
 
+def git_sha(workdir: Path) -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(workdir), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except Exception:
+        return None
+
+
+def camera_metric_key(group: str, delivery_id: str, camera_id: str) -> str:
+    return f"{group}/{delivery_id}/{camera_id}"
+
+
 # --------------------------------------------------------------------------- #
 # Inference
 # --------------------------------------------------------------------------- #
@@ -598,8 +614,10 @@ def main() -> int:
     run_dir = abspath(args.run_dir) if args.run_dir else (ROOT / "benchmarks" / "runs" / run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
     pred_dir = run_dir / "predictions"
+    delivery_metrics_dir = run_dir / "delivery_metrics"
     if not args.benchmark_only:
         pred_dir.mkdir(parents=True, exist_ok=True)
+        delivery_metrics_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading detector + RTMPose on {device} ...", flush=True)
     detector, pose_model, inference_detector, inference_topdown, pose_config, pose_checkpoint = build_models(args, device)
@@ -617,12 +635,16 @@ def main() -> int:
         "pose_config": pose_config, "pose_checkpoint": pose_checkpoint,
         "det_config": str(abspath(args.det_config)), "det_checkpoint": str(abspath(args.det_checkpoint)),
         "skeleton": source_skeleton, "started_at": utc_now(),
+        "inference_mode": "topdown_detector_pose",
+        "input_mode": "opencv_bgr_mmdet_mmpose_batch",
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,
         "io_workers": args.io_workers, "benchmark_only": args.benchmark_only,
         "sync_cuda_timing": args.sync_cuda_timing,
         "overlay_enabled": args.overlay, "overlay_limit_per_camera": args.overlay_limit,
         "overlay_frame_ids": sorted(args.overlay_frame_ids) if args.overlay_frame_ids is not None else None,
         "visualizations": str(run_dir / "visualizations") if args.overlay else None,
+        "prediction_dir": str(pred_dir) if not args.benchmark_only else None,
+        "delivery_metrics_dir": str(delivery_metrics_dir) if not args.benchmark_only else None,
         "cameras": [], "frames_processed": 0, "frames_skipped": 0,
         "total_people": 0, "failed_frames": 0,
     }
@@ -634,6 +656,8 @@ def main() -> int:
         "write_seconds": 0.0,
         "overlay_seconds": 0.0,
     }
+    failures: list[dict[str, Any]] = []
+    overlay_failures: list[dict[str, Any]] = []
     t0 = time.perf_counter()
     progress = build_progress_bar(total_frames, args.show_progress)
     for t in targets:
@@ -641,16 +665,20 @@ def main() -> int:
         camera_name = f"{t['group']}/{delivery_id}/{cam_id}"
         out_jsonl = pred_dir / f"{t['group']}__{delivery_id}__{cam_id}.jsonl"
         done: set[str] = set()
+        existing_people = 0
         if args.resume and not args.benchmark_only and out_jsonl.exists():
             with out_jsonl.open("r", encoding="utf-8") as handle:
                 for line in handle:
                     try:
-                        done.add(json.loads(line)["frame_name"])
+                        row = json.loads(line)
+                        done.add(row["frame_name"])
+                        existing_people += len(row.get("players", []))
                     except Exception:
                         pass
         mode = "a" if (args.resume and out_jsonl.exists()) else "w"
 
-        cam_people = cam_processed = cam_skipped = cam_failed = overlays = 0
+        cam_processed = cam_skipped = cam_failed = overlays = 0
+        cam_people = existing_people
         output_context = nullcontext(None) if args.benchmark_only else out_jsonl.open(mode, encoding="utf-8")
         with output_context as handle:
             indexed_frames = list(enumerate(t["frames"]))
@@ -682,6 +710,14 @@ def main() -> int:
                 )
                 for _, frame_path, exc in load_failures:
                     cam_failed += 1
+                    failures.append({
+                        "group": t["group"],
+                        "delivery_id": delivery_id,
+                        "camera_id": cam_id,
+                        "frame_name": frame_path.name,
+                        "stage": "decode",
+                        "error": str(exc),
+                    })
                     progress_write(progress, f"  ! {camera_name}/{frame_path.name}: {exc}")
                     progress_step(
                         progress,
@@ -724,6 +760,14 @@ def main() -> int:
                 except Exception as exc:  # noqa: BLE001
                     for entry in loaded:
                         cam_failed += 1
+                        failures.append({
+                            "group": t["group"],
+                            "delivery_id": delivery_id,
+                            "camera_id": cam_id,
+                            "frame_name": entry["frame_path"].name,
+                            "stage": "inference",
+                            "error": str(exc),
+                        })
                         progress_write(progress, f"  ! {camera_name}/{entry['frame_path'].name}: {exc}")
                         progress_step(
                             progress,
@@ -751,6 +795,11 @@ def main() -> int:
                         "metadata": {
                             "model_id": args.model_id, "run_id": run_id, "device": device,
                             "image_size_px": [entry["width"], entry["height"]], "skeleton": source_skeleton,
+                            "inference_mode": "topdown_detector_pose",
+                            "input_mode": "opencv_bgr_mmdet_mmpose_batch",
+                            "det_batch_size_requested": args.det_batch_size,
+                            "pose_batch_size_requested": args.pose_batch_size,
+                            "io_workers": args.io_workers,
                             "detector": "rtmdet_m_person", "bbox_thr": args.bbox_thr,
                             "nms_thr": args.nms_thr,
                         },
@@ -771,6 +820,14 @@ def main() -> int:
                             timings["overlay_seconds"] += time.perf_counter() - start
                             overlays += 1
                         except Exception as exc:  # noqa: BLE001
+                            overlay_failures.append({
+                                "group": t["group"],
+                                "delivery_id": delivery_id,
+                                "camera_id": cam_id,
+                                "frame_name": frame_path.name,
+                                "stage": "overlay",
+                                "error": str(exc),
+                            })
                             progress_write(progress, f"  ! overlay {camera_name}/{frame_path.name}: {exc}")
 
                     progress_step(
@@ -811,7 +868,153 @@ def main() -> int:
         elapsed - sum(timings.values()),
         3,
     )
+    summary["failures"] = failures[:500]
+    summary["overlay_failures"] = overlay_failures[:500]
     (run_dir / "run_manifest.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    p1_metrics = {
+        "schema_version": "cricket_phase1_metrics/v2",
+        "run_id": run_id,
+        "created_at": summary["finished_at"],
+        "delivery_ids": sorted({camera["delivery_id"] for camera in summary["cameras"]}),
+        "match_ids": sorted({match_id_from_delivery(camera["delivery_id"]) for camera in summary["cameras"]}),
+        "model_id": args.model_id,
+        "device": device,
+        "inference_mode": summary["inference_mode"],
+        "input_mode": summary["input_mode"],
+        "skeleton": source_skeleton,
+        "detector": "rtmdet_m_person",
+        "det_batch_size": args.det_batch_size,
+        "pose_batch_size": args.pose_batch_size,
+        "io_workers": args.io_workers,
+        "bbox_thr": args.bbox_thr,
+        "nms_thr": args.nms_thr,
+        "kpt_thr": args.kpt_thr,
+        "git_sha": git_sha(ROOT),
+        "prediction_dir": str(pred_dir) if not args.benchmark_only else None,
+        "delivery_metrics_dir": str(delivery_metrics_dir) if not args.benchmark_only else None,
+        "visualizations": summary["visualizations"],
+        "summary": {
+            "delivery_count": len({camera["delivery_id"] for camera in summary["cameras"]}),
+            "camera_count": len(summary["cameras"]),
+            "records_written": summary["frames_processed"],
+            "records_written_this_run": summary["frames_processed"],
+            "records_reused": summary["frames_skipped"],
+            "total_players_detected": summary["total_people"],
+            "failed_frames": summary["failed_frames"],
+            "wall_clock_s": elapsed,
+            "fps_overall": summary["fps"],
+            "timings": summary["timings"],
+            "status": "pass" if summary["failed_frames"] == 0 else "partial",
+        },
+        "per_camera": {
+            camera_metric_key(camera["group"], camera["delivery_id"], camera["camera_id"]): {
+                "capture_group": camera["group"],
+                "delivery_id": camera["delivery_id"],
+                "camera_id": camera["camera_id"],
+                "prediction_jsonl": camera["predictions"],
+                "frames_selected": camera["frames_processed"] + camera["frames_skipped"] + camera["failed"],
+                "records_written": camera["frames_processed"] + camera["frames_skipped"],
+                "records_written_this_run": camera["frames_processed"],
+                "records_reused": camera["frames_skipped"],
+                "total_players_detected": camera["people"],
+                "failed_frames": camera["failed"],
+                "overlays": camera["overlays"],
+            }
+            for camera in summary["cameras"]
+        },
+        "failures": failures[:500],
+        "overlay_failures": overlay_failures[:500],
+    }
+    (run_dir / "p1_metrics.json").write_text(json.dumps(p1_metrics, indent=2), encoding="utf-8")
+    if not args.benchmark_only:
+        for delivery_id in sorted({camera["delivery_id"] for camera in summary["cameras"]}):
+            delivery_cameras = [
+                camera for camera in summary["cameras"]
+                if camera["delivery_id"] == delivery_id
+            ]
+            delivery_failures = [
+                failure for failure in failures
+                if failure.get("delivery_id") == delivery_id
+            ]
+            delivery_overlay_failures = [
+                failure for failure in overlay_failures
+                if failure.get("delivery_id") == delivery_id
+            ]
+            delivery_dir = delivery_metrics_dir / delivery_id
+            delivery_dir.mkdir(parents=True, exist_ok=True)
+            delivery_metrics = {
+                "schema_version": "cricket_phase1_metrics/v2",
+                "run_id": run_id,
+                "created_at": summary["finished_at"],
+                "delivery_id": delivery_id,
+                "match_id": match_id_from_delivery(delivery_id),
+                "model_id": args.model_id,
+                "device": device,
+                "inference_mode": summary["inference_mode"],
+                "input_mode": summary["input_mode"],
+                "skeleton": source_skeleton,
+                "detector": "rtmdet_m_person",
+                "det_batch_size": args.det_batch_size,
+                "pose_batch_size": args.pose_batch_size,
+                "io_workers": args.io_workers,
+                "bbox_thr": args.bbox_thr,
+                "nms_thr": args.nms_thr,
+                "kpt_thr": args.kpt_thr,
+                "prediction_dir": str(pred_dir),
+                "visualizations": summary["visualizations"],
+                "summary": {
+                    "camera_count": len(delivery_cameras),
+                    "records_written": sum(camera["frames_processed"] + camera["frames_skipped"] for camera in delivery_cameras),
+                    "records_written_this_run": sum(camera["frames_processed"] for camera in delivery_cameras),
+                    "records_reused": sum(camera["frames_skipped"] for camera in delivery_cameras),
+                    "total_players_detected": sum(camera["people"] for camera in delivery_cameras),
+                    "failed_frames": sum(camera["failed"] for camera in delivery_cameras),
+                    "status": "pass" if not delivery_failures else "partial",
+                },
+                "per_camera": {
+                    camera_metric_key(camera["group"], camera["delivery_id"], camera["camera_id"]): {
+                        "capture_group": camera["group"],
+                        "delivery_id": camera["delivery_id"],
+                        "camera_id": camera["camera_id"],
+                        "prediction_jsonl": camera["predictions"],
+                        "frames_selected": camera["frames_processed"] + camera["frames_skipped"] + camera["failed"],
+                        "records_written": camera["frames_processed"] + camera["frames_skipped"],
+                        "records_written_this_run": camera["frames_processed"],
+                        "records_reused": camera["frames_skipped"],
+                        "total_players_detected": camera["people"],
+                        "failed_frames": camera["failed"],
+                        "overlays": camera["overlays"],
+                    }
+                    for camera in delivery_cameras
+                },
+                "failures": delivery_failures[:200],
+                "overlay_failures": delivery_overlay_failures[:200],
+            }
+            delivery_manifest = {
+                "schema_version": "cricket_phase1_delivery_run/v1",
+                "run_id": run_id,
+                "created_at": summary["finished_at"],
+                "drive_root": str(abspath(args.drive_root)),
+                "delivery_id": delivery_id,
+                "model_id": args.model_id,
+                "device": device,
+                "inference_mode": summary["inference_mode"],
+                "input_mode": summary["input_mode"],
+                "det_batch_size": args.det_batch_size,
+                "pose_batch_size": args.pose_batch_size,
+                "io_workers": args.io_workers,
+                "prediction_dir": str(pred_dir),
+                "visualizations": summary["visualizations"],
+                "summary": delivery_metrics["summary"],
+            }
+            (delivery_dir / "p1_metrics.json").write_text(
+                json.dumps(delivery_metrics, indent=2),
+                encoding="utf-8",
+            )
+            (delivery_dir / "run_manifest.json").write_text(
+                json.dumps(delivery_manifest, indent=2),
+                encoding="utf-8",
+            )
 
     print(
         f"\nDone in {elapsed:.1f}s | processed={summary['frames_processed']} "

@@ -1,0 +1,305 @@
+{
+  "batch_fallbacks": [],
+  "batch_size": 8,
+  "conf": 0.25,
+  "created_at": "2026-06-25T13:27:41.600309+00:00",
+  "decode_workers": 4,
+  "delivery_id": "CCPL080626M1_1_14_4",
+  "device": "cuda:0",
+  "failures": [],
+  "git_sha": "6e32ae8d30fde139b4d9f04e8bf96d349d60704e",
+  "half": true,
+  "imgsz": 640,
+  "inference_mode": "full_frame",
+  "input_mode": "opencv_resized_preload",
+  "iou": 0.7,
+  "match_id": "CCPL080626",
+  "model_id": "yolo26x_pose",
+  "per_camera": {
+    "cam_01": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_01/CCPL080626M1_1_14_4/camera01",
+      "camera_id": "cam_01",
+      "capture_group": "bt_01",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 352.7953320008237,
+        "p50_ms": 71.3596969981154,
+        "p95_ms": 272.3195790022146
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 1039.9572768751568,
+        "p50_ms": 26.608522499827814,
+        "p95_ms": 29.34154437525649
+      },
+      "players_per_frame_mean": 4.48,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_4__cam_01.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 1081.244431874893,
+        "p50_ms": 98.9290308116324,
+        "p95_ms": 302.61316337691824
+      },
+      "total_players_detected": 2688
+    },
+    "cam_02": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_4/camera02",
+      "camera_id": "cam_02",
+      "capture_group": "bt_02",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 446.6507270008151,
+        "p50_ms": 283.9266810005938,
+        "p95_ms": 349.0460360008001
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 32.78354299982311,
+        "p50_ms": 25.797802500164835,
+        "p95_ms": 27.35950399983267
+      },
+      "players_per_frame_mean": 3.4783333333333335,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_4__cam_02.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 456.88774175096114,
+        "p50_ms": 295.92481712757035,
+        "p95_ms": 360.91408762558785
+      },
+      "total_players_detected": 2087
+    },
+    "cam_03": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_03/CCPL080626M1_1_14_4/camera03",
+      "camera_id": "cam_03",
+      "capture_group": "bt_03",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 408.09568999975454,
+        "p50_ms": 259.7066164980788,
+        "p95_ms": 293.463347999932
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 39.96584549986437,
+        "p50_ms": 25.84294662483444,
+        "p95_ms": 26.89763550006319
+      },
+      "players_per_frame_mean": 3.005,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_4__cam_03.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 437.0276253744123,
+        "p50_ms": 285.2139362498747,
+        "p95_ms": 321.201583000402
+      },
+      "total_players_detected": 1803
+    },
+    "cam_04": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_01/CCPL080626M1_1_14_4/camera04",
+      "camera_id": "cam_04",
+      "capture_group": "bt_01",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 393.9185159979388,
+        "p50_ms": 277.79871599886974,
+        "p95_ms": 294.010181001795
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 41.38224549978986,
+        "p50_ms": 26.25707724973836,
+        "p95_ms": 28.03627225011951
+      },
+      "players_per_frame_mean": 5.003333333333333,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_01__CCPL080626M1_1_14_4__cam_04.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 407.2670561231462,
+        "p50_ms": 296.37280331098736,
+        "p95_ms": 319.1129626247857
+      },
+      "total_players_detected": 3002
+    },
+    "cam_05": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_4/camera05",
+      "camera_id": "cam_05",
+      "capture_group": "bt_02",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 428.6051360031706,
+        "p50_ms": 286.0776929992426,
+        "p95_ms": 341.41002199976356
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 31.818541499887942,
+        "p50_ms": 26.617617125339166,
+        "p95_ms": 27.649290874251164
+      },
+      "players_per_frame_mean": 2.933333333333333,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_4__cam_05.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 455.3382775029604,
+        "p50_ms": 312.73572037480335,
+        "p95_ms": 367.23361250005837
+      },
+      "total_players_detected": 1760
+    },
+    "cam_06": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_03/CCPL080626M1_1_14_4/camera06",
+      "camera_id": "cam_06",
+      "capture_group": "bt_03",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 375.6623699955526,
+        "p50_ms": 285.0822170039464,
+        "p95_ms": 315.0573059974704
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 27.543634000721795,
+        "p50_ms": 25.996049625064188,
+        "p95_ms": 26.501329375605565
+      },
+      "players_per_frame_mean": 3.0033333333333334,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_03__CCPL080626M1_1_14_4__cam_06.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 403.12792200620606,
+        "p50_ms": 309.4614146893946,
+        "p95_ms": 339.0846810061703
+      },
+      "total_players_detected": 1802
+    },
+    "cam_07": {
+      "append_mode": false,
+      "camera_dir": "/home/aksh/quidich/Pose_Estimation/drive/dataset/bt_02/CCPL080626M1_1_14_4/camera07",
+      "camera_id": "cam_07",
+      "capture_group": "bt_02",
+      "decode_latency": {
+        "count": 600,
+        "max_ms": 520.1803370000562,
+        "p50_ms": 339.9324335005076,
+        "p95_ms": 393.4243420007988
+      },
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "empty_detection_frames": 0,
+      "frames_selected": 600,
+      "frames_to_process": 600,
+      "inference_latency": {
+        "count": 600,
+        "max_ms": 888.501035250556,
+        "p50_ms": 23.447704124919255,
+        "p95_ms": 27.671876499880455
+      },
+      "players_per_frame_mean": 1.2783333333333333,
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/yolo26x-pose-full-db8/predictions/bt_02__CCPL080626M1_1_14_4__cam_07.jsonl",
+      "records_reused": 0,
+      "records_written": 600,
+      "records_written_this_run": 600,
+      "resumed_from_existing": false,
+      "skipped_complete_camera": false,
+      "total_latency": {
+        "count": 600,
+        "max_ms": 1262.4756972481919,
+        "p50_ms": 351.9166648757164,
+        "p95_ms": 432.61702275140124
+      },
+      "total_players_detected": 767
+    }
+  },
+  "preload_full_frame": true,
+  "resize_long_side": 640,
+  "run_id": "yolo26x-pose-full-db8",
+  "schema_version": "cricket_phase1_metrics/v1",
+  "summary": {
+    "camera_count": 7,
+    "decode_latency": {
+      "count": 4200,
+      "max_ms": 520.1803370000562,
+      "p50_ms": 276.79634550077026,
+      "p95_ms": 356.5629930017167
+    },
+    "failed_frames": 0,
+    "fps_overall": 10.962186597597043,
+    "inference_latency": {
+      "count": 4200,
+      "max_ms": 1039.9572768751568,
+      "p50_ms": 25.999172999945586,
+      "p95_ms": 27.548232124900096
+    },
+    "records_reused": 0,
+    "records_written": 4200,
+    "records_written_this_run": 4200,
+    "status": "pass",
+    "total_latency": {
+      "count": 4200,
+      "max_ms": 1262.4756972481919,
+      "p50_ms": 296.0358178120259,
+      "p95_ms": 375.8223027502936
+    },
+    "total_players_detected": 13909,
+    "wall_clock_s": 383.1352406390033
+  }
+}
