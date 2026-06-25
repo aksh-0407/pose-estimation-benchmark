@@ -1,0 +1,42 @@
+schema_version: 1
+model:
+  id: rtmpose_l_body8
+  name: RTMPose-l Body8 384x288
+  family: OpenMMLab RTMPose
+  role: best_coco17_rtmpose_candidate
+  framework: mmpose
+  skeleton: coco_17
+  input_size:
+  - 384
+  - 288
+  checkpoint: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+  config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py
+  export_targets:
+  - onnx
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: candidate
+  expected_strengths:
+  - Highest official RTMPose COCO-17 AP row in the local RTMPose project table
+  - 384x288 input improves accuracy over the 256x192 RTMPose-l body model
+  - Native COCO-17 body-only output
+  expected_risks:
+  - Slower than smaller RTMPose variants
+  - Multi-dataset Body8 training may differ from pure COCO/AIC behavior
+  sources:
+  - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
+  - https://arxiv.org/abs/2303.07399
+environment:
+  env_name: cricket-rtmpose-l
+  profile: mmpose_v1
+  smoke_profile: mmpose
+  config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py
+  checkpoint: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+  assets:
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+    path: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+    required_for_smoke: true
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+    path: models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+    required_for_smoke: true

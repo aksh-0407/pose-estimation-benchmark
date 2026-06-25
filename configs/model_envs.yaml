@@ -140,6 +140,23 @@ models:
         path: models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
         required_for_smoke: true
 
+  rtmpose_l_body8:
+    env_name: cricket-rtmpose-l
+    profile: mmpose_v1
+    smoke_profile: mmpose
+    benchmark_runner: mmpose_topdown
+    config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py
+    checkpoint: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+    assets:
+      - kind: url
+        url: https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+        path: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
+        required_for_smoke: true
+      - kind: url
+        url: https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+        path: models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+        required_for_smoke: true
+
   dwpose_l_384:
     env_name: cricket-dwpose-l-384
     profile: dwpose_onnx
