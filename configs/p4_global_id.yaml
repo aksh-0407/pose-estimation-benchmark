@@ -13,7 +13,11 @@ p4a:
   role_latch_frames: 5
   cap_max_pos_var: 25.0
   confidence_high: 0.7
-  confidence_discard: 0.3
+  # Track anything the geometry can place on the pitch, including untracked
+  # single-camera detections (P3 confidence ~0.20). Persistent ones confirm into a
+  # geometric track and get an id; transient noise never reaches confirm_hits. This
+  # is what lets a person P2 failed to tracklet still receive a global id.
+  confidence_discard: 0.15
   local_identity_mahalanobis_gate: 25.0
   role_params:
     bowler: {alpha: 2.0, sigma_a: 3.0, measurement_noise: 0.3}
@@ -25,8 +29,10 @@ p4a:
     unknown: {alpha: 1.0, sigma_a: 2.0, measurement_noise: 0.4}
 
 p4b:
-  # Merge only identities repeatedly co-associated by P3 geometry/appearance,
-  # and only when their same-camera occupancy histories do not conflict.
+  # Min-cost-flow path cover that bridges fragmented confirmed tracklets across
+  # short gaps (temporal + spatial + role + velocity-continuity costs). A merge is
+  # forbidden whenever the two histories ever share a (camera, frame) cell, so
+  # stitching can never create a same-camera-frame identity collision.
   enabled: true
   cross_camera_min_frames: 30
   cross_camera_min_track_ratio: 0.5

@@ -86,9 +86,6 @@ benchmarks/reports/*
 # --- Local research/reference dump; curate source-worthy notes into docs/ ---
 Papers/
 
-# --- Local-only orientation dumps (non-authoritative) ---
-archive/
-
 # --- Local-only presentation handout (generated from the .md script; hidden in VS Code) ---
 presentables/00_presentation_script.pdf
 
