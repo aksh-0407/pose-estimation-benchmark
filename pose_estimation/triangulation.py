@@ -20,7 +20,12 @@ class TriangulationResult:
 def _project_point(point_xyz: np.ndarray, projection_matrix: np.ndarray) -> np.ndarray:
     homogeneous = np.append(np.asarray(point_xyz, dtype=float), 1.0)
     projected = np.asarray(projection_matrix, dtype=float) @ homogeneous
-    return projected[:2] / max(projected[2], 1e-12)
+    # Projection matrices are homogeneous and may use either signed depth
+    # convention. Clamping a valid negative denominator to +epsilon explodes
+    # reprojection error and invalidates otherwise correct triangulations.
+    if abs(float(projected[2])) < 1e-12:
+        return np.full(2, np.nan, dtype=float)
+    return projected[:2] / projected[2]
 
 
 def triangulate_point_dlt(
@@ -218,4 +223,3 @@ def confidence_ema_smooth(
         smoothed[frame_index, carry_mask] = smoothed[frame_index - 1, carry_mask]
 
     return smoothed
-

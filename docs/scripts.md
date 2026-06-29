@@ -251,6 +251,54 @@ calibration and triangulates 3D world coordinates with RANSAC outlier rejection.
 | `--reprojection-threshold-px` | RANSAC outlier threshold (default 10). |
 | `--min-views` | Minimum cameras per 3D point (default 2). |
 
+It also accepts a canonical P4 run with `--input-run-dir`, `--output-run-dir`,
+`--drive-root`, and `--delivery-id`. In that mode it groups observations by
+`global_player_id`, writes `pose_3d.keypoints_world_m` back into each camera stream,
+and applies confidence-aware temporal EMA smoothing. The legacy flat-JSONL flags
+remain supported.
+
+## PipeTrack cricket tracking (P2–P6)
+
+Use an environment with NumPy ≥1.23.5 and SciPy ≥1.10. The pipeline stages are
+separate canonical runs:
+
+```bash
+PY=/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python
+
+$PY -m scripts.tracking.run_per_camera_tracking \
+  --input-run-dir <p1-run> --output-run-dir <p2-run> \
+  --drive-root drive --delivery-id <delivery> --config configs/p2_tracking.yaml
+
+$PY -m scripts.association.run_cross_camera_association \
+  --input-run-dir <p2-run> --output-run-dir <p3-run> \
+  --drive-root drive --delivery-id <delivery> --config configs/p3_association.yaml
+
+$PY -m scripts.global_id.run_global_id \
+  --input-run-dir <p3-run> --output-run-dir <p4-run> \
+  --drive-root drive --delivery-id <delivery> --config configs/p4_global_id.yaml
+
+$PY -m scripts.export.triangulate_predictions \
+  --input-run-dir <p4-run> --output-run-dir <p6-run> \
+  --drive-root drive --delivery-id <delivery>
+```
+
+P3 writes `diagnostics/correspondences.jsonl`. P4 adds
+`diagnostics/ground_tracks.jsonl`, `id_switch_report.json`, and optional labelled
+MOTA/IDF1-style metrics via `--ground-truth`. Without labels, all reported identity
+and association figures are explicitly geometry/fragmentation proxies.
+
+Render stable global-ID colours across the seven-camera mosaic or a top-down minimap:
+
+```bash
+$PY -m scripts.visualization.render_phase1_videos \
+  --drive-root drive --run-dir <p4-run> --delivery-id <delivery> \
+  --mode mosaic --show p4
+
+$PY -m scripts.visualization.render_phase1_videos \
+  --drive-root drive --run-dir <p4-run> --delivery-id <delivery> \
+  --mode ground --show p4
+```
+
 ### `export_ue_packets.py`
 
 The 3D path, step 2: converts triangulated 3D JSONL into Unreal Engine-ready pose

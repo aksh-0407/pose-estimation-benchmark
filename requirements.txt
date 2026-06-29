@@ -1,6 +1,7 @@
-numpy
+numpy>=1.23.5,<2
 opencv-python
 openpyxl
 PyYAML
 pytest
+scipy>=1.10,<2
 tqdm

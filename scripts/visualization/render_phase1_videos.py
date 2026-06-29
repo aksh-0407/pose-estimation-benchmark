@@ -29,21 +29,17 @@ from pose_estimation.cricket.dataset import (
     resolve_delivery_camera_dirs,
 )
 from pose_estimation.cricket.phase1_outputs import COCO_17_EDGES
+from scripts.visualization.identity_colors import (
+    IDENTITY_PALETTE,
+    color_for_global_id,
+    color_for_player,
+)
 
 
 CAMERA_ORDER = [f"cam_{index:02d}" for index in range(1, 8)]
 BALL_TRAIL_FRAMES = 18
 BALL_COLOR = (0, 215, 255)
-PLAYER_COLORS = [
-    (78, 220, 255),
-    (255, 139, 92),
-    (129, 236, 145),
-    (230, 126, 255),
-    (120, 187, 255),
-    (255, 211, 92),
-    (126, 255, 219),
-    (181, 162, 255),
-]
+PLAYER_COLORS = list(IDENTITY_PALETTE)  # backward-compatible export for callers
 EDGE_COLORS = [
     (82, 229, 255),
     (82, 229, 255),
@@ -76,6 +72,7 @@ class VideoSettings:
     preset: str
     use_ffmpeg: bool
     ball_trail_frames: int
+    show: str
 
 
 class VideoSink:
@@ -187,7 +184,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--keypoint-threshold", type=float, default=0.2)
     parser.add_argument("--ball-trail-frames", type=int, default=BALL_TRAIL_FRAMES)
     parser.add_argument("--cameras", nargs="+", default=None)
-    parser.add_argument("--mode", choices=["all", "per-camera", "mosaic"], default="all")
+    parser.add_argument("--mode", choices=["all", "per-camera", "mosaic", "ground"], default="all")
+    parser.add_argument("--show", choices=["p2", "p3", "p4"], default=None)
     parser.add_argument("--crf", type=int, default=22)
     parser.add_argument("--preset", default="veryfast")
     parser.add_argument("--no-ffmpeg", dest="use_ffmpeg", action="store_false")
@@ -212,6 +210,45 @@ def iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
             line = line.strip()
             if line:
                 yield json.loads(line)
+
+
+def stage_from_manifest(manifest: dict[str, Any]) -> str:
+    return {
+        "per_camera_tracking": "p2",
+        "cross_camera_association": "p3",
+        "global_id_tracking": "p4",
+        "multi_view_3d_lift": "p4",
+    }.get(manifest.get("task"), "p4")
+
+
+def load_cluster_badges(path: Path) -> dict[tuple[int, str], dict[int, int]]:
+    badges: dict[tuple[int, str], dict[int, int]] = {}
+    if not path.exists():
+        return badges
+    for row in iter_jsonl(path):
+        frame_index = int(row["frame_index"])
+        for cluster in row.get("clusters", []):
+            for member in cluster.get("members", []):
+                key = (frame_index, member["cam_id"])
+                badges.setdefault(key, {})[int(member["player_index"])] = int(cluster["cluster_id"])
+    return badges
+
+
+def load_pitch_extents(path: Path) -> tuple[float, float, float, float]:
+    if not path.exists():
+        return (-15.0, 15.0, -30.0, 30.0)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    points = np.asarray(
+        [value[:2] for value in payload.values() if isinstance(value, list) and len(value) >= 2],
+        dtype=float,
+    )
+    if points.size == 0 or not np.isfinite(points).all():
+        return (-15.0, 15.0, -30.0, 30.0)
+    x_min, y_min = np.min(points, axis=0)
+    x_max, y_max = np.max(points, axis=0)
+    x_pad = max(3.0, 0.08 * (x_max - x_min))
+    y_pad = max(3.0, 0.08 * (y_max - y_min))
+    return (float(x_min - x_pad), float(x_max + x_pad), float(y_min - y_pad), float(y_max + y_pad))
 
 
 def load_ball_positions(events_root: Path, delivery_id: str) -> dict[str, tuple[float, float]]:
@@ -390,14 +427,24 @@ def draw_players(
     sy: float,
     keypoint_threshold: float,
     compact: bool,
-) -> tuple[int, float]:
-    players = [scale_player(player, sx=sx, sy=sy) for player in record.get("players", [])]
+    show: str,
+) -> int:
+    players = [
+        scale_player(player, sx=sx, sy=sy)
+        for player in record.get("players", [])
+        if player.get("bbox_xywh_px") is not None and player.get("pose_2d") is not None
+    ]
     line_thickness = 2 if compact else 3
     point_radius = 3 if compact else 5
     font_scale = 0.42 if compact else 0.56
 
     for player_index, player in enumerate(players, start=1):
-        color = PLAYER_COLORS[(player_index - 1) % len(PLAYER_COLORS)]
+        if show == "p3" and player.get("_cluster_id") is not None:
+            color = color_for_global_id(
+                f"cluster:{record['frame_index']}:{player['_cluster_id']}"
+            )
+        else:
+            color = color_for_player(player.get("global_player_id"), player.get("local_track_id"))
         x, y, w, h = [int(round(value)) for value in player["bbox_xywh_px"]]
         x2, y2 = x + w, y + h
         detection_confidence = player.get("detection_confidence")
@@ -413,7 +460,13 @@ def draw_players(
         cv2.line(image, (x2, y), (x2 - corner, y), (255, 255, 255), line_thickness, cv2.LINE_AA)
         cv2.line(image, (x2, y), (x2, y + corner), (255, 255, 255), line_thickness, cv2.LINE_AA)
 
-        label = f"P{player_index:02d} det {detection_conf:.2f}"
+        if show == "p4":
+            identity = player.get("global_player_id") or "unassigned"
+        elif show == "p3":
+            identity = f"C{player.get('_cluster_id')}" if player.get("_cluster_id") is not None else "unmatched"
+        else:
+            identity = player.get("local_track_id") or f"det-{player_index}"
+        label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
         label_y = max(24, y - 8)
         next_x, _ = draw_chip(image, label, (max(8, x), label_y), color=color, scale=font_scale)
         bar_w = 56 if compact else 84
@@ -533,6 +586,7 @@ def render_feed_frame(
     keypoint_threshold: float,
     compact: bool,
     ball_trail: list[tuple[float, float]] | None = None,
+    show: str = "p4",
 ) -> np.ndarray:
     output_width, output_height = output_size
     source_height, source_width = image.shape[:2]
@@ -546,6 +600,7 @@ def render_feed_frame(
         sy=sy,
         keypoint_threshold=keypoint_threshold,
         compact=compact,
+        show=show,
     )
     if ball_trail:
         draw_ball_trail(frame, ball_trail, compact=compact)
@@ -626,6 +681,7 @@ def render_per_camera_videos(
                     ball_trail=ball_trail_for(
                         records, index, ball_positions, settings.ball_trail_frames
                     ),
+                    show=settings.show,
                 )
                 sink.write(frame)
         written.append(
@@ -653,7 +709,12 @@ def render_mosaic_video(
     width, height = settings.mosaic_size
     cell_width = width // 3
     cell_height = height // 3
-    frame_count = min(len(records) for records in records_by_camera.values())
+    record_maps = {
+        camera_id: {int(record["frame_index"]): (index, record) for index, record in enumerate(records)}
+        for camera_id, records in records_by_camera.items()
+    }
+    common_frames = sorted(set.intersection(*(set(items) for items in record_maps.values())))
+    frame_count = len(common_frames)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with VideoSink(
@@ -667,14 +728,16 @@ def render_mosaic_video(
     ) as sink:
         progress = tqdm(range(frame_count), desc="video mosaic", unit="frame") if tqdm else range(frame_count)
         for index in progress:
+            synchronized_frame = common_frames[index]
             canvas = np.zeros((height, width, 3), dtype=np.uint8)
             canvas[:] = (10, 14, 21)
             total_players = 0
+            active_ids: set[str] = set()
             for camera_position, camera_id in enumerate(CAMERA_ORDER):
                 if camera_id not in records_by_camera:
                     continue
                 row, col = divmod(camera_position, 3)
-                record = records_by_camera[camera_id][index]
+                record_index, record = record_maps[camera_id][synchronized_frame]
                 image = load_image_for_record(camera_dirs[camera_id], record)
                 tile = render_feed_frame(
                     image,
@@ -683,14 +746,20 @@ def render_mosaic_video(
                     keypoint_threshold=settings.keypoint_threshold,
                     compact=True,
                     ball_trail=ball_trail_for(
-                        records_by_camera[camera_id], index, ball_positions, settings.ball_trail_frames
+                        records_by_camera[camera_id], record_index, ball_positions, settings.ball_trail_frames
                     ),
+                    show=settings.show,
                 )
                 total_players += len(record.get("players", []))
+                active_ids.update(
+                    str(player["global_player_id"])
+                    for player in record.get("players", [])
+                    if player.get("global_player_id")
+                )
                 y1, x1 = row * cell_height, col * cell_width
                 canvas[y1 : y1 + cell_height, x1 : x1 + cell_width] = tile
 
-            frame_index = records_by_camera[CAMERA_ORDER[0]][index]["frame_index"]
+            frame_index = synchronized_frame
             summary = draw_info_panel(
                 size=(cell_width, cell_height),
                 title="Delivery Monitor",
@@ -706,15 +775,11 @@ def render_mosaic_video(
             )
             legend = draw_info_panel(
                 size=(cell_width, cell_height),
-                title="Overlay Legend",
-                lines=[
-                    "bbox: player detection",
-                    "chip: detection confidence",
-                    "lines: COCO-17 limbs",
-                    "dots: visible joints",
-                    "green: high confidence",
-                    "blue/orange: mid-low confidence",
-                ],
+                title="Active Global Roster",
+                lines=(
+                    [f"{player_id}  identity-stable colour" for player_id in sorted(active_ids)[:6]]
+                    or ["No confirmed global IDs", "P2/P3 fallback uses local IDs"]
+                ),
                 accent=(129, 236, 145),
             )
             y = 2 * cell_height
@@ -731,6 +796,83 @@ def render_mosaic_video(
     }
 
 
+def render_ground_tracks(
+    *,
+    ground_rows: list[dict[str, Any]],
+    output_path: Path,
+    settings: VideoSettings,
+    pitch_extents: tuple[float, float, float, float],
+    delivery_id: str,
+) -> dict[str, Any]:
+    """Render a top-down, identity-coloured world-ground trajectory video."""
+
+    width, height = settings.per_camera_size
+    margin = 64
+    x_min, x_max, y_min, y_max = pitch_extents
+
+    def world_to_pixel(point: Iterable[float]) -> tuple[int, int]:
+        x, y = [float(value) for value in point]
+        px = margin + (x - x_min) / max(x_max - x_min, 1e-6) * (width - 2 * margin)
+        py = height - margin - (y - y_min) / max(y_max - y_min, 1e-6) * (height - 2 * margin)
+        return int(round(px)), int(round(py))
+
+    sampled = ground_rows[:: settings.sample_every]
+    if settings.max_frames is not None:
+        sampled = sampled[: settings.max_frames]
+    trails: dict[str, list[tuple[int, int]]] = {}
+    with VideoSink(
+        output_path,
+        width=width,
+        height=height,
+        fps=settings.fps,
+        crf=settings.crf,
+        preset=settings.preset,
+        use_ffmpeg=settings.use_ffmpeg,
+    ) as sink:
+        progress = tqdm(sampled, desc="ground tracks", unit="frame") if tqdm else sampled
+        for row in progress:
+            canvas = np.full((height, width, 3), (14, 45, 25), dtype=np.uint8)
+            cv2.rectangle(canvas, (margin, margin), (width - margin, height - margin), (95, 170, 105), 2)
+            cv2.line(canvas, world_to_pixel((x_min, 0.0)), world_to_pixel((x_max, 0.0)), (90, 130, 95), 1)
+            # Regulation pitch is approximately 3.05 x 20.12 metres around origin.
+            cv2.rectangle(canvas, world_to_pixel((-1.525, 10.06)), world_to_pixel((1.525, -10.06)), (185, 205, 190), 2)
+            active = []
+            for track in row.get("tracks", []):
+                player_id = str(track["global_player_id"])
+                pixel = world_to_pixel(track["ground_xy"])
+                trail = trails.setdefault(player_id, [])
+                trail.append(pixel)
+                if len(trail) > 150:
+                    del trail[:-150]
+                color = color_for_global_id(player_id)
+                if len(trail) >= 2:
+                    cv2.polylines(canvas, [np.asarray(trail, np.int32)], False, color, 2, cv2.LINE_AA)
+                cv2.circle(canvas, pixel, 7, (10, 18, 13), -1, cv2.LINE_AA)
+                cv2.circle(canvas, pixel, 5, color, -1, cv2.LINE_AA)
+                draw_text(canvas, player_id, (pixel[0] + 8, pixel[1] - 7), scale=0.45, color=color)
+                active.append(player_id)
+            add_header(
+                canvas,
+                title=f"GROUND TRACKS  |  {delivery_id}",
+                subtitle="calibrated pitch coordinates (metres)",
+                right_text=f"frame {row['frame_index']}  active {len(active)}",
+                compact=False,
+            )
+            y = 92
+            for player_id in sorted(active)[:12]:
+                cv2.circle(canvas, (width - 180, y - 5), 5, color_for_global_id(player_id), -1)
+                draw_text(canvas, player_id, (width - 165, y), scale=0.42)
+                y += 24
+            sink.write(canvas)
+    return {
+        "path": str(output_path),
+        "frames": len(sampled),
+        "size": [width, height],
+        "fps": settings.fps,
+        "pitch_extents_world_m": list(pitch_extents),
+    }
+
+
 def main() -> int:
     args = parse_args()
     run_dir = Path(args.run_dir)
@@ -742,6 +884,7 @@ def main() -> int:
 
     manifest = json.loads((run_dir / "run_manifest.json").read_text())
     run_id = manifest.get("run_id") or run_dir.name
+    show = args.show or stage_from_manifest(manifest)
 
     prediction_dir = run_dir / "predictions"
     prediction_parts = [
@@ -792,12 +935,14 @@ def main() -> int:
         preset=args.preset,
         use_ffmpeg=args.use_ffmpeg,
         ball_trail_frames=max(0, args.ball_trail_frames),
+        show=show,
     )
 
     selected_cameras = args.cameras or CAMERA_ORDER
     camera_dirs = resolve_delivery_camera_dirs(drive_root, delivery_id)
     ball_positions = load_ball_positions(drive_root / "dataset" / "events-data", delivery_id)
     records_by_camera: dict[str, list[dict[str, Any]]] = {}
+    cluster_badges = load_cluster_badges(run_dir / "diagnostics" / "correspondences.jsonl")
     for camera_id in selected_cameras:
         prediction_path = prediction_paths_by_camera.get(camera_id)
         if prediction_path is None:
@@ -815,10 +960,15 @@ def main() -> int:
         )
         if not records:
             raise RuntimeError(f"no records loaded from {prediction_path}")
+        for record in records:
+            badges = cluster_badges.get((int(record["frame_index"]), camera_id), {})
+            for player_index, player in enumerate(record.get("players", [])):
+                if player_index in badges:
+                    player["_cluster_id"] = badges[player_index]
         records_by_camera[camera_id] = records
 
     outputs: dict[str, Any] = {
-        "schema_version": "cricket_phase1_video_manifest/v1",
+        "schema_version": "cricket_pipetrack_video_manifest/v2",
         "run_id": run_id,
         "delivery_id": delivery_id,
         "artifact_dir": repo_relative(artifact_dir, ROOT),
@@ -832,6 +982,7 @@ def main() -> int:
             "encoder": "ffmpeg/libx264" if settings.use_ffmpeg and shutil.which("ffmpeg") else "opencv/mp4v",
             "crf": settings.crf,
             "preset": settings.preset,
+            "show": show,
         },
     }
 
@@ -855,12 +1006,34 @@ def main() -> int:
             delivery_id=delivery_id,
             ball_positions=ball_positions,
         )
+    if args.mode in {"all", "ground"}:
+        ground_path = run_dir / "diagnostics" / "ground_tracks.jsonl"
+        if ground_path.exists():
+            ground_rows = list(iter_jsonl(ground_path))
+            outputs["ground_tracks"] = render_ground_tracks(
+                ground_rows=ground_rows,
+                output_path=artifact_dir / f"{delivery_id}__ground_tracks.mp4",
+                settings=settings,
+                pitch_extents=load_pitch_extents(
+                    drive_root
+                    / "dataset"
+                    / "calibration-data"
+                    / manifest.get("match_id", "CCPL080626")
+                    / "calibration_data"
+                    / "pitch_calibration_config.json"
+                ),
+                delivery_id=delivery_id,
+            )
+        elif args.mode == "ground":
+            raise RuntimeError(f"ground mode requires {ground_path}")
 
     # Store output video paths repo-root-relative for portable manifests.
     for entry in outputs.get("per_camera", []):
         entry["path"] = repo_relative(entry["path"], ROOT)
     if "mosaic" in outputs:
         outputs["mosaic"]["path"] = repo_relative(outputs["mosaic"]["path"], ROOT)
+    if "ground_tracks" in outputs:
+        outputs["ground_tracks"]["path"] = repo_relative(outputs["ground_tracks"]["path"], ROOT)
 
     manifest_path = artifact_dir / "video_manifest.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

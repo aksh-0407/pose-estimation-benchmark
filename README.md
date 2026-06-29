@@ -49,6 +49,12 @@ and not directly comparable protocol). The remaining models are smoke-ready, wit
 benchmark adapters tracked as work. The distinction and the readiness matrix are in
 [docs/models.md](docs/models.md).
 
+The cricket delivery path also includes the modular PipeTrack stages: per-camera
+tracking (P2), cycle-consistent cross-camera association (P3), global identity and
+tracklet stitching (P4), and a light multi-view 3D lift (P6). Each stage consumes and
+produces canonical run directories, so it can be inspected or rerun independently.
+See [docs/scripts.md](docs/scripts.md#pipetrack-cricket-tracking-p2p6).
+
 ## Documentation
 
 Read the Start here docs in order; use the Reference docs as needed. The full index is

@@ -20,6 +20,14 @@ ROLE_VALUES = {
     "fielder",
     "unknown",
 }
+# Tracking lifecycle states emitted onto player records. A detection-bearing
+# record is "confirmed" or "tentative"; a "lost" record is a coasted prediction
+# with no detection in that frame (so its bbox/pose_2d may be null).
+TRACK_STATE_VALUES = {
+    "confirmed",
+    "lost",
+    "tentative",
+}
 CAMERA_RE = re.compile(r"^cam_0[1-7]$")
 
 
@@ -111,26 +119,51 @@ def validate_player(player: Any, *, final_handoff: bool) -> None:
         raise ValueError("global_player_id is required for final handoff")
     if global_player_id is not None and not isinstance(global_player_id, str):
         raise ValueError("global_player_id must be a string or null")
+    local_track_id = player.get("local_track_id")
+    if local_track_id is not None and not isinstance(local_track_id, str):
+        raise ValueError("local_track_id must be a string or null")
     role = player.get("role", "unknown")
     if role not in ROLE_VALUES:
         raise ValueError(f"invalid role: {role}")
+
+    track_state = player.get("track_state")
+    if track_state is not None and track_state not in TRACK_STATE_VALUES:
+        raise ValueError(f"invalid track_state: {track_state}")
+    # Coasted ("lost") / not-yet-confirmed ("tentative") records may carry no
+    # detection, so bbox and pose_2d are optional in those states.
+    detection_optional = track_state in {"lost", "tentative"}
+
+    single_camera = player.get("single_camera")
+    if single_camera is not None and not isinstance(single_camera, bool):
+        raise ValueError("single_camera must be a boolean or null")
+
     validate_numeric_vector(
         player.get("bbox_xywh_px"),
         length=4,
         field_name="bbox_xywh_px",
+        allow_none=detection_optional,
     )
     validate_numeric_vector(
         player.get("bbox_xywh_norm"),
         length=4,
         field_name="bbox_xywh_norm",
+        allow_none=detection_optional,
     )
     track_confidence = player.get("track_confidence")
-    if track_confidence is not None and not is_finite_number(track_confidence):
-        raise ValueError("track_confidence must be numeric or null")
+    if track_confidence is not None and (
+        not is_finite_number(track_confidence) or not 0.0 <= float(track_confidence) <= 1.0
+    ):
+        raise ValueError("track_confidence must be in [0, 1] or null")
     detection_confidence = player.get("detection_confidence")
     if detection_confidence is not None and not is_finite_number(detection_confidence):
         raise ValueError("detection_confidence must be numeric or null")
-    validate_pose_2d(player.get("pose_2d"))
+
+    pose_2d = player.get("pose_2d")
+    if pose_2d is None:
+        if not detection_optional:
+            raise ValueError("pose_2d is required unless track_state is lost or tentative")
+    else:
+        validate_pose_2d(pose_2d)
     validate_pose_3d(player.get("pose_3d"))
 
 
@@ -155,6 +188,15 @@ def validate_group1_frame(record: dict[str, Any], *, final_handoff: bool = False
     players = record.get("players")
     if not isinstance(players, list):
         raise ValueError("players must be a list")
+    global_ids = [
+        player.get("global_player_id") for player in players
+        if isinstance(player, dict) and player.get("global_player_id") is not None
+    ]
+    if len(global_ids) != len(set(global_ids)):
+        raise ValueError(
+            "global_player_id must be unique within one camera frame; "
+            f"camera={camera_id} frame={record.get('frame_index')}"
+        )
     for player in players:
         validate_player(player, final_handoff=final_handoff)
 
@@ -170,10 +212,12 @@ def example_group1_frame(*, final_handoff: bool = True) -> dict[str, Any]:
         "global_player_id": "P001" if final_handoff else None,
         "local_track_id": "cam_01_trk_0001",
         "role": "unknown",
+        "track_state": "confirmed",
+        "single_camera": False,
         "bbox_xywh_px": [100.0, 200.0, 80.0, 240.0],
         "bbox_xywh_norm": [0.0390625, 0.1388889, 0.03125, 0.1666667],
         "detection_confidence": 0.94,
-        "track_confidence": None,
+        "track_confidence": 0.91,
         "pose_2d": {
             "skeleton": SKELETON,
             "keypoints_px": keypoints_px,

@@ -91,3 +91,7 @@ archive/
 
 # --- Local-only presentation handout (generated from the .md script; hidden in VS Code) ---
 presentables/00_presentation_script.pdf
+
+# --- Local-only colleague's work (Vedant) & Midsem Report---
+vedant/
+report/

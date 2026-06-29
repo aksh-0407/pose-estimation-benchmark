@@ -1,0 +1,62 @@
+# P3 cross-camera geometry-first association. Every runtime parameter is
+# explicit so run manifests are reproducible.
+image_w: 2560
+image_h: 1440
+matching_mode: multiway_cycle
+
+baseline_angle_degen_deg: 20.0
+degenerate_pairs: []
+
+w_epi: 0.6
+w_tri: 0.4
+parallax_min_deg: 10.0
+parallax_full_deg: 25.0
+mu_fine_score: 15.0
+sigma_fine_score: 5.0
+dummy_cost_scale: 3.0
+
+ankle_conf_min: 0.6
+keypoint_match_conf_min: 0.5
+max_ankle_above_bbox_fraction: 0.25
+
+# Calibrated ground-plane matching is the primary association cue.  FACING
+# (co-observing) pairs follow configs/facing.jpeg and receive the stricter gate.
+# These are the cameras that look at the SAME ground strip from opposite sides
+# (C1-C4 centre, C2-C6 near, C3-C5 far) -- NOT the diametrically-opposite
+# positions. The runner re-derives this from the calibration optical axes.
+ground_distance_gate_m: 3.5
+opposite_pair_ground_gate_m: 2.5
+ground_cluster_gate_m: 2.75
+ground_weight: 0.65
+epipolar_weight: 0.15
+epipolar_scale_px: 12.0
+appearance_enabled: true
+appearance_weight: 0.20
+pair_unmatched_cost: 0.75
+temporal_link_bonus: 0.25
+temporal_confirm_frames: 3
+opposite_camera_pairs:
+  - [cam_01, cam_04]
+  - [cam_02, cam_06]
+  - [cam_03, cam_05]
+cycle_xy_tol_m: 0.5
+cycle_reproj_tol_px: 12.0
+triangulation_min_views: 2
+triangulation_reproj_threshold_px: 10.0
+
+chi2_gate_2dof: 5.991
+confidence_high: 0.7
+confidence_discard: 0.3
+single_camera_confidence: 0.45
+untracked_single_camera_confidence: 0.20
+
+anchor_hysteresis_margin: 2
+anchor_hysteresis_frames: 3
+anchor_priority:
+  - cam_01
+  - cam_04
+  - cam_02
+  - cam_03
+  - cam_05
+  - cam_06
+  - cam_07

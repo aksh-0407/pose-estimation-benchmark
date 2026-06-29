@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from pose_estimation.cricket.phase1_outputs import COCO_17_EDGES
+from scripts.visualization.identity_colors import color_for_player
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--max-per-camera", type=int, default=5)
     parser.add_argument("--keypoint-threshold", type=float, default=0.2)
+    parser.add_argument("--show", choices=["p2", "p3", "p4"], default=None)
     parser.add_argument(
         "--no-manifest-update",
         action="store_true",
@@ -75,6 +77,26 @@ def canonical_prediction_parts(path: Path) -> tuple[str, str, str] | None:
     if not group or not delivery_id or not camera_id.startswith("cam_"):
         return None
     return group, delivery_id, camera_id
+
+
+def load_cluster_badges(path: Path) -> dict[tuple[int, str], dict[int, int]]:
+    badges: dict[tuple[int, str], dict[int, int]] = defaultdict(dict)
+    if not path.exists():
+        return badges
+    for row in read_jsonl(path):
+        frame_index = int(row["frame_index"])
+        for cluster in row.get("clusters", []):
+            for member in cluster.get("members", []):
+                badges[(frame_index, member["cam_id"])][int(member["player_index"])] = int(cluster["cluster_id"])
+    return badges
+
+
+def stage_from_manifest(manifest: dict[str, Any]) -> str:
+    return {
+        "per_camera_tracking": "p2",
+        "cross_camera_association": "p3",
+        "global_id_tracking": "p4",
+    }.get(manifest.get("task"), "p4")
 
 
 def camera_folder(camera_id: str) -> str:
@@ -167,18 +189,36 @@ def draw_label_block(image, lines: list[str], *, anchor: tuple[int, int]) -> Non
         cursor_y += line_gap
 
 
-def draw_record(image, record: dict[str, Any], *, keypoint_threshold: float) -> None:
+def draw_record(
+    image,
+    record: dict[str, Any],
+    *,
+    keypoint_threshold: float,
+    show: str = "p4",
+    cluster_badges: dict[int, int] | None = None,
+) -> None:
     for player_index, player in enumerate(record.get("players", []), start=1):
+        if player.get("bbox_xywh_px") is None or player.get("pose_2d") is None:
+            continue
         x, y, w, h = [int(round(value)) for value in player["bbox_xywh_px"]]
-        color = (0, 255, 0)
+        color = color_for_player(player.get("global_player_id"), player.get("local_track_id"))
         cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+        cluster_id = (cluster_badges or {}).get(player_index - 1)
+        if show == "p4":
+            identity_line = f"global id: {display_id(player.get('global_player_id'))}"
+        elif show == "p3":
+            identity_line = f"cluster: {cluster_id if cluster_id is not None else 'n/a'}"
+        else:
+            identity_line = f"local track: {display_id(player.get('local_track_id'))}"
         draw_label_block(
             image,
             [
                 f"detection index: {player_index}",
-                f"global id: '{display_id(player.get('global_player_id'))}' (to be implemented)",
+                identity_line,
                 f"local track id: {display_id(player.get('local_track_id'))}",
                 f"role: {player.get('role') or 'unknown'}",
+                f"track state: {player.get('track_state') or 'n/a'}",
+                f"single camera: {player.get('single_camera') if player.get('single_camera') is not None else 'n/a'}",
                 f"detection confidence: {confidence_text(player.get('detection_confidence'))}",
                 f"track confidence: {confidence_text(player.get('track_confidence'))}",
                 f"pose confidence mean: {pose_confidence_text(player)}",
@@ -255,6 +295,14 @@ def main() -> int:
         artifact_dir = ROOT / artifact_dir
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
+    run_manifest = (
+        json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
+        if (run_dir / "run_manifest.json").exists()
+        else {}
+    )
+    show = args.show or stage_from_manifest(run_manifest)
+    cluster_badges = load_cluster_badges(run_dir / "diagnostics" / "correspondences.jsonl")
+
     frame_ids = set(args.frame_ids) if args.frame_ids is not None else None
     row_indices = set(args.row_indices) if args.row_indices is not None else None
     written: list[str] = []
@@ -297,7 +345,13 @@ def main() -> int:
                     "image_path": str(image_path),
                 })
                 continue
-            draw_record(image, record, keypoint_threshold=args.keypoint_threshold)
+            draw_record(
+                image,
+                record,
+                keypoint_threshold=args.keypoint_threshold,
+                show=show,
+                cluster_badges=cluster_badges.get((frame_index, camera_id)),
+            )
             cv2.putText(
                 image,
                 f"{camera_key} frame={frame_index} detections={len(record['players'])}",
@@ -317,7 +371,7 @@ def main() -> int:
 
     manifest_path = artifact_dir / "visual_qa_manifest.json"
     manifest_payload = {
-        "schema_version": "cricket_phase1_visual_qa/v1",
+        "schema_version": "cricket_pipetrack_visual_qa/v2",
         "run_id": json.loads((run_dir / "run_manifest.json").read_text()).get("run_id")
         if (run_dir / "run_manifest.json").exists()
         else run_dir.name,
@@ -327,6 +381,7 @@ def main() -> int:
         "sample_every": args.sample_every,
         "max_per_camera": args.max_per_camera,
         "keypoint_threshold": args.keypoint_threshold,
+        "show": show,
         "overlay_count": len(written),
         "overlays_by_camera": overlays_by_camera,
         "overlays_by_delivery": dict(sorted(overlays_by_delivery.items())),
