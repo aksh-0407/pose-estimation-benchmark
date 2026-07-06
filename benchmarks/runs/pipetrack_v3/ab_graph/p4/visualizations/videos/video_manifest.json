@@ -4,7 +4,10 @@
   "mosaic": {
     "fps": 25.0,
     "frames": 600,
-    "layout": "3x3: cam_01..cam_07 plus summary and legend panels",
+    "layout": "cam_04 | cam_02 | cam_03; cam_01 | cam_06 | cam_05; __monitor__ | cam_07 | __roster__  (mirrored: cam_02, cam_03)",
+    "layout_notes": [
+      "bowling direction inferred from tracklet motion"
+    ],
     "path": "benchmarks/runs/pipetrack_v3/ab_graph/p4/visualizations/videos/CCPL080626M1_1_14_1__all_cameras.mp4",
     "size": [
       1920,

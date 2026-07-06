@@ -28,7 +28,7 @@ TRACK_STATE_VALUES = {
     "lost",
     "tentative",
 }
-CAMERA_RE = re.compile(r"^cam_0[1-7]$")
+CAMERA_RE = re.compile(r"^cam_\d{2}$")
 
 
 def is_finite_number(value: Any) -> bool:
@@ -180,7 +180,7 @@ def validate_group1_frame(record: dict[str, Any], *, final_handoff: bool = False
         raise ValueError("delivery_id is required")
     camera_id = record.get("camera_id")
     if not isinstance(camera_id, str) or not CAMERA_RE.match(camera_id):
-        raise ValueError("camera_id must be cam_01 through cam_07")
+        raise ValueError("camera_id must match cam_NN (two digits)")
     if not isinstance(record.get("frame_index"), int):
         raise ValueError("frame_index must be an integer")
     if not isinstance(record.get("frame_name"), str) or not record["frame_name"]:

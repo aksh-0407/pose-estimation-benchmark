@@ -18,7 +18,7 @@ from scripts.tracking.config import TrackingConfig
 from scripts.tracking.jsonl_io import track_camera_file
 
 CANONICAL_PREDICTION_RE = re.compile(
-    r"^(?P<capture_group>bt_\d{2})__(?P<delivery_id>.+)__(?P<camera_id>cam_0[1-7])\.jsonl$"
+    r"^(?P<capture_group>bt_\d{2})__(?P<delivery_id>.+)__(?P<camera_id>cam_\d{2})\.jsonl$"
 )
 
 

@@ -34,9 +34,16 @@ from scripts.visualization.identity_colors import (
     color_for_global_id,
     color_for_player,
 )
+from scripts.visualization.mosaic_layout import (
+    MONITOR_SLOT,
+    ROSTER_SLOT,
+    MosaicLayout,
+    derive_mosaic_layout,
+    infer_bowling_direction,
+    load_pitch_axis,
+)
 
 
-CAMERA_ORDER = [f"cam_{index:02d}" for index in range(1, 8)]
 BALL_TRAIL_FRAMES = 18
 BALL_COLOR = (0, 215, 255)
 PLAYER_COLORS = list(IDENTITY_PALETTE)  # backward-compatible export for callers
@@ -184,6 +191,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--keypoint-threshold", type=float, default=0.2)
     parser.add_argument("--ball-trail-frames", type=int, default=BALL_TRAIL_FRAMES)
     parser.add_argument("--cameras", nargs="+", default=None)
+    parser.add_argument(
+        "--bowling-end-cam",
+        default=None,
+        help=(
+            "Camera looking WITH the delivery (behind the bowler's arm). "
+            "Overrides the automatic bowling-end inference for the mosaic layout."
+        ),
+    )
     parser.add_argument("--mode", choices=["all", "per-camera", "mosaic", "ground"], default="all")
     parser.add_argument("--show", choices=["p2", "p3", "p4"], default=None)
     parser.add_argument("--crf", type=int, default=22)
@@ -410,6 +425,33 @@ def scale_player(player: dict[str, Any], *, sx: float, sy: float) -> dict[str, A
     return scaled
 
 
+def mirror_record(record: dict[str, Any], source_width: int) -> dict[str, Any]:
+    """Mirror all player geometry about the vertical axis of the SOURCE frame.
+
+    Overlays (chips, labels, skeletons) are drawn AFTER the image is flipped,
+    on mirrored coordinates — so text always renders upright and unmirrored.
+    """
+
+    mirrored = dict(record)
+    players = []
+    for player in record.get("players", []):
+        copy = dict(player)
+        bbox = player.get("bbox_xywh_px")
+        if bbox is not None:
+            x, y, w, h = bbox
+            copy["bbox_xywh_px"] = [source_width - x - w, y, w, h]
+        pose = player.get("pose_2d")
+        if pose is not None:
+            pose_copy = dict(pose)
+            pose_copy["keypoints_px"] = [
+                [source_width - point[0], point[1]] for point in pose["keypoints_px"]
+            ]
+            copy["pose_2d"] = pose_copy
+        players.append(copy)
+    mirrored["players"] = players
+    return mirrored
+
+
 def confidence_color(score: float) -> tuple[int, int, int]:
     score = max(0.0, min(1.0, float(score)))
     if score >= 0.75:
@@ -467,7 +509,8 @@ def draw_players(
         else:
             identity = player.get("local_track_id") or f"det-{player_index}"
         label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
-        label_y = max(24, y - 8)
+        # Keep chips clear of the header band drawn afterwards.
+        label_y = max(60 if compact else 86, y - 8)
         next_x, _ = draw_chip(image, label, (max(8, x), label_y), color=color, scale=font_scale)
         bar_w = 56 if compact else 84
         bar_h = 5 if compact else 7
@@ -587,10 +630,24 @@ def render_feed_frame(
     compact: bool,
     ball_trail: list[tuple[float, float]] | None = None,
     show: str = "p4",
+    mirror: bool = False,
+    ghosts: list[tuple[str, tuple[float, float]]] | None = None,
 ) -> np.ndarray:
     output_width, output_height = output_size
     source_height, source_width = image.shape[:2]
     frame = cv2.resize(image, (output_width, output_height), interpolation=cv2.INTER_AREA)
+    if mirror:
+        # Flip the PICTURE first, then draw every overlay on mirrored
+        # coordinates — text and chips always render upright.
+        frame = cv2.flip(frame, 1)
+        record = mirror_record(record, source_width)
+        if ball_trail:
+            ball_trail = [(1.0 - cx, cy) for cx, cy in ball_trail]
+        if ghosts:
+            ghosts = [
+                (player_id, (source_width - foot_x, foot_y))
+                for player_id, (foot_x, foot_y) in ghosts
+            ]
     sx = output_width / source_width
     sy = output_height / source_height
     player_count = draw_players(
@@ -602,9 +659,13 @@ def render_feed_frame(
         compact=compact,
         show=show,
     )
+    if ghosts:
+        draw_ghost_markers(frame, ghosts, sx=sx, sy=sy)
     if ball_trail:
         draw_ball_trail(frame, ball_trail, compact=compact)
     camera_title = record["camera_id"].replace("_", " ").upper()
+    if mirror:
+        camera_title += "  (mirrored)"
     if compact:
         title = camera_title
         subtitle = ""
@@ -616,6 +677,152 @@ def render_feed_frame(
     add_header(frame, title=title, subtitle=subtitle, right_text=right, compact=compact)
     add_footer(frame, compact=compact)
     return frame
+
+
+def draw_ghost_markers(
+    image: np.ndarray,
+    ghosts: list[tuple[str, tuple[float, float]]],
+    *,
+    sx: float,
+    sy: float,
+) -> None:
+    """Mark players occluded in THIS camera but tracked by the others.
+
+    The detector produces nothing while one player fully covers another, so the
+    binding's fused ground position (from the other cameras) is reprojected here
+    and drawn as an explicitly-labelled ghost — a viewer aid only; no synthetic
+    detection ever enters the pipeline data.
+    """
+
+    height, width = image.shape[:2]
+    for player_id, (foot_x, foot_y) in ghosts:
+        x, y = int(round(foot_x * sx)), int(round(foot_y * sy))
+        if not (0 <= x < width and 0 <= y < height):
+            continue
+        color = color_for_global_id(player_id)
+        cv2.ellipse(image, (x, y), (18, 7), 0, 0, 360, (12, 16, 24), 3, cv2.LINE_AA)
+        cv2.ellipse(image, (x, y), (18, 7), 0, 0, 360, color, 1, cv2.LINE_AA)
+        for angle in range(0, 360, 45):  # dashed inner ring: reads as "not a detection"
+            cv2.ellipse(image, (x, y), (11, 4), 0, angle, angle + 22, color, 1, cv2.LINE_AA)
+        draw_chip(image, f"{player_id}  occluded", (max(8, x - 40), max(60, y - 18)),
+                  color=color, scale=0.4)
+
+
+def cam_short(camera_id: str) -> str:
+    try:
+        return f"C{int(camera_id.rsplit('_', 1)[1])}"
+    except (ValueError, IndexError):
+        return camera_id
+
+
+def build_delivery_roster(
+    records_by_camera: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Every global id seen anywhere in the delivery, in first-appearance order."""
+
+    stats: dict[str, dict[str, Any]] = {}
+    for records in records_by_camera.values():
+        for record in records:
+            frame_index = int(record["frame_index"])
+            for player in record.get("players", []):
+                player_id = player.get("global_player_id")
+                if not player_id:
+                    continue
+                entry = stats.setdefault(
+                    str(player_id), {"first": frame_index, "last": frame_index, "frames": 0}
+                )
+                entry["first"] = min(entry["first"], frame_index)
+                entry["last"] = max(entry["last"], frame_index)
+                entry["frames"] += 1
+    return [
+        {"id": player_id, **entry}
+        for player_id, entry in sorted(stats.items(), key=lambda kv: (kv[1]["first"], kv[0]))
+    ]
+
+
+def draw_roster_panel(
+    *,
+    size: tuple[int, int],
+    roster: list[dict[str, Any]],
+    visible_now: dict[str, list[str]],
+    accent: tuple[int, int, int] = (129, 236, 145),
+) -> np.ndarray:
+    """Full-delivery roster: every id ever assigned, who is on screen right now
+    (and in which cameras), and a reserved ROLE column for the upcoming role
+    classifier."""
+
+    width, height = size
+    panel = np.zeros((height, width, 3), dtype=np.uint8)
+    panel[:] = (17, 22, 31)
+    blend_rect(panel, (0, 0), (width, height), (28, 36, 48), 0.55)
+    cv2.rectangle(panel, (0, 0), (width - 1, height - 1), (58, 68, 82), 1, cv2.LINE_AA)
+    cv2.line(panel, (0, 0), (width, 0), accent, 4, cv2.LINE_AA)
+    draw_text(panel, "GLOBAL ROSTER", (20, 36), scale=0.62, color=(250, 252, 255), thickness=2)
+    live_count = sum(1 for entry in roster if visible_now.get(entry["id"]))
+    draw_text(
+        panel,
+        f"{live_count}/{len(roster)} on screen",
+        (width - 150, 34),
+        scale=0.42,
+        color=(184, 196, 214),
+        thickness=1,
+    )
+
+    top = 56
+    row_height = 24
+    rows_per_column = max(1, (height - top - 10) // row_height)
+    columns = 1 if len(roster) <= rows_per_column else 2
+    column_width = width // columns
+    header_color = (140, 152, 170)
+    for column in range(columns):
+        x0 = 20 + column * column_width
+        draw_text(panel, "ID", (x0 + 20, top), scale=0.38, color=header_color, thickness=1)
+        draw_text(panel, "LIVE IN", (x0 + 96, top), scale=0.38, color=header_color, thickness=1)
+        draw_text(panel, "ROLE", (x0 + column_width - 90, top), scale=0.38, color=header_color, thickness=1)
+
+    for index, entry in enumerate(roster[: rows_per_column * columns]):
+        column, row = divmod(index, rows_per_column)
+        x0 = 20 + column * column_width
+        y = top + 20 + row * row_height
+        player_id = entry["id"]
+        cams = visible_now.get(player_id) or []
+        live = bool(cams)
+        color = color_for_global_id(player_id)
+        if live:
+            blend_rect(panel, (x0 - 8, y - 15), (x0 + column_width - 24, y + 6), (40, 52, 66), 0.55)
+        cv2.rectangle(panel, (x0, y - 11), (x0 + 12, y + 1), color, -1, cv2.LINE_AA)
+        cv2.rectangle(panel, (x0, y - 11), (x0 + 12, y + 1), (235, 240, 248), 1, cv2.LINE_AA)
+        text_color = (245, 248, 255) if live else (120, 132, 150)
+        draw_text(panel, player_id, (x0 + 20, y), scale=0.46, color=text_color, thickness=1)
+        live_text = " ".join(cam_short(cam) for cam in sorted(cams)) if live else "-"
+        draw_text(
+            panel,
+            live_text,
+            (x0 + 96, y),
+            scale=0.42,
+            color=(148, 236, 164) if live else (96, 106, 122),
+            thickness=1,
+        )
+        # Reserved for the role classifier (kept as a placeholder on purpose).
+        draw_text(
+            panel,
+            entry.get("role") or "-",
+            (x0 + column_width - 90, y),
+            scale=0.42,
+            color=(120, 132, 150),
+            thickness=1,
+        )
+    overflow = len(roster) - rows_per_column * columns
+    if overflow > 0:
+        draw_text(
+            panel,
+            f"+{overflow} more",
+            (20, height - 12),
+            scale=0.4,
+            color=(140, 152, 170),
+            thickness=1,
+        )
+    return panel
 
 
 def draw_info_panel(
@@ -696,6 +903,20 @@ def render_per_camera_videos(
     return written
 
 
+def fallback_mosaic_layout(camera_ids: Iterable[str]) -> MosaicLayout:
+    """Alphabetical grid used when calibration is unavailable."""
+
+    cameras = sorted(camera_ids)
+    slots: list[str | None] = list(cameras[:6]) + [None] * max(0, 6 - len(cameras))
+    bottom: list[str | None] = [MONITOR_SLOT, cameras[6] if len(cameras) > 6 else None, ROSTER_SLOT]
+    return MosaicLayout(
+        grid=(tuple(slots[0:3]), tuple(slots[3:6]), tuple(bottom)),
+        mirrored=frozenset(),
+        bowling_direction_xy=None,
+        notes=("calibration unavailable - alphabetical fallback layout",),
+    )
+
+
 def render_mosaic_video(
     *,
     records_by_camera: dict[str, list[dict[str, Any]]],
@@ -705,6 +926,10 @@ def render_mosaic_video(
     run_id: str,
     delivery_id: str,
     ball_positions: dict[str, tuple[float, float]],
+    layout: MosaicLayout,
+    projections: dict[str, np.ndarray] | None = None,
+    ground_positions: dict[int, dict[str, tuple[float, float]]] | None = None,
+    ghost_window_frames: int = 150,
 ) -> dict[str, Any]:
     width, height = settings.mosaic_size
     cell_width = width // 3
@@ -715,6 +940,35 @@ def render_mosaic_video(
     }
     common_frames = sorted(set.intersection(*(set(items) for items in record_maps.values())))
     frame_count = len(common_frames)
+    roster = build_delivery_roster(records_by_camera)
+    projections = projections or {}
+    ground_positions = ground_positions or {}
+
+    # Per (camera, id) detection frames — used to decide when a missing player is
+    # "occluded HERE" (seen in this camera nearby in time) vs simply out of view.
+    import bisect
+
+    id_frames: dict[tuple[str, str], list[int]] = {}
+    for camera_id, records in records_by_camera.items():
+        for record in records:
+            frame_index = int(record["frame_index"])
+            for player in record.get("players", []):
+                player_id = player.get("global_player_id")
+                if player_id:
+                    id_frames.setdefault((camera_id, str(player_id)), []).append(frame_index)
+    for frames in id_frames.values():
+        frames.sort()
+
+    def seen_here_nearby(camera_id: str, player_id: str, frame_index: int) -> bool:
+        frames = id_frames.get((camera_id, player_id))
+        if not frames:
+            return False
+        pos = bisect.bisect_left(frames, frame_index)
+        for neighbour in (pos - 1, pos):
+            if 0 <= neighbour < len(frames) and abs(frames[neighbour] - frame_index) <= ghost_window_frames:
+                return True
+        return False
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with VideoSink(
@@ -732,59 +986,104 @@ def render_mosaic_video(
             canvas = np.zeros((height, width, 3), dtype=np.uint8)
             canvas[:] = (10, 14, 21)
             total_players = 0
-            active_ids: set[str] = set()
-            for camera_position, camera_id in enumerate(CAMERA_ORDER):
-                if camera_id not in records_by_camera:
-                    continue
-                row, col = divmod(camera_position, 3)
-                record_index, record = record_maps[camera_id][synchronized_frame]
-                image = load_image_for_record(camera_dirs[camera_id], record)
-                tile = render_feed_frame(
-                    image,
-                    record,
-                    output_size=(cell_width, cell_height),
-                    keypoint_threshold=settings.keypoint_threshold,
-                    compact=True,
-                    ball_trail=ball_trail_for(
-                        records_by_camera[camera_id], record_index, ball_positions, settings.ball_trail_frames
-                    ),
-                    show=settings.show,
-                )
-                total_players += len(record.get("players", []))
-                active_ids.update(
+            visible_now: dict[str, list[str]] = {}
+            monitor_slot_position: tuple[int, int] | None = None
+            roster_slot_position: tuple[int, int] | None = None
+            # Who is detected where THIS frame (for occlusion ghosts).
+            detected_by_camera: dict[str, set[str]] = {}
+            for camera_id in records_by_camera:
+                _, record = record_maps[camera_id][synchronized_frame]
+                detected_by_camera[camera_id] = {
                     str(player["global_player_id"])
                     for player in record.get("players", [])
                     if player.get("global_player_id")
-                )
-                y1, x1 = row * cell_height, col * cell_width
-                canvas[y1 : y1 + cell_height, x1 : x1 + cell_width] = tile
+                }
+            frame_grounds = ground_positions.get(synchronized_frame, {})
+            for row, slots in enumerate(layout.grid):
+                for col, slot in enumerate(slots):
+                    if slot == MONITOR_SLOT:
+                        monitor_slot_position = (row, col)
+                        continue
+                    if slot == ROSTER_SLOT:
+                        roster_slot_position = (row, col)
+                        continue
+                    if slot is None or slot not in records_by_camera:
+                        continue
+                    camera_id = slot
+                    record_index, record = record_maps[camera_id][synchronized_frame]
+                    image = load_image_for_record(camera_dirs[camera_id], record)
+                    ghosts: list[tuple[str, tuple[float, float]]] = []
+                    projection = projections.get(camera_id)
+                    if projection is not None and settings.show == "p4":
+                        others_see = set().union(*(
+                            ids for cam, ids in detected_by_camera.items() if cam != camera_id
+                        )) if len(detected_by_camera) > 1 else set()
+                        for player_id, (gx, gy) in frame_grounds.items():
+                            if player_id in detected_by_camera.get(camera_id, set()):
+                                continue
+                            if player_id not in others_see:
+                                continue
+                            if not seen_here_nearby(camera_id, player_id, synchronized_frame):
+                                continue
+                            homogeneous = projection @ np.array([gx, gy, 0.0, 1.0])
+                            if abs(float(homogeneous[2])) < 1e-9:
+                                continue
+                            foot = homogeneous[:2] / homogeneous[2]
+                            if 0 <= foot[0] < image.shape[1] and 0 <= foot[1] < image.shape[0]:
+                                ghosts.append((player_id, (float(foot[0]), float(foot[1]))))
+                    tile = render_feed_frame(
+                        image,
+                        record,
+                        output_size=(cell_width, cell_height),
+                        keypoint_threshold=settings.keypoint_threshold,
+                        compact=True,
+                        ball_trail=ball_trail_for(
+                            records_by_camera[camera_id], record_index, ball_positions,
+                            settings.ball_trail_frames,
+                        ),
+                        show=settings.show,
+                        mirror=camera_id in layout.mirrored,
+                        ghosts=ghosts,
+                    )
+                    total_players += len(record.get("players", []))
+                    for player in record.get("players", []):
+                        player_id = player.get("global_player_id")
+                        if player_id:
+                            visible_now.setdefault(str(player_id), []).append(camera_id)
+                    y1, x1 = row * cell_height, col * cell_width
+                    canvas[y1 : y1 + cell_height, x1 : x1 + cell_width] = tile
 
-            frame_index = synchronized_frame
-            summary = draw_info_panel(
+            direction_note = "unknown"
+            if layout.bowling_direction_xy is not None:
+                dx, dy = layout.bowling_direction_xy
+                direction_note = f"({dx:+.2f}, {dy:+.2f})"
+            monitor = draw_info_panel(
                 size=(cell_width, cell_height),
-                title="Delivery Monitor",
+                title="DELIVERY MONITOR",
                 lines=[
                     delivery_id,
                     f"run: {run_id}",
-                    f"frame: {frame_index}",
-                    f"feeds: {len(records_by_camera)} cameras",
+                    f"frame: {synchronized_frame}",
+                    f"feeds: {len(records_by_camera)} cameras"
+                    + (f"  |  {len(layout.mirrored)} mirrored" if layout.mirrored else ""),
                     f"detections: {total_players}",
-                    f"joint threshold: {settings.keypoint_threshold:.2f}",
+                    f"bowling direction: {direction_note}",
                 ],
                 accent=(82, 220, 255),
             )
-            legend = draw_info_panel(
+            roster_panel = draw_roster_panel(
                 size=(cell_width, cell_height),
-                title="Active Global Roster",
-                lines=(
-                    [f"{player_id}  identity-stable colour" for player_id in sorted(active_ids)[:6]]
-                    or ["No confirmed global IDs", "P2/P3 fallback uses local IDs"]
-                ),
-                accent=(129, 236, 145),
+                roster=roster,
+                visible_now=visible_now,
             )
-            y = 2 * cell_height
-            canvas[y : y + cell_height, cell_width : 2 * cell_width] = summary
-            canvas[y : y + cell_height, 2 * cell_width : 3 * cell_width] = legend
+            if monitor_slot_position is not None:
+                row, col = monitor_slot_position
+                canvas[row * cell_height : (row + 1) * cell_height,
+                       col * cell_width : (col + 1) * cell_width] = monitor
+            if roster_slot_position is not None:
+                row, col = roster_slot_position
+                canvas[row * cell_height : (row + 1) * cell_height,
+                       col * cell_width : (col + 1) * cell_width] = roster_panel
             sink.write(canvas)
 
     return {
@@ -792,7 +1091,8 @@ def render_mosaic_video(
         "frames": frame_count,
         "size": [width, height],
         "fps": settings.fps,
-        "layout": "3x3: cam_01..cam_07 plus summary and legend panels",
+        "layout": layout.describe(),
+        "layout_notes": list(layout.notes),
     }
 
 
@@ -873,6 +1173,73 @@ def render_ground_tracks(
     }
 
 
+def derive_layout_for_run(
+    records_by_camera: dict[str, list[dict[str, Any]]],
+    drive_root: Path,
+    delivery_id: str,
+    bowling_end_cam: str | None,
+) -> MosaicLayout:
+    """Calibration-derived mosaic layout, falling back gracefully without it."""
+
+    try:
+        from scripts.tracking.calibration import (
+            build_ground_calibrators,
+            current_calibration_dir,
+            load_projection_matrices_from_drive,
+        )
+        from scripts.tracking.runner import infer_match_id
+
+        match_id = infer_match_id(delivery_id)
+        projections = {
+            camera_id: matrix
+            for camera_id, matrix in load_projection_matrices_from_drive(
+                drive_root, match_id
+            ).items()
+            if camera_id in records_by_camera
+        }
+        direction = None
+        if bowling_end_cam is None:
+            axis = load_pitch_axis(
+                current_calibration_dir(drive_root, match_id) / "pitch_calibration_config.json"
+            )
+            if axis is not None:
+                calibrators = build_ground_calibrators(
+                    drive_root, match_id, sorted(records_by_camera)
+                )
+                series: dict[str, list[tuple[int, Any]]] = {}
+                for camera_id, records in records_by_camera.items():
+                    calibrator = calibrators.get(camera_id)
+                    if calibrator is None:
+                        continue
+                    for record in records:
+                        for player in record.get("players", []):
+                            local_track_id = player.get("local_track_id")
+                            bbox = player.get("bbox_xywh_px")
+                            if not local_track_id or not bbox:
+                                continue
+                            xy = calibrator.bbox_bottom_center_ground_xy(
+                                [float(value) for value in bbox]
+                            )
+                            if xy is not None:
+                                series.setdefault(f"{camera_id}:{local_track_id}", []).append(
+                                    (int(record["frame_index"]), xy)
+                                )
+                direction = infer_bowling_direction(series, axis)
+        return derive_mosaic_layout(
+            projections,
+            bowling_direction_xy=direction,
+            bowling_end_cam=bowling_end_cam,
+        )
+    except Exception as exc:  # calibration missing/unreadable: degrade, don't die
+        layout = fallback_mosaic_layout(records_by_camera)
+        return MosaicLayout(
+            grid=layout.grid,
+            mirrored=layout.mirrored,
+            bowling_direction_xy=None,
+            notes=layout.notes + (f"layout derivation failed: {exc}",),
+        )
+
+
 def main() -> int:
     args = parse_args()
     run_dir = Path(args.run_dir)
@@ -938,7 +1305,7 @@ def main() -> int:
         show=show,
     )
 
-    selected_cameras = args.cameras or CAMERA_ORDER
+    selected_cameras = args.cameras or sorted(prediction_paths_by_camera)
     camera_dirs = resolve_delivery_camera_dirs(drive_root, delivery_id)
     ball_positions = load_ball_positions(drive_root / "dataset" / "events-data", delivery_id)
     records_by_camera: dict[str, list[dict[str, Any]]] = {}
@@ -995,8 +1362,36 @@ def main() -> int:
             ball_positions=ball_positions,
         )
     if args.mode in {"all", "mosaic"}:
-        if [camera for camera in CAMERA_ORDER if camera in records_by_camera] != CAMERA_ORDER:
-            raise RuntimeError("mosaic mode requires all seven cameras")
+        if len(records_by_camera) < 2:
+            raise RuntimeError("mosaic mode requires at least two cameras")
+        layout = derive_layout_for_run(
+            records_by_camera, drive_root, delivery_id, args.bowling_end_cam
+        )
+        print(f"mosaic layout: {layout.describe()}")
+        for note in layout.notes:
+            print(f"  layout note: {note}")
+        mosaic_projections: dict[str, np.ndarray] = {}
+        try:
+            from scripts.tracking.calibration import load_projection_matrices_from_drive
+            from scripts.tracking.runner import infer_match_id
+
+            mosaic_projections = load_projection_matrices_from_drive(
+                drive_root, infer_match_id(delivery_id)
+            )
+        except Exception:
+            pass  # ghosts are an enhancement; the mosaic renders without them
+        ground_positions: dict[int, dict[str, tuple[float, float]]] = {}
+        ground_tracks_path = run_dir / "diagnostics" / "ground_tracks.jsonl"
+        if ground_tracks_path.exists():
+            for row in iter_jsonl(ground_tracks_path):
+                frame_grounds = {}
+                for track in row.get("tracks", []):
+                    xy = track.get("ground_xy")
+                    player_id = track.get("global_player_id")
+                    if player_id and xy and len(xy) >= 2:
+                        frame_grounds[str(player_id)] = (float(xy[0]), float(xy[1]))
+                if frame_grounds:
+                    ground_positions[int(row["frame_index"])] = frame_grounds
         outputs["mosaic"] = render_mosaic_video(
             records_by_camera=records_by_camera,
             camera_dirs=camera_dirs,
@@ -1005,6 +1400,9 @@ def main() -> int:
             run_id=run_id,
             delivery_id=delivery_id,
             ball_positions=ball_positions,
+            layout=layout,
+            projections=mosaic_projections,
+            ground_positions=ground_positions,
         )
     if args.mode in {"all", "ground"}:
         ground_path = run_dir / "diagnostics" / "ground_tracks.jsonl"
