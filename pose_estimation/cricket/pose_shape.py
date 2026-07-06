@@ -246,6 +246,8 @@ POSTURE_QUANTITIES: tuple[str, ...] = (
 )
 # Quantities meaningful only when the player is standing roughly upright.
 _UPRIGHT_ONLY = frozenset({"head_top_m", "shoulder_h_m", "hip_h_m", "leg_len_m"})
+# Foreshortening-free verticals: safe to compare across ANY pair of views.
+STATURE_QUANTITIES = frozenset(_UPRIGHT_ONLY)
 
 # Fallback cross-camera systematic sigmas (metres) when no cue calibration is
 # available; the calibration harness replaces these with measured values.
@@ -340,6 +342,7 @@ def posture_from_skeleton(
     *,
     upright_tilt_max_deg: float = 30.0,
     upright_ankle_max_m: float = 0.35,
+    upright_hip_min_m: float = 0.6,
 ) -> PostureSample | None:
     """Reduce a lifted skeleton to comparable metric quantities."""
 
@@ -379,7 +382,10 @@ def posture_from_skeleton(
                 np.clip(abs(spine[2]) / values["torso_len_m"], 0.0, 1.0)
             )))
             ankle_ok = bool(ankles) and float(np.min([p[2] for p in ankles])) <= upright_ankle_max_m
-            upright = tilt <= upright_tilt_max_deg and ankle_ok and spine[2] > 0.0
+            # A squat keeps the spine vertical and the ankles grounded but is NOT
+            # standing — the hips give it away.
+            hips_ok = float(hip_mid[2]) >= upright_hip_min_m
+            upright = tilt <= upright_tilt_max_deg and ankle_ok and hips_ok and spine[2] > 0.0
 
     if not values:
         return None
@@ -467,6 +473,7 @@ def posture_distance_z(
     *,
     sigma_sys: dict[str, float] | None = None,
     min_shared: int = 2,
+    quantities: frozenset[str] | set[str] | None = None,
 ) -> tuple[float, int] | None:
     """RMS z-score between two tracklets' posture aggregates.
 
@@ -474,7 +481,9 @@ def posture_distance_z(
     standard errors plus the cross-camera systematic sigma (measured by the cue
     calibration harness; falls back to :data:`DEFAULT_POSTURE_SIGMA_SYS`). Returns
     ``None`` (abstain) when fewer than ``min_shared`` quantities are shared, so an
-    unobservable posture never fakes a verdict.
+    unobservable posture never fakes a verdict. ``quantities`` restricts the
+    comparison (e.g. :data:`STATURE_QUANTITIES` when a bent/crouched body makes
+    the planar shape quantities view-dependent between non-parallel cameras).
     """
 
     if a is None or b is None or not a.is_defined() or not b.is_defined():
@@ -484,6 +493,8 @@ def posture_distance_z(
         sigmas.update({k: float(v) for k, v in sigma_sys.items() if np.isfinite(v) and v > 0})
     z_sq: list[float] = []
     for name in POSTURE_QUANTITIES:
+        if quantities is not None and name not in quantities:
+            continue
         if name not in a.median or name not in b.median:
             continue
         sigma = float(np.sqrt(

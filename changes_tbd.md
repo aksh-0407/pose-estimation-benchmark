@@ -1,5 +1,17 @@
 # changes_tbd.md — deferred work for global-ID stability
 
+> **2026-07-05 status.** The tracklet-graph identity layer
+> (`association_mode: tracklet_graph`, `scripts/association/tracklet_graph.py`)
+> landed and supersedes several items below: "P3 temporal cluster memory"
+> (bindings replace the nudge), "clustering-algorithm refinement" (LLR
+> agglomeration + move-refinement + rescue pass can reconsider),
+> "distance-scaled measurement noise" (per-detection ground covariance via the
+> ray-plane Jacobian), and the pose cue is now the ground-anchored billboard
+> posture layer with empirically calibrated tolerances (`cue_calibration.py`).
+> Panel on this delivery: agreement 0.689→0.952, teleports 113→11, IDs 22→15,
+> collisions 0. Still open below: weight/gate tuning for the per_frame fallback,
+> adaptive lost-window, P4b descriptor stitching, role wiring, cheirality.
+
 Captured while landing the safe, cross-camera-focused work (measurement guardrails +
 degeneracy/C07 fix + view-invariant pose tie-breaker). These are the *next* levers,
 ordered roughly by value-for-risk. None should be started before the current work is

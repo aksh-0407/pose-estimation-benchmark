@@ -32,10 +32,12 @@ from itertools import combinations
 import numpy as np
 
 from pose_estimation.cricket.geometry import (
+    camera_center_from_P,
     ground_covariance,
     ground_mahalanobis_sq,
 )
 from pose_estimation.cricket.pose_shape import (
+    STATURE_QUANTITIES,
     PostureAccumulator,
     PostureAggregate,
     ground_anchored_skeleton,
@@ -62,6 +64,12 @@ class _ChunkState:
     ground_by_frame: dict[int, np.ndarray] = field(default_factory=dict)
     cov_by_frame: dict[int, np.ndarray] = field(default_factory=dict)
     posture: PostureAccumulator = field(default_factory=PostureAccumulator)
+    posture_samples: int = 0
+    upright_samples: int = 0
+
+    @property
+    def upright_fraction(self) -> float:
+        return self.upright_samples / self.posture_samples if self.posture_samples else 0.0
 
     @property
     def first_frame(self) -> int:
@@ -155,6 +163,7 @@ class TrackletGraphBuilder:
         self._det_chunk: dict[tuple[int, str, str], ChunkKey] = {}
         self._pairs: dict[tuple[ChunkKey, ChunkKey], _PairSamples] = defaultdict(_PairSamples)
         self._velocity_cache: dict[ChunkKey, dict[int, np.ndarray | None]] = {}
+        self._azimuth_cache: dict[ChunkKey, np.ndarray | None] = {}
         self.diagnostics: dict[str, int] = defaultdict(int)
 
     # ------------------------------------------------------------- pass A
@@ -205,7 +214,11 @@ class TrackletGraphBuilder:
                         det.keypoints_px, det.keypoint_conf, foot, projection,
                         min_conf=self.config.pose_min_conf,
                     )
-                    chunk.posture.add(posture_from_skeleton(points3d, valid))
+                    sample = posture_from_skeleton(points3d, valid)
+                    chunk.posture.add(sample)
+                    if sample is not None:
+                        chunk.posture_samples += 1
+                        chunk.upright_samples += int(sample.upright)
                 self._det_chunk[(frame_index, cam_id, det.local_track_id)] = key
                 placed.append((key, det, ground, cov))
 
@@ -323,11 +336,41 @@ class TrackletGraphBuilder:
         pair: tuple[ChunkKey, ChunkKey],
         calibration: CueCalibration,
     ) -> float | None:
+        # A bent/crouched body (e.g. the keeper) is not billboard-planar, so its
+        # SHAPE quantities (torso length, widths) are only comparable between
+        # near-parallel or near-antiparallel views; between oblique views of a
+        # non-upright player only the foreshortening-free verticals may vote.
+        quantities = None
+        chunk_a, chunk_b = self._chunks[pair[0]], self._chunks[pair[1]]
+        if min(chunk_a.upright_fraction, chunk_b.upright_fraction) < 0.5:
+            az_a, az_b = self._view_azimuth(pair[0]), self._view_azimuth(pair[1])
+            if az_a is not None and az_b is not None and abs(float(az_a @ az_b)) < 0.7:
+                quantities = STATURE_QUANTITIES
         result = posture_distance_z(
             postures.get(pair[0]), postures.get(pair[1]),
             sigma_sys=calibration.posture_sigma_sys,
+            quantities=quantities,
         )
         return None if result is None else result[0]
+
+    def _view_azimuth(self, key: ChunkKey) -> np.ndarray | None:
+        """Horizontal unit vector from the chunk's camera to its mean position."""
+
+        cached = self._azimuth_cache.get(key)
+        if cached is not None or key in self._azimuth_cache:
+            return cached
+        chunk = self._chunks[key]
+        projection = self.projections.get(key[0])
+        azimuth = None
+        if projection is not None and chunk.ground_by_frame:
+            center = camera_center_from_P(np.asarray(projection, dtype=float))
+            mean_ground = np.mean(np.asarray(list(chunk.ground_by_frame.values())), axis=0)
+            direction = np.array([mean_ground[0] - center[0], mean_ground[1] - center[1]])
+            norm = float(np.linalg.norm(direction))
+            if np.isfinite(norm) and norm > 1e-6:
+                azimuth = direction / norm
+        self._azimuth_cache[key] = azimuth
+        return azimuth
 
     def _chunk_postures(self) -> dict[ChunkKey, PostureAggregate | None]:
         return {
@@ -537,6 +580,7 @@ class TrackletGraphBuilder:
         }
         moves = self._refine(cluster_members, cluster_of, llr_lookup)
         self.diagnostics["refine_moves"] = moves
+        self._rescue_singletons(cluster_members, cluster_of, edges, llr_lookup)
 
         clusters_raw = sorted(
             cluster_members.values(),
@@ -611,6 +655,57 @@ class TrackletGraphBuilder:
             if not changed:
                 break
         return moves
+
+    def _rescue_singletons(
+        self,
+        cluster_members: dict[int, list[ChunkKey]],
+        cluster_of: dict[ChunkKey, int],
+        edges: list[GraphEdge],
+        llr_lookup: dict[tuple[ChunkKey, ChunkKey], float],
+    ) -> None:
+        """Attach a leftover singleton when the constraints leave ONE explanation.
+
+        The archetype is the wicketkeeper in a camera whose posture is polluted by
+        occlusion: it cannot reach the merge threshold on its own, but every other
+        cluster at its position is impossible (cannot-link with that camera's
+        striker/non-striker/bowler tracklets), ground agrees with the keeper
+        cluster, and nothing contradicts it. Requiring EXACTLY one compatible
+        candidate keeps ambiguous cases (e.g. an umpire between two clusters)
+        untouched.
+        """
+
+        edge_partners: dict[ChunkKey, dict[int, float]] = defaultdict(dict)
+        ground_positive: dict[tuple[ChunkKey, ChunkKey], bool] = {}
+        for edge in edges:
+            ground_positive[_pair_key(edge.key_a, edge.key_b)] = edge.llr_ground > 0.0
+        for singleton in sorted(key for key, cid in cluster_of.items()
+                                if len(cluster_members[cluster_of[key]]) == 1):
+            candidates: list[int] = []
+            for candidate_id in sorted(cluster_members):
+                if candidate_id == cluster_of[singleton]:
+                    continue
+                members = cluster_members[candidate_id]
+                pair_llrs = [
+                    llr_lookup.get(_pair_key(singleton, member)) for member in members
+                ]
+                if not any(v is not None for v in pair_llrs):
+                    continue
+                if not any(
+                    ground_positive.get(_pair_key(singleton, member), False)
+                    for member in members
+                ):
+                    continue
+                if not self._cluster_compatible([singleton], members, llr_lookup):
+                    continue
+                candidates.append(candidate_id)
+            if len(candidates) != 1:
+                continue
+            old_id = cluster_of[singleton]
+            target = candidates[0]
+            cluster_members[target] = sorted(cluster_members[target] + [singleton])
+            del cluster_members[old_id]
+            cluster_of[singleton] = target
+            self.diagnostics["rescued_singletons"] += 1
 
     # --------------------------------------------------------------- emit
 

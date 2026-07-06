@@ -114,7 +114,7 @@ class P3AssociationConfig:
     # Tracklet purity: split a P2 tracklet at kinematically impossible ground jumps
     purity_split_enabled: bool = True
     purity_jump_slack: float = 1.5
-    purity_jump_floor_m: float = 1.0
+    purity_jump_floor_m: float = 1.5
     frame_rate_fps: float = 50.0
     kinematic_v_max_mps: float = 9.0
     # Ground-anchored (billboard) posture cue -- the pose-shape identity layer

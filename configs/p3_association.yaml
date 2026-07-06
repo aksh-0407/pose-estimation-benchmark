@@ -82,7 +82,7 @@ ground_sigma_px_bbox_frac: 0.01
 ground_var_floor_m: 0.4
 purity_split_enabled: true
 purity_jump_slack: 1.5
-purity_jump_floor_m: 1.0
+purity_jump_floor_m: 1.5
 frame_rate_fps: 50.0
 kinematic_v_max_mps: 9.0
 # Ground-anchored (billboard) posture: the pose-shape identity layer. Metric,

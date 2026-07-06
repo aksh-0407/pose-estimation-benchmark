@@ -2,9 +2,9 @@
   "camera_count": 7,
   "completeness": {
     "confirmed_frame_completeness": {
-      "count": 20,
+      "count": 15,
       "max": 0.9966666666666667,
-      "mean": 0.8501135604282843,
+      "mean": 0.8915385175476919,
       "p50": 0.9966666666666667,
       "p95": 0.9966666666666667
     },
@@ -80,9 +80,10 @@
         "span_frames": 600
       },
       "P006": {
-        "camera_count": 2,
+        "camera_count": 3,
         "cameras": [
           "cam_02",
+          "cam_04",
           "cam_06"
         ],
         "confirmed_frame_completeness": 0.9966666666666667,
@@ -107,54 +108,6 @@
       "P008": {
         "camera_count": 1,
         "cameras": [
-          "cam_04"
-        ],
-        "confirmed_frame_completeness": 0.9775280898876404,
-        "confirmed_frames": 87,
-        "first_frame": 212334,
-        "last_frame": 212422,
-        "observed_frames": 89,
-        "span_frames": 89
-      },
-      "P009": {
-        "camera_count": 1,
-        "cameras": [
-          "cam_04"
-        ],
-        "confirmed_frame_completeness": 0.9966666666666667,
-        "confirmed_frames": 598,
-        "first_frame": 212334,
-        "last_frame": 212933,
-        "observed_frames": 600,
-        "span_frames": 600
-      },
-      "P010": {
-        "camera_count": 1,
-        "cameras": [
-          "cam_05"
-        ],
-        "confirmed_frame_completeness": 0.9222222222222223,
-        "confirmed_frames": 249,
-        "first_frame": 212334,
-        "last_frame": 212603,
-        "observed_frames": 251,
-        "span_frames": 270
-      },
-      "P011": {
-        "camera_count": 1,
-        "cameras": [
-          "cam_05"
-        ],
-        "confirmed_frame_completeness": 0.990909090909091,
-        "confirmed_frames": 218,
-        "first_frame": 212334,
-        "last_frame": 212553,
-        "observed_frames": 220,
-        "span_frames": 220
-      },
-      "P012": {
-        "camera_count": 1,
-        "cameras": [
           "cam_06"
         ],
         "confirmed_frame_completeness": 0.9966666666666667,
@@ -164,7 +117,7 @@
         "observed_frames": 600,
         "span_frames": 600
       },
-      "P013": {
+      "P009": {
         "camera_count": 2,
         "cameras": [
           "cam_01",
@@ -177,7 +130,7 @@
         "observed_frames": 569,
         "span_frames": 600
       },
-      "P014": {
+      "P010": {
         "camera_count": 1,
         "cameras": [
           "cam_02"
@@ -189,7 +142,7 @@
         "observed_frames": 600,
         "span_frames": 600
       },
-      "P015": {
+      "P011": {
         "camera_count": 1,
         "cameras": [
           "cam_04"
@@ -201,7 +154,7 @@
         "observed_frames": 600,
         "span_frames": 600
       },
-      "P016": {
+      "P012": {
         "camera_count": 1,
         "cameras": [
           "cam_05"
@@ -213,32 +166,19 @@
         "observed_frames": 411,
         "span_frames": 545
       },
-      "P017": {
-        "camera_count": 2,
-        "cameras": [
-          "cam_04",
-          "cam_05"
-        ],
-        "confirmed_frame_completeness": 0.11956521739130435,
-        "confirmed_frames": 11,
-        "first_frame": 212423,
-        "last_frame": 212514,
-        "observed_frames": 13,
-        "span_frames": 92
-      },
-      "P018": {
+      "P013": {
         "camera_count": 1,
         "cameras": [
           "cam_05"
         ],
-        "confirmed_frame_completeness": 0.1223021582733813,
-        "confirmed_frames": 17,
-        "first_frame": 212554,
+        "confirmed_frame_completeness": 0.5,
+        "confirmed_frames": 13,
+        "first_frame": 212667,
         "last_frame": 212692,
-        "observed_frames": 21,
-        "span_frames": 139
+        "observed_frames": 17,
+        "span_frames": 26
       },
-      "P020": {
+      "P015": {
         "camera_count": 1,
         "cameras": [
           "cam_05"
@@ -250,7 +190,7 @@
         "observed_frames": 4,
         "span_frames": 4
       },
-      "P022": {
+      "P017": {
         "camera_count": 1,
         "cameras": [
           "cam_07"
@@ -263,67 +203,12 @@
         "span_frames": 7
       }
     },
-    "track_count": 20
+    "track_count": 15
   },
-  "created_at": "2026-07-05T12:07:30.914781+00:00",
-  "cross_camera_agreeing_pair_count": 9121,
-  "cross_camera_agreement_rate": 0.7508231807704973,
+  "created_at": "2026-07-05T13:28:02.622330+00:00",
+  "cross_camera_agreeing_pair_count": 11577,
+  "cross_camera_agreement_rate": 0.9518993586581155,
   "cross_camera_disagreement_examples": [
-    {
-      "camera_ids": [
-        "cam_01",
-        "cam_05"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P001",
-        "P010"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_01",
-        "cam_05"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P004",
-        "P011"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_02",
-        "cam_04"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P006",
-        "P009"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_03",
-        "cam_05"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P001",
-        "P010"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_03",
-        "cam_05"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P004",
-        "P011"
-      ]
-    },
     {
       "camera_ids": [
         "cam_04",
@@ -332,7 +217,7 @@
       "frame_index": 212334,
       "global_player_ids": [
         "P005",
-        "P009"
+        "P006"
       ]
     },
     {
@@ -340,76 +225,10 @@
         "cam_04",
         "cam_06"
       ],
-      "frame_index": 212334,
+      "frame_index": 212337,
       "global_player_ids": [
-        "P006",
-        "P009"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_05",
-        "cam_07"
-      ],
-      "frame_index": 212334,
-      "global_player_ids": [
-        "P001",
-        "P010"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_01",
-        "cam_05"
-      ],
-      "frame_index": 212335,
-      "global_player_ids": [
-        "P001",
-        "P010"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_01",
-        "cam_05"
-      ],
-      "frame_index": 212335,
-      "global_player_ids": [
-        "P004",
-        "P011"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_02",
-        "cam_04"
-      ],
-      "frame_index": 212335,
-      "global_player_ids": [
-        "P006",
-        "P009"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_03",
-        "cam_05"
-      ],
-      "frame_index": 212335,
-      "global_player_ids": [
-        "P001",
-        "P010"
-      ]
-    },
-    {
-      "camera_ids": [
-        "cam_03",
-        "cam_05"
-      ],
-      "frame_index": 212335,
-      "global_player_ids": [
-        "P004",
-        "P011"
+        "P005",
+        "P006"
       ]
     },
     {
@@ -417,82 +236,203 @@
         "cam_04",
         "cam_06"
       ],
-      "frame_index": 212335,
+      "frame_index": 212338,
       "global_player_ids": [
-        "P006",
-        "P009"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_05",
-        "cam_07"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212335,
+      "frame_index": 212405,
       "global_player_ids": [
-        "P001",
-        "P010"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_01",
-        "cam_05"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212336,
+      "frame_index": 212407,
       "global_player_ids": [
-        "P001",
-        "P010"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_01",
-        "cam_05"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212336,
+      "frame_index": 212408,
       "global_player_ids": [
-        "P004",
-        "P011"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_02",
-        "cam_04"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212336,
+      "frame_index": 212409,
       "global_player_ids": [
-        "P006",
-        "P009"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_03",
-        "cam_05"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212336,
+      "frame_index": 212410,
       "global_player_ids": [
-        "P004",
-        "P011"
+        "P005",
+        "P006"
       ]
     },
     {
       "camera_ids": [
-        "cam_03",
-        "cam_05"
+        "cam_04",
+        "cam_06"
       ],
-      "frame_index": 212336,
+      "frame_index": 212411,
       "global_player_ids": [
-        "P001",
-        "P010"
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212413,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212417,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212419,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212420,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212421,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212423,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212424,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212425,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212426,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212427,
+      "global_player_ids": [
+        "P005",
+        "P006"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 212428,
+      "global_player_ids": [
+        "P005",
+        "P006"
       ]
     }
   ],
-  "cross_camera_pair_count": 12148,
+  "cross_camera_pair_count": 12162,
   "delivery_id": "CCPL080626M1_1_14_1",
-  "distinct_global_id_count": 20,
+  "distinct_global_id_count": 15,
   "dominant_tracks": [
     {
       "camera_count": 5,
@@ -544,34 +484,34 @@
       "span_frames": 600
     }
   ],
-  "excess_id_fragment_count_proxy": 15,
+  "excess_id_fragment_count_proxy": 10,
   "expected_frames": 600,
-  "feasible_stitch_edge_count": 301,
+  "feasible_stitch_edge_count": 170,
   "frames_processed": 600,
   "group_radius_m": 1.5,
   "match_id": "CCPL080626",
   "max_speed_mps": 9.0,
   "maximum_simultaneous_id_count_per_camera": 5,
   "online_tracker": {
-    "binding_matches": 6129,
-    "binding_tracks_spawned": 24,
+    "binding_matches": 4958,
+    "binding_tracks_spawned": 14,
     "geometry_matches": 2032,
-    "local_track_ownership_transfers": 3,
-    "local_track_reassignment_conflicts_prevented": 153,
-    "reentries": 4,
-    "tracks_confirmed": 22,
-    "tracks_deleted": 20,
-    "tracks_spawned": 29
+    "local_track_ownership_transfers": 1,
+    "local_track_reassignment_conflicts_prevented": 51,
+    "reentries": 2,
+    "tracks_confirmed": 17,
+    "tracks_deleted": 11,
+    "tracks_spawned": 21
   },
   "same_camera_duplicate_identity_assignments": 0,
   "same_camera_identity_collision_examples": [],
   "same_camera_identity_collision_frames": 0,
   "schema_version": "global_id_metrics/v1",
-  "segment_count": 57,
+  "segment_count": 45,
   "selected_stitch_link_count": 2,
   "status": "pass",
   "stitched_id_switch_proxy_count": 2,
-  "teleport_event_count": 17,
+  "teleport_event_count": 11,
   "teleport_examples": [
     {
       "frames": [
@@ -579,7 +519,7 @@
         212410
       ],
       "global_player_id": "P004",
-      "speed_mps": 29.33101150542539
+      "speed_mps": 13.986920174934342
     },
     {
       "frames": [
@@ -587,62 +527,14 @@
         212411
       ],
       "global_player_id": "P004",
-      "speed_mps": 27.200265674337963
-    },
-    {
-      "frames": [
-        212434,
-        212435
-      ],
-      "global_player_id": "P004",
-      "speed_mps": 41.79443720375549
-    },
-    {
-      "frames": [
-        212514,
-        212515
-      ],
-      "global_player_id": "P004",
-      "speed_mps": 20.669215417611458
-    },
-    {
-      "frames": [
-        212517,
-        212518
-      ],
-      "global_player_id": "P004",
-      "speed_mps": 19.9590368738773
-    },
-    {
-      "frames": [
-        212397,
-        212398
-      ],
-      "global_player_id": "P011",
-      "speed_mps": 29.09703908617218
-    },
-    {
-      "frames": [
-        212398,
-        212399
-      ],
-      "global_player_id": "P011",
-      "speed_mps": 14.204562874485553
-    },
-    {
-      "frames": [
-        212414,
-        212415
-      ],
-      "global_player_id": "P011",
-      "speed_mps": 16.815874984614894
+      "speed_mps": 14.647436118968834
     },
     {
       "frames": [
         212865,
         212866
       ],
-      "global_player_id": "P013",
+      "global_player_id": "P009",
       "speed_mps": 86.0535820452549
     },
     {
@@ -650,7 +542,7 @@
         212866,
         212867
       ],
-      "global_player_id": "P013",
+      "global_player_id": "P009",
       "speed_mps": 86.34471938898305
     },
     {
@@ -658,7 +550,7 @@
         212688,
         212689
       ],
-      "global_player_id": "P018",
+      "global_player_id": "P013",
       "speed_mps": 19.510665381137244
     },
     {
@@ -666,7 +558,7 @@
         212695,
         212696
       ],
-      "global_player_id": "P020",
+      "global_player_id": "P015",
       "speed_mps": 18.23505201672074
     },
     {
@@ -674,7 +566,7 @@
         212874,
         212875
       ],
-      "global_player_id": "P022",
+      "global_player_id": "P017",
       "speed_mps": 31.514255015665526
     },
     {
@@ -682,7 +574,7 @@
         212875,
         212876
       ],
-      "global_player_id": "P022",
+      "global_player_id": "P017",
       "speed_mps": 24.912473952747664
     },
     {
@@ -690,7 +582,7 @@
         212877,
         212878
       ],
-      "global_player_id": "P022",
+      "global_player_id": "P017",
       "speed_mps": 23.90996860123091
     },
     {
@@ -698,7 +590,7 @@
         212878,
         212879
       ],
-      "global_player_id": "P022",
+      "global_player_id": "P017",
       "speed_mps": 34.4908252807108
     },
     {
@@ -706,12 +598,12 @@
         212879,
         212880
       ],
-      "global_player_id": "P022",
+      "global_player_id": "P017",
       "speed_mps": 20.036812972289866
     }
   ],
   "track_state_record_counts": {
-    "confirmed": 13427,
-    "tentative": 66
+    "confirmed": 13433,
+    "tentative": 60
   }
 }

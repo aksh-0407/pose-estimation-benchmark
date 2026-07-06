@@ -1,0 +1,34 @@
+{
+  "artifact_dir": "benchmarks/runs/pipetrack_v3/ab_graph/p4/visualizations/videos",
+  "delivery_id": "CCPL080626M1_1_14_1",
+  "mosaic": {
+    "fps": 25.0,
+    "frames": 600,
+    "layout": "3x3: cam_01..cam_07 plus summary and legend panels",
+    "path": "benchmarks/runs/pipetrack_v3/ab_graph/p4/visualizations/videos/CCPL080626M1_1_14_1__all_cameras.mp4",
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "run_id": "p4",
+  "schema_version": "cricket_pipetrack_video_manifest/v2",
+  "settings": {
+    "crf": 22,
+    "encoder": "ffmpeg/libx264",
+    "fps": 25.0,
+    "keypoint_threshold": 0.2,
+    "max_frames": null,
+    "mosaic_size": [
+      1920,
+      1080
+    ],
+    "per_camera_size": [
+      1280,
+      720
+    ],
+    "preset": "veryfast",
+    "sample_every": 1,
+    "show": "p4"
+  }
+}
