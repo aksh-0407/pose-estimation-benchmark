@@ -33,8 +33,13 @@ from scripts.global_id.stitching import (
     remap_ids,
     solve_flow,
 )
+from pose_estimation.cricket.geometry import upper_body_ground_estimate
 from scripts.global_id.track_manager import TrackManager
-from scripts.tracking.calibration import build_ground_calibrators
+from scripts.tracking.calibration import (
+    build_ground_calibrators,
+    load_image_sizes_from_drive,
+    load_projection_matrices_from_drive,
+)
 from scripts.tracking.runner import discover_prediction_files, infer_match_id
 
 
@@ -135,22 +140,87 @@ def run_global_id(
         )
     except (FileNotFoundError, ValueError):
         ground_calibrators = {}
+    try:
+        metric_projections = load_projection_matrices_from_drive(
+            drive_root, infer_match_id(delivery_id)
+        )
+    except (FileNotFoundError, ValueError):
+        metric_projections = {}
+    try:
+        metric_image_wh = load_image_sizes_from_drive(drive_root, infer_match_id(delivery_id))
+    except (FileNotFoundError, ValueError):
+        metric_image_wh = {}
+    # A bbox cut off at the frame bottom with no confident ankle projects the
+    # FRAME edge, not the player; anchor those on an upper-body height plane
+    # instead (calibration + detection only — still independent of the P3
+    # clustering these metrics judge). The decision is STICKY per tracklet so
+    # borderline frames don't flip between anchors and read as teleports.
+    def _feet_unusable_for_metrics(player: dict, image_h: int) -> bool:
+        bbox = player.get("bbox_xywh_px")
+        if not bbox:
+            return False
+        conf = np.asarray((player.get("pose_2d") or {}).get("confidence", []), dtype=float)
+        return float(bbox[1]) + float(bbox[3]) >= image_h - 4 and (
+            conf.shape != (17,) or float(np.max(conf[[15, 16]])) < 0.6
+        )
+
+    anchor_votes: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for record in records:
+        camera_id = str(record["camera_id"])
+        image_h = metric_image_wh.get(camera_id, (0, 1 << 30))[1]
+        for player in record.get("players", []):
+            local_track_id = player.get("local_track_id")
+            if not local_track_id:
+                continue
+            tally = anchor_votes[(camera_id, local_track_id)]
+            tally[0] += 1
+            tally[1] += int(_feet_unusable_for_metrics(player, image_h))
+    sticky_approx = {
+        key for key, (total, unusable) in anchor_votes.items()
+        if total > 0 and unusable / total >= 0.6
+    }
+
     detection_ground_positions: dict[tuple[int, str, int], np.ndarray] = {}
+    approximated_keys: set[tuple[int, str, int]] = set()
     for record in records:
         calibrator = ground_calibrators.get(str(record["camera_id"]))
         if calibrator is None:
             continue
         frame_index = int(record["frame_index"])
         camera_id = str(record["camera_id"])
+        image_h = metric_image_wh.get(camera_id, (0, 1 << 30))[1]
+        projection = metric_projections.get(camera_id)
         for player_index, player in enumerate(record.get("players", [])):
             if not player.get("global_player_id"):
                 continue
             bbox = player.get("bbox_xywh_px")
             if not bbox:
                 continue
-            xy = calibrator.bbox_bottom_center_ground_xy([float(v) for v in bbox])
+            bbox = [float(v) for v in bbox]
+            local_track_id = player.get("local_track_id")
+            if local_track_id:
+                approximate = (camera_id, local_track_id) in sticky_approx
+            else:
+                approximate = _feet_unusable_for_metrics(player, image_h)
+            xy = None
+            if approximate and projection is not None:
+                pose = player.get("pose_2d") or {}
+                keypoints = np.asarray(pose.get("keypoints_px", []), dtype=float)
+                conf = np.asarray(pose.get("confidence", []), dtype=float)
+                if keypoints.shape != (17, 2):
+                    keypoints = np.zeros((17, 2))
+                if conf.shape != (17,):
+                    conf = np.zeros(17)
+                estimate = upper_body_ground_estimate(keypoints, conf, bbox, projection)
+                if estimate is not None:
+                    xy = estimate[0]
+            if xy is None:
+                xy = calibrator.bbox_bottom_center_ground_xy(bbox)
             if xy is not None:
-                detection_ground_positions[(frame_index, camera_id, player_index)] = xy
+                key = (frame_index, camera_id, player_index)
+                detection_ground_positions[key] = xy
+                if approximate:
+                    approximated_keys.add(key)
 
     # Ground-plane track table from the online (P4a) assignments.
     ground_positions_accumulator: dict[tuple[str, int], list[np.ndarray]] = defaultdict(list)
@@ -208,9 +278,16 @@ def run_global_id(
     collision_metrics = identity_collision_metrics(records)
     completeness = track_completeness(records)
     agreement_metrics = cross_camera_agreement(records, detection_ground_positions)
+    # Teleports judge identity leaps from POSITION series; height-plane
+    # approximated members carry ~1 m anchor bias that reads as hopping when
+    # their cameras pop in/out of the mean, so only foot-anchored detections
+    # vote on position (they still count for identity agreement above).
     teleport_metrics = teleport_proxy(
         records,
-        detection_ground_positions,
+        {
+            key: value for key, value in detection_ground_positions.items()
+            if key not in approximated_keys
+        },
         max_speed_mps=config.kinematic_v_max_mps,
         frame_rate_fps=config.frame_rate_fps,
     )

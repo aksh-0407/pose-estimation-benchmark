@@ -25,7 +25,10 @@ from scripts.association.associator import (
 from scripts.association.config import P3AssociationConfig
 from scripts.association.cue_calibration import CueCalibration
 from scripts.association.geometry_cache import build_geometry_cache
-from scripts.association.tracklet_graph import TrackletGraphBuilder
+from scripts.association.tracklet_graph import (
+    TrackletGraphBuilder,
+    apply_feet_approximation,
+)
 from scripts.association.jsonl_io import (
     apply_correspondences,
     correspondence_row,
@@ -134,6 +137,15 @@ def run_association(
                 max_ankle_above_bbox_fraction=config.max_ankle_above_bbox_fraction,
             )
         detections_by_frame[frame_index] = detections
+    if config.association_mode == "tracklet_graph":
+        # Feet cut off at the frame edge project garbage ground points; re-anchor
+        # those detections on upper-body height planes (sticky per tracklet).
+        image_h_by_cam = {
+            camera_id: wh[1] for camera_id, wh in (image_wh_by_cam or {}).items()
+        }
+        detections_by_frame = apply_feet_approximation(
+            detections_by_frame, projections, image_h_by_cam, config
+        )
 
     # Pass B (tracklet_graph mode): accumulate tracklet-pair evidence over the
     # whole delivery, calibrate cue LLRs, and solve persistent identity bindings.

@@ -214,6 +214,91 @@ def pixel_to_ground_xy(pixel_xy: np.ndarray, projection_matrix: np.ndarray) -> n
     return result if np.isfinite(result).all() else np.full(2, np.nan)
 
 
+def pixel_to_plane_xy(
+    pixel_xy: np.ndarray,
+    projection_matrix: np.ndarray,
+    plane_height_m: float,
+) -> np.ndarray:
+    """Back-project one image point onto the horizontal world plane ``z = h``.
+
+    Same homography construction as the ground plane, shifted up: a point
+    ``(x, y, h, 1)`` maps through ``P`` as ``[p1 | p2 | h*p3 + p4]`` acting on
+    ``(x, y, 1)``.
+    """
+
+    point = np.asarray(pixel_xy, dtype=float)
+    projection = np.asarray(projection_matrix, dtype=float)
+    if point.shape != (2,) or not np.isfinite(point).all() or projection.shape != (3, 4):
+        return np.full(2, np.nan)
+    plane_to_image = np.column_stack([
+        projection[:, 0], projection[:, 1],
+        plane_height_m * projection[:, 2] + projection[:, 3],
+    ])
+    try:
+        image_to_plane = np.linalg.inv(plane_to_image)
+    except np.linalg.LinAlgError:
+        return np.full(2, np.nan)
+    homogeneous = image_to_plane @ np.append(point, 1.0)
+    if abs(float(homogeneous[2])) < 1e-12:
+        return np.full(2, np.nan)
+    result = homogeneous[:2] / homogeneous[2]
+    return result if np.isfinite(result).all() else np.full(2, np.nan)
+
+
+def upper_body_ground_estimate(
+    keypoints_px: np.ndarray,
+    keypoint_conf: np.ndarray,
+    bbox_xywh_px: list[float],
+    projection_matrix: np.ndarray,
+    *,
+    hip_height_m: float = 0.93,
+    shoulder_height_m: float = 1.42,
+    head_height_m: float = 1.78,
+    keypoint_conf_min: float = 0.45,
+) -> tuple[np.ndarray, str] | None:
+    """Estimate a standing person's ground position when their feet are unusable.
+
+    A ray through a body landmark of KNOWN typical height intersected with the
+    horizontal plane at that height lands directly above the feet. Preference
+    order: hip midpoint (closest to the ground, least height variance), shoulder
+    midpoint, then the bbox top-centre as the head crown (works even when the
+    pose model fails entirely, e.g. dark distant umpires). Returns
+    ``(ground_xy, anchor_kind)`` or ``None``. The height priors are population
+    means; the residual height error divided by the ray's elevation tangent is
+    the caller's extra ground variance — smallest exactly for the close-to-camera
+    subjects that get cut off at the frame bottom.
+    """
+
+    keypoints = np.asarray(keypoints_px, dtype=float).reshape(-1, 2)
+    conf = np.asarray(keypoint_conf, dtype=float).reshape(-1)
+
+    def midpoint(indices: tuple[int, int]) -> np.ndarray | None:
+        usable = [keypoints[j] for j in indices
+                  if np.isfinite(conf[j]) and conf[j] >= keypoint_conf_min
+                  and np.isfinite(keypoints[j]).all()]
+        if not usable:
+            return None
+        return np.mean(np.asarray(usable, dtype=float), axis=0)
+
+    for indices, height, kind in (
+        ((11, 12), hip_height_m, "hips"),
+        ((5, 6), shoulder_height_m, "shoulders"),
+    ):
+        anchor = midpoint(indices)
+        if anchor is not None:
+            xy = pixel_to_plane_xy(anchor, projection_matrix, height)
+            if np.isfinite(xy).all():
+                return xy, kind
+
+    bbox = np.asarray(bbox_xywh_px, dtype=float)
+    if bbox.shape == (4,) and np.isfinite(bbox).all() and bbox[2] > 8 and bbox[3] > 24:
+        top_centre = np.array([bbox[0] + bbox[2] / 2.0, bbox[1]], dtype=float)
+        xy = pixel_to_plane_xy(top_centre, projection_matrix, head_height_m)
+        if np.isfinite(xy).all():
+            return xy, "bbox_top"
+    return None
+
+
 def ground_covariance(
     pixel_xy: np.ndarray,
     projection_matrix: np.ndarray,

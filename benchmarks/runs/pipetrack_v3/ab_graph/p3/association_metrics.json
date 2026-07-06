@@ -4,9 +4,9 @@
   "anchor_switch_frequency": 0.0,
   "appearance_images_missing": 0,
   "association_mode": "tracklet_graph",
-  "binding_count": 14,
-  "calibration_anchor_pair_count": 7,
-  "calibration_diff_pair_count": 40,
+  "binding_count": 18,
+  "calibration_anchor_pair_count": 8,
+  "calibration_diff_pair_count": 31,
   "calibration_preflight": {
     "camera_count": 7,
     "finite_camera_center_count": 7,
@@ -15,24 +15,24 @@
   },
   "camera_count": 7,
   "cluster_camera_support": {
-    "count": 7013,
+    "count": 5306,
     "max": 5.0,
-    "mean": 1.9239982888920577,
-    "p50": 1.0,
+    "mean": 2.5429702223897475,
+    "p50": 2.0,
     "p95": 5.0
   },
-  "cluster_count": 7013,
-  "created_at": "2026-07-05T13:27:56.237083+00:00",
+  "cluster_count": 5306,
+  "created_at": "2026-07-06T08:57:34.253684+00:00",
   "cue_d_prime": {
-    "appearance": 0.0,
-    "ground_dist_m": 3.738,
-    "ground_maha": 4.144,
-    "posture_z": 1.789
+    "appearance": 0.086,
+    "ground_dist_m": 4.523,
+    "ground_maha": 5.024,
+    "posture_z": 0.824
   },
-  "cycle_consistency_rate": 0.8070833333333334,
+  "cycle_consistency_rate": 0.8208217485325919,
   "degenerate_pair_count": 7,
-  "degenerate_pair_usage_count": 3427,
-  "degenerate_pair_usage_rate": 0.2686157704969431,
+  "degenerate_pair_usage_count": 5134,
+  "degenerate_pair_usage_rate": 0.31578299913888547,
   "degenerate_pairs": [
     [
       "cam_01",
@@ -90,42 +90,43 @@
   },
   "frames_processed": 600,
   "graph_diagnostics": {
-    "appearance_cue_abstained": 1,
-    "merges_accepted": 16,
+    "merges_accepted": 11,
     "merges_blocked": 1,
     "purity_splits": 4,
-    "refine_moves": 0
+    "refine_moves": 11,
+    "rescued_singletons": 2,
+    "synthetic_tracklets": 10
   },
-  "graph_edge_count": 49,
+  "graph_edge_count": 64,
   "ground_spread_m": {
-    "count": 2400,
+    "count": 3237,
     "max": 8.155233789800516,
-    "mean": 2.25154602424291,
-    "p50": 2.1093894046842685,
-    "p95": 4.234169371057284
+    "mean": 2.010456032152851,
+    "p50": 1.9442102326969937,
+    "p95": 3.6934677153903794
   },
   "match_id": "CCPL080626",
-  "matched_camera_pair_count": 12758,
-  "multi_camera_binding_count": 4,
+  "matched_camera_pair_count": 16258,
+  "multi_camera_binding_count": 6,
   "pair_link_broken_count": 4,
-  "pair_link_churn_rate": 0.0003151839886533764,
-  "pair_link_evaluated_count": 12691,
+  "pair_link_churn_rate": 0.00026700487283892933,
+  "pair_link_evaluated_count": 14981,
   "reprojection_error_px": {
-    "count": 2400,
-    "max": 90.04787365049401,
-    "mean": 12.267403523288094,
-    "p50": 5.7175208988576625,
-    "p95": 49.72293822675106
+    "count": 3237,
+    "max": 291.52140349281933,
+    "mean": 23.55819715723233,
+    "p50": 14.20631521554832,
+    "p95": 64.02257765069983
   },
   "schema_version": "association_metrics/v1",
-  "single_camera_cluster_count": 4613,
-  "single_camera_rate": 0.6577784115214601,
+  "single_camera_cluster_count": 2069,
+  "single_camera_rate": 0.38993592159819074,
   "status": "pass",
   "track_confidence": {
-    "count": 7013,
-    "max": 0.834416371528653,
-    "mean": 0.462927774327398,
-    "p50": 0.45,
-    "p95": 0.7703588666330675
+    "count": 5306,
+    "max": 0.8916526521064473,
+    "mean": 0.5457183709889061,
+    "p50": 0.65,
+    "p95": 0.7850175172954925
   }
 }

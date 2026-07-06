@@ -102,6 +102,7 @@ class P3AssociationConfig:
     graph_move_margin: float = 0.5            # refinement move hysteresis
     graph_refine_passes: int = 2
     graph_cannot_link_overlap_frames: int = 3  # same-camera overlap => different people
+    graph_rescue_min_covis: int = 30          # evidence floor for constraint rescues
     graph_hard_dist_gate_m: float = 2.75      # median ground residual ceiling for edges
     graph_motion_enabled: bool = True
     graph_min_app_samples: int = 5
@@ -111,6 +112,21 @@ class P3AssociationConfig:
     ground_sigma_px_base: float = 2.0
     ground_sigma_px_bbox_frac: float = 0.01   # + frac * bbox_height_px
     ground_var_floor_m: float = 0.4
+    # Feet-unusable recovery: when a bbox reaches the frame bottom with no
+    # confident ankle, re-anchor the ground point on an upper-body landmark's
+    # height plane (hips -> shoulders -> bbox-top-as-head). approx_var_floor_m is
+    # the honest positional sigma of that estimate.
+    approx_feet_enabled: bool = True
+    approx_hip_height_m: float = 0.93
+    approx_shoulder_height_m: float = 1.42
+    approx_head_height_m: float = 1.78
+    approx_var_floor_m: float = 0.8
+    # Synthetic tracklets: chain persistent untracked detections (e.g. umpires P2
+    # never tracked) by ground continuity so the graph can bind them.
+    synthetic_tracklets_enabled: bool = True
+    syn_chain_gate_m: float = 1.2
+    syn_chain_max_gap_frames: int = 150
+    syn_min_confidence: float = 0.2
     # Tracklet purity: split a P2 tracklet at kinematically impossible ground jumps
     purity_split_enabled: bool = True
     purity_jump_slack: float = 1.5
@@ -157,14 +173,22 @@ class P3AssociationConfig:
                      "ground_var_floor_m", "purity_jump_slack", "purity_jump_floor_m",
                      "frame_rate_fps", "kinematic_v_max_mps",
                      "anchor_pair_dist_m", "anchor_pair_isolation_m",
-                     "diff_pair_min_dist_m"):
+                     "diff_pair_min_dist_m",
+                     "approx_hip_height_m", "approx_shoulder_height_m",
+                     "approx_head_height_m", "approx_var_floor_m",
+                     "syn_chain_gate_m"):
             _require_positive(name, getattr(self, name))
-        for name in ("graph_min_covis_frames", "graph_refine_passes",
+        for name in ("graph_min_covis_frames", "graph_refine_passes", "graph_rescue_min_covis",
                      "graph_cannot_link_overlap_frames", "graph_min_app_samples",
-                     "posture_min_samples", "anchor_pair_min_frames"):
+                     "posture_min_samples", "anchor_pair_min_frames",
+                     "syn_chain_max_gap_frames"):
             value = getattr(self, name)
             if type(value) is not int or value < 0:
                 raise ValueError(f"{name} must be a non-negative integer")
+        _require_range("syn_min_confidence", self.syn_min_confidence, 0.0, 1.0)
+        for name in ("approx_feet_enabled", "synthetic_tracklets_enabled"):
+            if type(getattr(self, name)) is not bool:
+                raise ValueError(f"{name} must be a boolean")
         for name in ("graph_llr_merge_threshold", "graph_llr_veto", "graph_move_margin"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)) \

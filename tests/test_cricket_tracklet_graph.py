@@ -385,3 +385,103 @@ def test_pair_link_churn_zero_for_stable_and_positive_for_flicker():
     assert stable["pair_link_churn_rate"] == 0.0
     flicker = pair_link_churn([row(f, f % 2 == 0) for f in range(10)])
     assert flicker["pair_link_broken_count"] > 0
+
+
+# --------------------------------------------- feet approximation + synthetics
+
+def test_pixel_to_plane_recovers_position_above_feet():
+    from pose_estimation.cricket.geometry import pixel_to_plane_xy
+    feet = np.array([3.0, -1.0])
+    hip_world = np.array([3.0, -1.0, 0.93])
+    hip_px = _project(CAM_A, hip_world)
+    xy = pixel_to_plane_xy(hip_px, CAM_A, 0.93)
+    assert np.allclose(xy, feet, atol=1e-9)
+
+
+def test_upper_body_ground_estimate_prefers_hips_then_falls_back():
+    from pose_estimation.cricket.geometry import upper_body_ground_estimate
+    feet = np.array([2.0, 5.0])
+    keypoints = np.zeros((17, 2))
+    conf = np.zeros(17)
+    keypoints[11] = _project(CAM_A, [1.9, 5.0, 0.93])
+    keypoints[12] = _project(CAM_A, [2.1, 5.0, 0.93])
+    conf[[11, 12]] = 0.8
+    bbox = [0.0, 0.0, 100.0, 400.0]
+    xy, kind = upper_body_ground_estimate(keypoints, conf, bbox, CAM_A)
+    assert kind == "hips" and np.allclose(xy, feet, atol=0.02)
+
+    # No confident keypoints at all: bbox top as the head crown.
+    head_px = _project(CAM_A, [2.0, 5.0, 1.78])
+    bbox = [head_px[0] - 50.0, head_px[1], 100.0, 500.0]
+    xy, kind = upper_body_ground_estimate(np.zeros((17, 2)), np.zeros(17), bbox, CAM_A)
+    assert kind == "bbox_top" and np.allclose(xy, feet, atol=0.05)
+
+
+def test_feet_approximation_is_sticky_per_tracklet():
+    from scripts.association.tracklet_graph import apply_feet_approximation
+    config = _graph_config()
+    image_h = 1080
+    true_feet = np.array([0.0, -10.0])
+    hip_px = _project(CAM_A, [0.0, -10.0, 0.93])
+    keypoints = np.zeros((17, 2)); keypoints[[11, 12]] = hip_px
+    dead = np.zeros(17); dead[[11, 12]] = 0.8
+    good = dead.copy(); good[[15, 16]] = 0.9
+    cut_bbox = [hip_px[0] - 40, hip_px[1] - 300, 80.0, image_h - (hip_px[1] - 300)]
+
+    def det(tid, kp_conf, bbox):
+        return Detection3("cam_01", 0, bbox, keypoints, kp_conf, 0.9, tid, np.array([5.0, 5.0]))
+
+    # Tracklet "cut": ankles dead + bbox at the frame bottom in 3/4 frames ->
+    # sticky approximation on ALL its frames (even the one with a good ankle).
+    # Tracklet "fine": mostly confident ankles -> never approximated, even on
+    # its single bad frame (no per-frame flip-flopping).
+    frames = {
+        0: {"cam_01": [det("cut", dead, cut_bbox), det("fine", good, cut_bbox)]},
+        1: {"cam_01": [det("cut", dead, cut_bbox), det("fine", good, cut_bbox)]},
+        2: {"cam_01": [det("cut", dead, cut_bbox), det("fine", dead, cut_bbox)]},
+        3: {"cam_01": [det("cut", good, cut_bbox), det("fine", good, [100, 100, 80, 200])]},
+    }
+    fixed = apply_feet_approximation(frames, {"cam_01": CAM_A}, {"cam_01": image_h}, config)
+    for frame_index in range(4):
+        cut_det, fine_det = fixed[frame_index]["cam_01"]
+        assert cut_det.ground_approx
+        assert np.allclose(cut_det.ground_xy, true_feet, atol=0.05)
+        assert not fine_det.ground_approx
+        assert np.allclose(fine_det.ground_xy, [5.0, 5.0])
+
+    # Untracked detections decide per frame (no tracklet to vote over).
+    frames = {0: {"cam_01": [det(None, dead, cut_bbox)]}}
+    fixed = apply_feet_approximation(frames, {"cam_01": CAM_A}, {"cam_01": image_h}, config)
+    assert fixed[0]["cam_01"][0].ground_approx
+
+
+def test_synthetic_tracklets_chain_untracked_detections_and_bind():
+    config = _graph_config()
+    builder = TrackletGraphBuilder(config, PROJECTIONS)
+    rng = np.random.default_rng(13)
+    # A tracked player in cam_01 and an UNTRACKED persistent detection of the
+    # same person in cam_04 (P2 failed it): the synthetic chain makes it a node
+    # and the graph binds the pair.
+    for frame in range(80):
+        noisy = np.array([1.0, 0.0]) + rng.normal(0, 0.05, 2)
+        dets = {
+            "cam_01": [_detection("cam_01", 0, noisy, "cam_01_trk_A")],
+            "cam_04": [_detection("cam_04", 0, noisy + rng.normal(0, 0.05, 2), None)],
+        }
+        builder.observe_frame(frame, dets)
+    assert builder.diagnostics["synthetic_tracklets"] == 1
+    solution = builder.solve(CueCalibration())
+    multi = [keys for keys in solution.clusters.values() if len(keys) > 1]
+    assert len(multi) == 1
+    cams = {key[0] for key in multi[0]}
+    assert cams == {"cam_01", "cam_04"}
+    assert any("_syn_" in key[1] for key in multi[0])
+
+    # Emission stamps the binding on the untracked detection too.
+    dets = {
+        "cam_01": [_detection("cam_01", 0, np.array([1.0, 0.0]), "cam_01_trk_A")],
+        "cam_04": [_detection("cam_04", 0, np.array([1.0, 0.0]), None)],
+    }
+    corr = builder.emit_frame(40, dets, solution, PROJECTIONS)
+    bound = [c for c in corr if c.binding_id is not None]
+    assert len(bound) == 1 and set(bound[0].members) == {"cam_01", "cam_04"}

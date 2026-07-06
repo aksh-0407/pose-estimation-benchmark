@@ -73,6 +73,7 @@ graph_llr_ground_neg_clip: 2.0
 graph_move_margin: 0.5
 graph_refine_passes: 2
 graph_cannot_link_overlap_frames: 3
+graph_rescue_min_covis: 30
 graph_hard_dist_gate_m: 2.75
 graph_motion_enabled: true
 graph_min_app_samples: 5
@@ -80,6 +81,18 @@ ground_sigma_px_base: 2.0
 ground_sigma_px_bbox_frac: 0.01
 # Floor absorbs cross-camera calibration bias (~0.7-1.2 m same-player residuals).
 ground_var_floor_m: 0.4
+# Feet-unusable recovery (cut-off bboxes) + synthetic tracklets for persistent
+# untracked detections (umpires): both required to bind the close-to-camera
+# figures whose bbox-bottom ground projections are garbage.
+approx_feet_enabled: true
+approx_hip_height_m: 0.93
+approx_shoulder_height_m: 1.42
+approx_head_height_m: 1.78
+approx_var_floor_m: 0.8
+synthetic_tracklets_enabled: true
+syn_chain_gate_m: 1.2
+syn_chain_max_gap_frames: 150
+syn_min_confidence: 0.2
 purity_split_enabled: true
 purity_jump_slack: 1.5
 purity_jump_floor_m: 1.5

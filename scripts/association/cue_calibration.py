@@ -126,16 +126,39 @@ def _default_distribution(cue: str) -> CueDistribution:
 
 @dataclass
 class CueCalibration:
-    """Fitted (or default) distributions per cue + posture systematic sigmas."""
+    """Fitted (or default) distributions per cue + posture systematic sigmas.
+
+    Appearance is additionally calibrated PER CAMERA PAIR: colour processing can
+    differ between cameras (measured on this rig: the pano camera shifts kit
+    colours more than kits differ between people), so a global appearance model
+    punishes exactly the pairs it was never fitted on. A camera pair without its
+    own separable fit abstains.
+    """
 
     distributions: dict[str, CueDistribution] = field(
         default_factory=lambda: {cue: _default_distribution(cue) for cue in _DEFAULT_DISTRIBUTIONS}
     )
+    appearance_by_pair: dict[str, CueDistribution] = field(default_factory=dict)
     posture_sigma_sys: dict[str, float] = field(
         default_factory=lambda: dict(DEFAULT_POSTURE_SIGMA_SYS)
     )
     anchor_pair_count: int = 0
     diff_pair_count: int = 0
+
+    @staticmethod
+    def camera_pair_key(cam_a: str, cam_b: str) -> str:
+        return "|".join(sorted((cam_a, cam_b)))
+
+    def appearance_llr(
+        self, cam_a: str, cam_b: str, value: float | None, *,
+        clip: float = 4.0, clip_pos: float | None = None, min_d_prime: float = 0.5,
+    ) -> float:
+        if value is None:
+            return 0.0
+        dist = self.appearance_by_pair.get(self.camera_pair_key(cam_a, cam_b))
+        if dist is None or not dist.fitted or dist.d_prime() < min_d_prime:
+            return 0.0
+        return dist.llr(float(value), clip=clip, clip_pos=clip_pos)
 
     def llr(
         self, cue: str, value: float | None, *,
@@ -158,6 +181,9 @@ class CueCalibration:
             "anchor_pair_count": self.anchor_pair_count,
             "diff_pair_count": self.diff_pair_count,
             "cues": {name: dist.to_json() for name, dist in sorted(self.distributions.items())},
+            "appearance_by_pair": {
+                key: dist.to_json() for key, dist in sorted(self.appearance_by_pair.items())
+            },
             "posture_sigma_sys": {k: float(v) for k, v in sorted(self.posture_sigma_sys.items())},
         }
 
@@ -175,6 +201,8 @@ class CueCalibration:
         calibration = CueCalibration()
         for name, dist_payload in payload.get("cues", {}).items():
             calibration.distributions[name] = CueDistribution.from_json(dist_payload)
+        for key, dist_payload in payload.get("appearance_by_pair", {}).items():
+            calibration.appearance_by_pair[key] = CueDistribution.from_json(dist_payload)
         for name, value in payload.get("posture_sigma_sys", {}).items():
             if np.isfinite(value) and value > 0:
                 calibration.posture_sigma_sys[name] = float(value)
@@ -230,3 +258,32 @@ def fit_cue_calibration(
                 if np.isfinite(rms) and rms > 0.005:
                     calibration.posture_sigma_sys[name] = rms
     return calibration
+
+
+def fit_pair_distribution(
+    same_values: list[float],
+    diff_values: list[float],
+    *,
+    cue: str = "appearance",
+) -> CueDistribution | None:
+    """Fit one camera-pair's same/different distribution with the shared floors.
+
+    Returns ``None`` when either side is too thin — the caller must abstain for
+    that pair rather than borrow another pair's colour statistics.
+    """
+
+    same_fit = _robust_gaussian(same_values)
+    diff_fit = _robust_gaussian(diff_values)
+    if same_fit is None or diff_fit is None:
+        return None
+    floor = _SIGMA_FLOORS.get(cue, _MIN_SIGMA)
+    mu_same, sigma_same = same_fit[0], max(same_fit[1], floor)
+    mu_diff, sigma_diff = diff_fit[0], max(diff_fit[1], floor)
+    if mu_diff <= mu_same:
+        pooled = max(sigma_same, sigma_diff, _MIN_SIGMA)
+        mu_diff, sigma_same, sigma_diff = mu_same, pooled, pooled
+    return CueDistribution(
+        mu_same=mu_same, sigma_same=sigma_same,
+        mu_diff=mu_diff, sigma_diff=sigma_diff,
+        n_same=len(same_values), n_diff=len(diff_values), fitted=True,
+    )

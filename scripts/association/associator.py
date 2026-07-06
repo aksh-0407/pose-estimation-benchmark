@@ -62,6 +62,9 @@ class Detection3:
     local_track_id: str | None = None
     ground_xy: np.ndarray | None = None
     appearance: np.ndarray | None = None
+    # True when ground_xy came from an upper-body height-plane estimate because
+    # the feet were cut off / occluded — carries extra positional uncertainty.
+    ground_approx: bool = False
 
 
 @dataclass(frozen=True)

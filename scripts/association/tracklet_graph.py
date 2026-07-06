@@ -31,10 +31,13 @@ from itertools import combinations
 
 import numpy as np
 
+from dataclasses import replace as dc_replace
+
 from pose_estimation.cricket.geometry import (
     camera_center_from_P,
     ground_covariance,
     ground_mahalanobis_sq,
+    upper_body_ground_estimate,
 )
 from pose_estimation.cricket.pose_shape import (
     STATURE_QUANTITIES,
@@ -52,9 +55,94 @@ from scripts.association.associator import (
     _foot_pixel,
 )
 from scripts.association.config import P3AssociationConfig
-from scripts.association.cue_calibration import CueCalibration, fit_cue_calibration
+from scripts.association.cue_calibration import (
+    CueCalibration,
+    fit_cue_calibration,
+    fit_pair_distribution,
+)
 
 ChunkKey = tuple[str, str, int]  # (cam_id, local_track_id, chunk_index)
+
+
+def _feet_unusable(det: Detection3, image_h: int, config: P3AssociationConfig) -> bool:
+    bbox_bottom = float(det.bbox_xywh_px[1] + det.bbox_xywh_px[3])
+    ankle_conf = float(np.max(det.keypoint_conf[[15, 16]]))
+    return bbox_bottom >= image_h - 4 and ankle_conf < config.ankle_conf_min
+
+
+def _approximated(det: Detection3, projection: np.ndarray, config: P3AssociationConfig) -> Detection3:
+    estimate = upper_body_ground_estimate(
+        det.keypoints_px, det.keypoint_conf, det.bbox_xywh_px, projection,
+        hip_height_m=config.approx_hip_height_m,
+        shoulder_height_m=config.approx_shoulder_height_m,
+        head_height_m=config.approx_head_height_m,
+    )
+    if estimate is None:
+        # Feet unusable AND no upper-body anchor this frame: no position at all
+        # beats a garbage bbox-bottom projection — one garbage frame is enough to
+        # shatter a chunk at a purity split and orphan everything after it.
+        return dc_replace(det, ground_xy=np.full(2, np.nan), ground_approx=True)
+    return dc_replace(det, ground_xy=estimate[0], ground_approx=True)
+
+
+def apply_feet_approximation(
+    detections_by_frame: dict[int, dict[str, list[Detection3]]],
+    projections: dict[str, np.ndarray],
+    image_h_by_cam: dict[str, int],
+    config: P3AssociationConfig,
+) -> dict[int, dict[str, list[Detection3]]]:
+    """Re-anchor detections whose feet are unusable — STICKY per P2 tracklet.
+
+    A bbox that reaches the frame's bottom edge with no confident ankle means the
+    feet are cut off: the bbox-bottom ground projection is garbage (it projects
+    the FRAME edge, not the player). An upper-body landmark of known typical
+    height intersected with its height plane lands directly above the feet —
+    most accurate exactly for the close-to-camera subjects that get cut off.
+
+    The decision is made ONCE per tracklet (majority vote over its frames), never
+    per frame: a tracklet whose ankle confidence hovers around the threshold must
+    not flip between foot- and hip-anchored grounds (~1 m apart), which reads as
+    teleporting and shatters the purity splitter. Untracked detections have no
+    tracklet to vote over, so they stay per-frame.
+    """
+
+    if not config.approx_feet_enabled:
+        return detections_by_frame
+    votes: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for frames in detections_by_frame.values():
+        for cam_id, dets in frames.items():
+            image_h = image_h_by_cam.get(cam_id, config.image_h)
+            for det in dets:
+                if det.local_track_id is None:
+                    continue
+                tally = votes[(cam_id, det.local_track_id)]
+                tally[0] += 1
+                tally[1] += int(_feet_unusable(det, image_h, config))
+    sticky = {
+        key for key, (total, unusable) in votes.items()
+        if total > 0 and unusable / total >= 0.6
+    }
+    out: dict[int, dict[str, list[Detection3]]] = {}
+    for frame_index, frames in detections_by_frame.items():
+        new_frames: dict[str, list[Detection3]] = {}
+        for cam_id, dets in frames.items():
+            projection = projections.get(cam_id)
+            if projection is None:
+                new_frames[cam_id] = dets
+                continue
+            image_h = image_h_by_cam.get(cam_id, config.image_h)
+            new_dets = []
+            for det in dets:
+                if det.local_track_id is not None:
+                    approximate = (cam_id, det.local_track_id) in sticky
+                else:
+                    approximate = _feet_unusable(det, image_h, config)
+                new_dets.append(
+                    _approximated(det, projection, config) if approximate else det
+                )
+            new_frames[cam_id] = new_dets
+        out[frame_index] = new_frames
+    return out
 
 
 @dataclass
@@ -66,10 +154,33 @@ class _ChunkState:
     posture: PostureAccumulator = field(default_factory=PostureAccumulator)
     posture_samples: int = 0
     upright_samples: int = 0
+    approx_frames: int = 0
+
+    @property
+    def is_synthetic(self) -> bool:
+        return "_syn_" in self.key[1]
+
+    @property
+    def calibration_grade(self) -> bool:
+        """Only foot-anchored real tracklets may teach the calibration."""
+
+        return (
+            not self.is_synthetic
+            and (not self.frames or self.approx_frames / len(self.frames) <= 0.3)
+        )
 
     @property
     def upright_fraction(self) -> float:
-        return self.upright_samples / self.posture_samples if self.posture_samples else 0.0
+        """Fraction of DETERMINABLE samples that were standing.
+
+        With no determinable sample (feet never visible) the player is assumed
+        standing: "unknown" must not trigger the crouch restrictions that
+        "measured as crouching" does.
+        """
+
+        if not self.posture_samples:
+            return 1.0
+        return self.upright_samples / self.posture_samples
 
     @property
     def first_frame(self) -> int:
@@ -164,6 +275,13 @@ class TrackletGraphBuilder:
         self._pairs: dict[tuple[ChunkKey, ChunkKey], _PairSamples] = defaultdict(_PairSamples)
         self._velocity_cache: dict[ChunkKey, dict[int, np.ndarray | None]] = {}
         self._azimuth_cache: dict[ChunkKey, np.ndarray | None] = {}
+        # Synthetic tracklets: persistent untracked detections (e.g. umpires whose
+        # cut-off dark figures P2 never tracked) chained by ground continuity so
+        # the graph can bind them like any P2 tracklet.
+        self._syn_chains: dict[str, list[dict]] = defaultdict(list)
+        self._syn_counter: dict[str, int] = defaultdict(int)
+        self._syn_of_det: dict[tuple[int, str, int], str] = {}
+        self._support_lookup: dict[tuple[ChunkKey, ChunkKey], int] = {}
         self.diagnostics: dict[str, int] = defaultdict(int)
 
     # ------------------------------------------------------------- pass A
@@ -196,30 +314,43 @@ class TrackletGraphBuilder:
                     continue
                 ground = np.asarray(ground, dtype=float)
                 grounds_by_cam[cam_id].append(ground)
-                if det.local_track_id is None or projection is None:
+                if projection is None:
                     continue
-                key = self._chunk_for(cam_id, det.local_track_id, frame_index, ground)
+                tid = det.local_track_id
+                if tid is None:
+                    tid = self._synthetic_tid(cam_id, frame_index, ground, det)
+                    if tid is None:
+                        continue
+                    self._syn_of_det[(frame_index, cam_id, det.player_index)] = tid
+                key = self._chunk_for(cam_id, tid, frame_index, ground)
                 chunk = self._chunks.setdefault(key, _ChunkState(key=key))
                 chunk.frames.append(frame_index)
                 chunk.ground_by_frame[frame_index] = ground
+                chunk.approx_frames += int(det.ground_approx)
                 foot = _foot_pixel(det, self.config)
-                cov = ground_covariance(
-                    foot, projection,
-                    sigma_px=self._sigma_px(det),
-                    var_floor_m=self.config.ground_var_floor_m,
-                )
+                if det.ground_approx:
+                    # Height-plane anchored position: honest isotropic uncertainty
+                    # from the height-prior error, no foot-pixel Jacobian.
+                    cov = float(self.config.approx_var_floor_m) ** 2 * np.eye(2)
+                else:
+                    cov = ground_covariance(
+                        foot, projection,
+                        sigma_px=self._sigma_px(det),
+                        var_floor_m=self.config.ground_var_floor_m,
+                    )
                 chunk.cov_by_frame[frame_index] = cov
                 if self.config.posture_enabled:
                     points3d, valid = ground_anchored_skeleton(
                         det.keypoints_px, det.keypoint_conf, foot, projection,
                         min_conf=self.config.pose_min_conf,
+                        ground_xy=ground if det.ground_approx else None,
                     )
                     sample = posture_from_skeleton(points3d, valid)
                     chunk.posture.add(sample)
-                    if sample is not None:
+                    if sample is not None and sample.upright_known:
                         chunk.posture_samples += 1
                         chunk.upright_samples += int(sample.upright)
-                self._det_chunk[(frame_index, cam_id, det.local_track_id)] = key
+                self._det_chunk[(frame_index, cam_id, tid)] = key
                 placed.append((key, det, ground, cov))
 
         for (key_a, det_a, ground_a, cov_a), (key_b, det_b, ground_b, cov_b) in combinations(placed, 2):
@@ -249,6 +380,43 @@ class TrackletGraphBuilder:
             ]
             samples.isolation_m.append(min(others) if others else float("inf"))
 
+    def _synthetic_tid(
+        self, cam_id: str, frame_index: int, ground: np.ndarray, det: Detection3
+    ) -> str | None:
+        """Chain a persistent untracked detection into a synthetic tracklet."""
+
+        if not self.config.synthetic_tracklets_enabled:
+            return None
+        if det.confidence < self.config.syn_min_confidence:
+            return None
+        chains = self._syn_chains[cam_id]
+        best, best_dist = None, float("inf")
+        for chain in chains:
+            gap = frame_index - chain["last_frame"]
+            if gap <= 0 or gap > self.config.syn_chain_max_gap_frames:
+                continue
+            # Re-acquisition radius grows kinematically but is capped: a chain
+            # surviving a long occlusion must resume near where it stopped, never
+            # leap to a different person.
+            allowed = min(
+                max(
+                    self.config.syn_chain_gate_m,
+                    self.config.kinematic_v_max_mps * gap / self.config.frame_rate_fps,
+                ),
+                self.config.graph_hard_dist_gate_m,
+            )
+            distance = float(np.linalg.norm(ground - chain["last_ground"]))
+            if distance <= allowed and distance < best_dist:
+                best, best_dist = chain, distance
+        if best is None:
+            self._syn_counter[cam_id] += 1
+            best = {"tid": f"{cam_id}_syn_{self._syn_counter[cam_id]:03d}"}
+            chains.append(best)
+            self.diagnostics["synthetic_tracklets"] += 1
+        best["last_frame"] = frame_index
+        best["last_ground"] = ground.copy()
+        return best["tid"]
+
     def _sigma_px(self, det: Detection3) -> float:
         bbox_h = float(det.bbox_xywh_px[3]) if len(det.bbox_xywh_px) == 4 else 0.0
         return (
@@ -264,6 +432,8 @@ class TrackletGraphBuilder:
         postures = self._chunk_postures()
         same_samples: dict[str, list[float]] = defaultdict(list)
         diff_samples: dict[str, list[float]] = defaultdict(list)
+        pair_app_same: dict[str, list[float]] = defaultdict(list)
+        pair_app_diff: dict[str, list[float]] = defaultdict(list)
         posture_same_deltas: dict[str, list[float]] = defaultdict(list)
         same_pairs: list[tuple[ChunkKey, ChunkKey]] = []
         diff_pairs: list[tuple[ChunkKey, ChunkKey]] = []
@@ -271,10 +441,16 @@ class TrackletGraphBuilder:
         for (key_a, key_b), samples in sorted(self._pairs.items()):
             if len(samples.frames) < self.config.anchor_pair_min_frames:
                 continue
+            # Synthetic chains and approximation-anchored tracklets carry
+            # model-based position error; they must not teach the calibration.
+            if not (self._chunks[key_a].calibration_grade
+                    and self._chunks[key_b].calibration_grade):
+                continue
             med_dist = _median(samples.dist_m)
             med_iso = _median(samples.isolation_m)
             if not np.isfinite(med_dist):
                 continue
+            camera_pair = CueCalibration.camera_pair_key(key_a[0], key_b[0])
             if (
                 med_dist <= self.config.anchor_pair_dist_m
                 and med_iso >= self.config.anchor_pair_isolation_m
@@ -283,6 +459,7 @@ class TrackletGraphBuilder:
                 same_samples["ground_dist_m"].extend(samples.dist_m)
                 same_samples["ground_maha"].extend(samples.maha)
                 same_samples["appearance"].extend(samples.appearance)
+                pair_app_same[camera_pair].extend(samples.appearance)
                 agg_a, agg_b = postures.get(key_a), postures.get(key_b)
                 if agg_a is not None and agg_b is not None:
                     for name in set(agg_a.median) & set(agg_b.median):
@@ -294,6 +471,7 @@ class TrackletGraphBuilder:
                 diff_samples["ground_dist_m"].extend(samples.dist_m)
                 diff_samples["ground_maha"].extend(samples.maha)
                 diff_samples["appearance"].extend(samples.appearance)
+                pair_app_diff[camera_pair].extend(samples.appearance)
 
         if len(same_pairs) < 3:
             # Per-frame samples within one pair are correlated; fewer than three
@@ -312,6 +490,12 @@ class TrackletGraphBuilder:
             anchor_pair_count=len(same_pairs),
             diff_pair_count=len(diff_pairs),
         )
+        for camera_pair in sorted(set(pair_app_same) & set(pair_app_diff)):
+            fitted = fit_pair_distribution(
+                pair_app_same[camera_pair], pair_app_diff[camera_pair]
+            )
+            if fitted is not None:
+                calibration.appearance_by_pair[camera_pair] = fitted
 
         # Second pass: posture z-scores need the fitted systematic sigmas.
         z_same = [
@@ -454,18 +638,11 @@ class TrackletGraphBuilder:
         postures = self._chunk_postures()
         edges: list[GraphEdge] = []
         positive_cap = self.config.graph_llr_positive_cap
-        # Appearance is rig-dependent (inter-camera colour processing can differ
-        # more than kits differ between people — measured d'=0.09 on this rig), so
-        # it must EARN its way in: a measured, separable fit or it abstains. The
-        # physically-anchored cues (metres on the calibrated ground plane, metric
-        # posture) remain usable from their conservative defaults.
-        appearance_dist = calibration.distributions.get("appearance")
-        appearance_usable = (
-            appearance_dist is not None
-            and appearance_dist.fitted
-            and appearance_dist.d_prime() >= 0.5
-        )
-        if not appearance_usable:
+        # Appearance is rig-dependent (inter-camera colour processing differs more
+        # than kits differ between people on some pairs of this rig), so it is
+        # scored PER CAMERA PAIR from that pair's own anchors and abstains for
+        # pairs without a separable fit of their own.
+        if not calibration.appearance_by_pair:
             self.diagnostics["appearance_cue_abstained"] = 1
         for (key_a, key_b), samples in sorted(self._pairs.items()):
             gated = len(samples.frames)
@@ -491,11 +668,12 @@ class TrackletGraphBuilder:
             )
             med_app = (
                 _median(samples.appearance)
-                if appearance_usable
-                and len(samples.appearance) >= self.config.graph_min_app_samples
+                if len(samples.appearance) >= self.config.graph_min_app_samples
                 else None
             )
-            llr_app = calibration.llr("appearance", med_app, clip_pos=positive_cap)
+            llr_app = calibration.appearance_llr(
+                key_a[0], key_b[0], med_app, clip_pos=positive_cap
+            )
             z = self._posture_z(postures, (key_a, key_b), calibration)
             llr_posture = calibration.llr("posture_z", z, clip_pos=positive_cap)
             llr_motion = self._motion_llr(key_a, key_b, samples.frames)
@@ -543,6 +721,9 @@ class TrackletGraphBuilder:
         calibration = calibration or self.harvest_calibration()
         edges = self._build_edges(calibration)
         llr_lookup = {_pair_key(e.key_a, e.key_b): e.llr_total for e in edges}
+        self._support_lookup = {
+            _pair_key(e.key_a, e.key_b): e.gated_frames for e in edges
+        }
 
         parent: dict[ChunkKey, ChunkKey] = {key: key for key in self._chunks}
         members: dict[ChunkKey, list[ChunkKey]] = {key: [key] for key in self._chunks}
@@ -630,6 +811,14 @@ class TrackletGraphBuilder:
                     if candidate_id == current_id:
                         continue
                     candidate = cluster_members[candidate_id]
+                    # A move needs real evidence volume behind it, same floor as
+                    # rescues — a thin edge must not relocate a tracklet.
+                    support = sum(
+                        self._support_lookup.get(_pair_key(key, other), 0)
+                        for other in candidate
+                    )
+                    if support < self.config.graph_rescue_min_covis:
+                        continue
                     if not self._cluster_compatible([key], candidate, llr_lookup):
                         continue
                     score = sum(
@@ -675,9 +864,15 @@ class TrackletGraphBuilder:
         """
 
         edge_partners: dict[ChunkKey, dict[int, float]] = defaultdict(dict)
-        ground_positive: dict[tuple[ChunkKey, ChunkKey], bool] = {}
+        rescue_grade: dict[tuple[ChunkKey, ChunkKey], bool] = {}
         for edge in edges:
-            ground_positive[_pair_key(edge.key_a, edge.key_b)] = edge.llr_ground > 0.0
+            # A rescue is a below-threshold attachment justified by constraint
+            # structure; it still needs real evidence volume — a handful of
+            # co-visible frames must not move a tracklet between identities.
+            rescue_grade[_pair_key(edge.key_a, edge.key_b)] = (
+                edge.llr_ground > 0.0
+                and edge.gated_frames >= self.config.graph_rescue_min_covis
+            )
         for singleton in sorted(key for key, cid in cluster_of.items()
                                 if len(cluster_members[cluster_of[key]]) == 1):
             candidates: list[int] = []
@@ -691,7 +886,7 @@ class TrackletGraphBuilder:
                 if not any(v is not None for v in pair_llrs):
                     continue
                 if not any(
-                    ground_positive.get(_pair_key(singleton, member), False)
+                    rescue_grade.get(_pair_key(singleton, member), False)
                     for member in members
                 ):
                     continue
@@ -723,9 +918,12 @@ class TrackletGraphBuilder:
         leftovers: list[tuple[str, int]] = []
         for cam_id in sorted(dets_per_cam):
             for det in dets_per_cam[cam_id]:
+                tid = det.local_track_id or self._syn_of_det.get(
+                    (frame_index, cam_id, det.player_index)
+                )
                 chunk = (
-                    self._det_chunk.get((frame_index, cam_id, det.local_track_id))
-                    if det.local_track_id is not None else None
+                    self._det_chunk.get((frame_index, cam_id, tid))
+                    if tid is not None else None
                 )
                 binding = solution.binding_of_chunk.get(chunk) if chunk else None
                 if binding is None:

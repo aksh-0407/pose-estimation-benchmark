@@ -271,13 +271,16 @@ def ground_anchored_skeleton(
     min_conf: float = 0.3,
     max_height_m: float = 3.2,
     max_lateral_m: float = 2.5,
+    ground_xy: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Lift COCO-17 pixels to metric 3D on a vertical plane at the player's depth.
 
     The plane passes through the player's calibrated ground point with its normal
     along the camera's horizontal viewing direction, so every keypoint ray gets a
     unique, metrically-scaled intersection. Returns ``(points3d (17,3), valid (17,))``
-    with NaN rows where the joint is unavailable or implausible.
+    with NaN rows where the joint is unavailable or implausible. ``ground_xy``
+    overrides the foot-pixel projection — used when the feet are cut off and the
+    anchor came from an upper-body height-plane estimate instead.
     """
 
     points = np.asarray(keypoints_px, dtype=float).reshape(-1, 2)
@@ -286,8 +289,11 @@ def ground_anchored_skeleton(
     out = np.full((joints, 3), np.nan, dtype=float)
     valid = np.zeros(joints, dtype=bool)
 
-    ground = pixel_to_ground_xy(np.asarray(foot_pixel, dtype=float), projection)
-    if not np.isfinite(ground).all():
+    if ground_xy is not None:
+        ground = np.asarray(ground_xy, dtype=float)
+    else:
+        ground = pixel_to_ground_xy(np.asarray(foot_pixel, dtype=float), projection)
+    if ground.shape != (2,) or not np.isfinite(ground).all():
         return out, valid
     P = np.asarray(projection, dtype=float)
     C = camera_center_from_P(P)
@@ -330,10 +336,17 @@ def ground_anchored_skeleton(
 
 @dataclass(frozen=True)
 class PostureSample:
-    """Per-frame metric posture quantities from one camera's billboard skeleton."""
+    """Per-frame metric posture quantities from one camera's billboard skeleton.
+
+    ``upright_known`` distinguishes "measured as not standing" (crouching keeper)
+    from "could not be determined" (feet cut off at the frame edge) — the two
+    must be treated differently when deciding whether shape quantities are
+    comparable across oblique views.
+    """
 
     values: dict[str, float]  # quantity -> metres (absent keys were unobservable)
     upright: bool
+    upright_known: bool = True
 
 
 def posture_from_skeleton(
@@ -372,16 +385,18 @@ def posture_from_skeleton(
         values["hip_w_m"] = float(np.linalg.norm(points3d[L_HIP] - points3d[R_HIP]))
 
     upright = False
+    upright_known = False
     if len(shoulders) == 2 and len(hips) == 2:
         shoulder_mid = np.mean(np.asarray(shoulders), axis=0)
         hip_mid = np.mean(np.asarray(hips), axis=0)
         spine = shoulder_mid - hip_mid
         values["torso_len_m"] = float(np.linalg.norm(spine))
-        if values["torso_len_m"] > 1e-6:
+        if values["torso_len_m"] > 1e-6 and ankles:
+            upright_known = True
             tilt = float(np.degrees(np.arccos(
                 np.clip(abs(spine[2]) / values["torso_len_m"], 0.0, 1.0)
             )))
-            ankle_ok = bool(ankles) and float(np.min([p[2] for p in ankles])) <= upright_ankle_max_m
+            ankle_ok = float(np.min([p[2] for p in ankles])) <= upright_ankle_max_m
             # A squat keeps the spine vertical and the ankles grounded but is NOT
             # standing — the hips give it away.
             hips_ok = float(hip_mid[2]) >= upright_hip_min_m
@@ -389,7 +404,7 @@ def posture_from_skeleton(
 
     if not values:
         return None
-    return PostureSample(values=values, upright=upright)
+    return PostureSample(values=values, upright=upright, upright_known=upright_known)
 
 
 @dataclass(frozen=True)
