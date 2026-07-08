@@ -13,6 +13,9 @@ model:
   config: external/mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-l_8xb256-420e_aic-coco-384x288.py
   export_targets:
   - onnx
+  - tensorrt
+  - ncnn
+  - openvino
   license: Apache-2.0 for code; verify checkpoint terms
   status: candidate
   expected_strengths:
@@ -20,8 +23,7 @@ model:
   - Mature MMPose ecosystem integration
   - Effective for real-time applications
   expected_risks:
-  - COCO-17 body-only (no hand/face/feet)
-  - Performance depends on checkpoint quality
+  - COCO-17 body-only (no hand/face/feet coverage)
   sources:
   - https://arxiv.org/abs/2303.07399
   - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
@@ -29,10 +31,15 @@ environment:
   env_name: cricket-rtmpose-l
   profile: mmpose_v1
   smoke_profile: mmpose
+  benchmark_runner: mmpose_topdown
   config: external/mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-l_8xb256-420e_aic-coco-384x288.py
   checkpoint: models/rtmpose_l/weights/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
   assets:
   - kind: url
     url: https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
     path: models/rtmpose_l/weights/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth
+    required_for_smoke: true
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+    path: models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
     required_for_smoke: true

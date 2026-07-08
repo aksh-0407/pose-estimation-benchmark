@@ -103,6 +103,11 @@ class P3AssociationConfig:
     graph_refine_passes: int = 2
     graph_cannot_link_overlap_frames: int = 3  # same-camera overlap => different people
     graph_rescue_min_covis: int = 30          # evidence floor for constraint rescues
+    # Fragment recovery + binding hygiene (the anti-id-explosion controls):
+    # fragments riding a binding's fused trajectory get attached to it; clusters
+    # that are neither multi-camera nor one long stable track get NO binding id.
+    graph_traj_attach_gate_m: float = 1.5
+    binding_min_single_frames: int = 150
     graph_hard_dist_gate_m: float = 2.75      # median ground residual ceiling for edges
     graph_motion_enabled: bool = True
     graph_min_app_samples: int = 5
@@ -112,6 +117,34 @@ class P3AssociationConfig:
     ground_sigma_px_base: float = 2.0
     ground_sigma_px_bbox_frac: float = 0.01   # + frac * bbox_height_px
     ground_var_floor_m: float = 0.4
+    # Cross-camera ground fusion for the EMITTED cluster position (feeds P4 Kalman +
+    # ground_tracks). The merge GATE (max pairwise spread) is UNCHANGED across all
+    # modes, so clustering/identity is byte-identical; only the reported position moves.
+    #   "median"     - historical unweighted median of per-camera homography points.
+    #   "z0_reproj"  - joint z=0-constrained robust (Huber) reprojection minimisation
+    #                  over every member's full projection matrix. Uses the calibration
+    #                  directly; well-posed on low-parallax facing pairs; lands on the
+    #                  reprojection-optimal foot to ~cm. RECOMMENDED. Empirically ~0.016 m
+    #                  from the triangulated foot vs 0.176 m for the median (delivery 1).
+    #   "robust_cov" - inverse ground-covariance IRLS fusion (kept for A/B; on this rig
+    #                  it under-performs z0_reproj because pixel-space reprojection, not
+    #                  metric variance, is the criterion the calibration nails).
+    ground_fusion_mode: str = "median"        # or "z0_reproj" | "robust_cov"
+    ground_reproj_huber_px: float = 8.0       # px residual before a view is down-weighted
+    ground_fusion_huber_delta: float = 2.5    # (robust_cov only) Mahalanobis-sqrt cutoff
+    # Foot-contact pixel (ISSUE-7). "legacy" = historical (lower confident ankle else
+    # bbox bottom-centre, projected as if on the ground). "v2" = ankle MIDPOINT as the
+    # cross-camera-consistent reference when both feet are down (F4/F6), tighter vertical
+    # + new horizontal plausibility (F3), and the ankle height reported so the z0_reproj
+    # solver back-projects onto z=ankle_height instead of z=0 (removes the ~10 cm bias, F2).
+    foot_contact_mode: str = "legacy"         # or "v2"
+    ankle_height_m: float = 0.10
+    foot_horizontal_margin_frac: float = 0.15
+    foot_level_frac: float = 0.15
+    # Temporal smoothing of the EMITTED foot pixel per (camera, tracklet), F7. Odd
+    # window for a centred median (robust to single-frame ankle spikes); 1 = disabled.
+    # Emit-only, so identity is unchanged.
+    foot_smooth_window: int = 1
     # Feet-unusable recovery: when a bbox reaches the frame bottom with no
     # confident ankle, re-anchor the ground point on an upper-body landmark's
     # height plane (hips -> shoulders -> bbox-top-as-head). approx_var_floor_m is
@@ -173,7 +206,7 @@ class P3AssociationConfig:
                      "ground_var_floor_m", "purity_jump_slack", "purity_jump_floor_m",
                      "frame_rate_fps", "kinematic_v_max_mps",
                      "anchor_pair_dist_m", "anchor_pair_isolation_m",
-                     "diff_pair_min_dist_m",
+                     "diff_pair_min_dist_m", "graph_traj_attach_gate_m",
                      "approx_hip_height_m", "approx_shoulder_height_m",
                      "approx_head_height_m", "approx_var_floor_m",
                      "syn_chain_gate_m"):
@@ -181,7 +214,7 @@ class P3AssociationConfig:
         for name in ("graph_min_covis_frames", "graph_refine_passes", "graph_rescue_min_covis",
                      "graph_cannot_link_overlap_frames", "graph_min_app_samples",
                      "posture_min_samples", "anchor_pair_min_frames",
-                     "syn_chain_max_gap_frames"):
+                     "syn_chain_max_gap_frames", "binding_min_single_frames"):
             value = getattr(self, name)
             if type(value) is not int or value < 0:
                 raise ValueError(f"{name} must be a non-negative integer")

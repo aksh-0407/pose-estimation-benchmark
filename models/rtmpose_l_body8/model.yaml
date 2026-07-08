@@ -18,7 +18,7 @@ model:
   expected_strengths:
   - Highest official RTMPose COCO-17 AP row in the local RTMPose project table
   - 384x288 input improves accuracy over the 256x192 RTMPose-l body model
-  - Native COCO-17 body-only output
+  - Still outputs native COCO-17 body keypoints
   expected_risks:
   - Slower than smaller RTMPose variants
   - Multi-dataset Body8 training may differ from pure COCO/AIC behavior
@@ -29,6 +29,7 @@ environment:
   env_name: cricket-rtmpose-l
   profile: mmpose_v1
   smoke_profile: mmpose
+  benchmark_runner: mmpose_topdown
   config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-l_8xb256-420e_body8-384x288.py
   checkpoint: models/rtmpose_l_body8/weights/rtmpose-l_simcc-body7_pt-body7_420e-384x288-3f5a1437_20230504.pth
   assets:

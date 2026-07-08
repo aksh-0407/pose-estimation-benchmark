@@ -1,0 +1,825 @@
+{
+  "camera_count": 7,
+  "completeness": {
+    "confirmed_frame_completeness": {
+      "count": 25,
+      "max": 0.9983333333333333,
+      "mean": 0.6908938453879218,
+      "p50": 0.8636363636363636,
+      "p95": 0.9966666666666667
+    },
+    "per_track": {
+      "P001": {
+        "camera_count": 5,
+        "cameras": [
+          "cam_01",
+          "cam_03",
+          "cam_04",
+          "cam_05",
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.9983333333333333,
+        "confirmed_frames": 599,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P002": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_01",
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.8384279475982532,
+        "confirmed_frames": 384,
+        "first_frame": 235804,
+        "last_frame": 236261,
+        "observed_frames": 386,
+        "span_frames": 458
+      },
+      "P003": {
+        "camera_count": 5,
+        "cameras": [
+          "cam_01",
+          "cam_03",
+          "cam_04",
+          "cam_05",
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P004": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_01",
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P005": {
+        "camera_count": 4,
+        "cameras": [
+          "cam_01",
+          "cam_02",
+          "cam_04",
+          "cam_06"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P006": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_02"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P007": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_03",
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P008": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.9649484536082474,
+        "confirmed_frames": 468,
+        "first_frame": 235804,
+        "last_frame": 236288,
+        "observed_frames": 470,
+        "span_frames": 485
+      },
+      "P009": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_06"
+        ],
+        "confirmed_frame_completeness": 0.9966666666666667,
+        "confirmed_frames": 598,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P010": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_05",
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.2777777777777778,
+        "confirmed_frames": 30,
+        "first_frame": 235806,
+        "last_frame": 235913,
+        "observed_frames": 32,
+        "span_frames": 108
+      },
+      "P011": {
+        "camera_count": 4,
+        "cameras": [
+          "cam_01",
+          "cam_02",
+          "cam_04",
+          "cam_06"
+        ],
+        "confirmed_frame_completeness": 0.9516666666666667,
+        "confirmed_frames": 571,
+        "first_frame": 235804,
+        "last_frame": 236403,
+        "observed_frames": 600,
+        "span_frames": 600
+      },
+      "P012": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_01",
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.24213075060532688,
+        "confirmed_frames": 100,
+        "first_frame": 235832,
+        "last_frame": 236244,
+        "observed_frames": 102,
+        "span_frames": 413
+      },
+      "P013": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_05",
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.5,
+        "confirmed_frames": 54,
+        "first_frame": 235835,
+        "last_frame": 235942,
+        "observed_frames": 70,
+        "span_frames": 108
+      },
+      "P014": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.8695652173913043,
+        "confirmed_frames": 20,
+        "first_frame": 235914,
+        "last_frame": 235936,
+        "observed_frames": 22,
+        "span_frames": 23
+      },
+      "P015": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_05",
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.028455284552845527,
+        "confirmed_frames": 7,
+        "first_frame": 235935,
+        "last_frame": 236180,
+        "observed_frames": 9,
+        "span_frames": 246
+      },
+      "P016": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_07"
+        ],
+        "confirmed_frame_completeness": 0.8823529411764706,
+        "confirmed_frames": 15,
+        "first_frame": 235943,
+        "last_frame": 235959,
+        "observed_frames": 17,
+        "span_frames": 17
+      },
+      "P017": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_03"
+        ],
+        "confirmed_frame_completeness": 0.8636363636363636,
+        "confirmed_frames": 19,
+        "first_frame": 235950,
+        "last_frame": 235971,
+        "observed_frames": 21,
+        "span_frames": 22
+      },
+      "P018": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.896551724137931,
+        "confirmed_frames": 26,
+        "first_frame": 235971,
+        "last_frame": 235999,
+        "observed_frames": 28,
+        "span_frames": 29
+      },
+      "P019": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_03"
+        ],
+        "confirmed_frame_completeness": 0.4482758620689655,
+        "confirmed_frames": 13,
+        "first_frame": 236164,
+        "last_frame": 236192,
+        "observed_frames": 15,
+        "span_frames": 29
+      },
+      "P020": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.25,
+        "confirmed_frames": 28,
+        "first_frame": 236171,
+        "last_frame": 236282,
+        "observed_frames": 30,
+        "span_frames": 112
+      },
+      "P021": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.25,
+        "confirmed_frames": 1,
+        "first_frame": 236197,
+        "last_frame": 236200,
+        "observed_frames": 3,
+        "span_frames": 4
+      },
+      "P022": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_01",
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.13043478260869565,
+        "confirmed_frames": 3,
+        "first_frame": 236249,
+        "last_frame": 236271,
+        "observed_frames": 5,
+        "span_frames": 23
+      },
+      "P023": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.75,
+        "confirmed_frames": 45,
+        "first_frame": 236250,
+        "last_frame": 236309,
+        "observed_frames": 47,
+        "span_frames": 60
+      },
+      "P024": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_01",
+          "cam_04"
+        ],
+        "confirmed_frame_completeness": 0.8164556962025317,
+        "confirmed_frames": 129,
+        "first_frame": 236246,
+        "last_frame": 236403,
+        "observed_frames": 158,
+        "span_frames": 158
+      },
+      "P025": {
+        "camera_count": 1,
+        "cameras": [
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.3333333333333333,
+        "confirmed_frames": 2,
+        "first_frame": 236284,
+        "last_frame": 236289,
+        "observed_frames": 4,
+        "span_frames": 6
+      }
+    },
+    "track_count": 25
+  },
+  "created_at": "2026-07-07T14:34:40.151161+00:00",
+  "cross_camera_agreeing_pair_count": 9958,
+  "cross_camera_agreement_rate": 0.8017067868931648,
+  "cross_camera_disagreement_examples": [
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235804,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235804,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235805,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235805,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_01",
+        "cam_05"
+      ],
+      "frame_index": 235806,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235806,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_03",
+        "cam_05"
+      ],
+      "frame_index": 235806,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235806,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_01",
+        "cam_05"
+      ],
+      "frame_index": 235807,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235807,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_03",
+        "cam_05"
+      ],
+      "frame_index": 235807,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235807,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_01",
+        "cam_05"
+      ],
+      "frame_index": 235808,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235808,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_03",
+        "cam_05"
+      ],
+      "frame_index": 235808,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235808,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_01",
+        "cam_05"
+      ],
+      "frame_index": 235809,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_02",
+        "cam_04"
+      ],
+      "frame_index": 235809,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_03",
+        "cam_05"
+      ],
+      "frame_index": 235809,
+      "global_player_ids": [
+        "P001",
+        "P010"
+      ]
+    },
+    {
+      "camera_ids": [
+        "cam_04",
+        "cam_06"
+      ],
+      "frame_index": 235809,
+      "global_player_ids": [
+        "P002",
+        "P011"
+      ]
+    }
+  ],
+  "cross_camera_pair_count": 12421,
+  "delivery_id": "CCPL080626M1_1_14_6",
+  "distinct_global_id_count": 25,
+  "dominant_tracks": [
+    {
+      "camera_count": 5,
+      "cameras": [
+        "cam_01",
+        "cam_03",
+        "cam_04",
+        "cam_05",
+        "cam_07"
+      ],
+      "confirmed_frame_completeness": 0.9983333333333333,
+      "confirmed_frames": 599,
+      "first_frame": 235804,
+      "global_player_id": "P001",
+      "last_frame": 236403,
+      "observed_frames": 600,
+      "span_frames": 600
+    },
+    {
+      "camera_count": 5,
+      "cameras": [
+        "cam_01",
+        "cam_03",
+        "cam_04",
+        "cam_05",
+        "cam_07"
+      ],
+      "confirmed_frame_completeness": 0.9966666666666667,
+      "confirmed_frames": 598,
+      "first_frame": 235804,
+      "global_player_id": "P003",
+      "last_frame": 236403,
+      "observed_frames": 600,
+      "span_frames": 600
+    },
+    {
+      "camera_count": 4,
+      "cameras": [
+        "cam_01",
+        "cam_02",
+        "cam_04",
+        "cam_06"
+      ],
+      "confirmed_frame_completeness": 0.9966666666666667,
+      "confirmed_frames": 598,
+      "first_frame": 235804,
+      "global_player_id": "P005",
+      "last_frame": 236403,
+      "observed_frames": 600,
+      "span_frames": 600
+    }
+  ],
+  "excess_id_fragment_count_proxy": 19,
+  "expected_frames": 600,
+  "feasible_stitch_edge_count": 284,
+  "frames_processed": 600,
+  "group_radius_m": 1.5,
+  "match_id": "CCPL080626",
+  "max_speed_mps": 9.0,
+  "maximum_simultaneous_id_count_per_camera": 6,
+  "online_tracker": {
+    "binding_ground_outliers": 6,
+    "binding_matches": 5780,
+    "binding_tracks_spawned": 11,
+    "geometry_matches": 248,
+    "local_identity_ground_outliers": 14,
+    "local_identity_matches": 157,
+    "local_track_ownership_transfers": 7,
+    "local_track_reassignment_conflicts_prevented": 380,
+    "reentries": 11,
+    "shadow_absorbs": 19,
+    "shadow_confirmations_blocked": 72,
+    "tracks_confirmed": 25,
+    "tracks_deleted": 30,
+    "tracks_spawned": 28
+  },
+  "quality_verdict": {
+    "expected_roster_max": 15,
+    "reasons": [
+      "id_overmint: 25 ids for <= 15 people",
+      "teleports_elevated: 52 events"
+    ],
+    "verdict": "warn"
+  },
+  "same_camera_duplicate_identity_assignments": 0,
+  "same_camera_identity_collision_examples": [],
+  "same_camera_identity_collision_frames": 0,
+  "schema_version": "global_id_metrics/v1",
+  "segment_count": 60,
+  "selected_stitch_link_count": 0,
+  "status": "pass",
+  "stitched_id_switch_proxy_count": 0,
+  "teleport_event_count": 52,
+  "teleport_examples": [
+    {
+      "frames": [
+        235805,
+        235806
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 16.356750313710638
+    },
+    {
+      "frames": [
+        235886,
+        235887
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 21.972690288453094
+    },
+    {
+      "frames": [
+        235887,
+        235888
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 22.722280299126783
+    },
+    {
+      "frames": [
+        235920,
+        235921
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 14.503379604388131
+    },
+    {
+      "frames": [
+        235924,
+        235925
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 14.561812209472151
+    },
+    {
+      "frames": [
+        235925,
+        235926
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 14.396031275663685
+    },
+    {
+      "frames": [
+        235995,
+        235996
+      ],
+      "global_player_id": "P001",
+      "speed_mps": 14.19328767743523
+    },
+    {
+      "frames": [
+        236248,
+        236249
+      ],
+      "global_player_id": "P005",
+      "speed_mps": 23.915667876693266
+    },
+    {
+      "frames": [
+        236265,
+        236266
+      ],
+      "global_player_id": "P005",
+      "speed_mps": 29.789930893127053
+    },
+    {
+      "frames": [
+        236271,
+        236272
+      ],
+      "global_player_id": "P005",
+      "speed_mps": 31.208260114408176
+    },
+    {
+      "frames": [
+        236286,
+        236287
+      ],
+      "global_player_id": "P005",
+      "speed_mps": 27.829787282849278
+    },
+    {
+      "frames": [
+        236389,
+        236390
+      ],
+      "global_player_id": "P005",
+      "speed_mps": 15.001970782515155
+    },
+    {
+      "frames": [
+        235931,
+        235932
+      ],
+      "global_player_id": "P007",
+      "speed_mps": 41.13069910272392
+    },
+    {
+      "frames": [
+        235932,
+        235933
+      ],
+      "global_player_id": "P007",
+      "speed_mps": 39.819190103269385
+    },
+    {
+      "frames": [
+        235825,
+        235826
+      ],
+      "global_player_id": "P010",
+      "speed_mps": 15.8727252338055
+    },
+    {
+      "frames": [
+        236312,
+        236313
+      ],
+      "global_player_id": "P011",
+      "speed_mps": 29.780588884146763
+    },
+    {
+      "frames": [
+        236395,
+        236396
+      ],
+      "global_player_id": "P011",
+      "speed_mps": 14.062054447682897
+    },
+    {
+      "frames": [
+        235837,
+        235838
+      ],
+      "global_player_id": "P013",
+      "speed_mps": 20.312571881034337
+    },
+    {
+      "frames": [
+        235838,
+        235839
+      ],
+      "global_player_id": "P013",
+      "speed_mps": 17.54122950838261
+    },
+    {
+      "frames": [
+        235884,
+        235885
+      ],
+      "global_player_id": "P013",
+      "speed_mps": 153.60887577833796
+    }
+  ],
+  "track_state_record_counts": {
+    "confirmed": 12783,
+    "tentative": 181
+  }
+}

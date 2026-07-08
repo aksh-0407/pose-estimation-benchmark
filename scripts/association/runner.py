@@ -21,6 +21,7 @@ from scripts.association.associator import (
     TemporalLinkMemory,
     associate_frame,
     select_anchor,
+    smooth_emit_feet,
 )
 from scripts.association.config import P3AssociationConfig
 from scripts.association.cue_calibration import CueCalibration
@@ -135,6 +136,9 @@ def run_association(
                 image,
                 ankle_confidence_min=config.ankle_conf_min,
                 max_ankle_above_bbox_fraction=config.max_ankle_above_bbox_fraction,
+                # detection.ground_xy feeds the clustering GATE -> keep it on the legacy
+                # foot so identity is invariant to foot_contact_mode (v2 affects only the
+                # emitted z0_reproj position, in the associator).
             )
         detections_by_frame[frame_index] = detections
     if config.association_mode == "tracklet_graph":
@@ -146,6 +150,11 @@ def run_association(
         detections_by_frame = apply_feet_approximation(
             detections_by_frame, projections, image_h_by_cam, config
         )
+
+    # Temporally smooth the emitted foot pixel per (camera, tracklet) (F7). Emit-only:
+    # it never touches detection.ground_xy (the gate), so identity/clustering is
+    # unchanged; it only steadies the reported ground position. No-op when window <= 1.
+    detections_by_frame = smooth_emit_feet(detections_by_frame, config)
 
     # Pass B (tracklet_graph mode): accumulate tracklet-pair evidence over the
     # whole delivery, calibrate cue LLRs, and solve persistent identity bindings.

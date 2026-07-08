@@ -1,20 +1,13 @@
 # RTMPose-l
 
-Real-time Multi-Person Pose Estimator - Large variant from OpenMMLab for COCO body-only (17 keypoints) keypoint detection.
+- ID: `rtmpose_l`
+- Family: OpenMMLab RTMPose
+- Framework: `mmpose`
+- Skeleton: `coco_17`
+- Role: `fast_body17_candidate`
+- Checkpoint: `models/rtmpose_l/weights/rtmpose-l_simcc-aic-coco_pt-aic-coco_420e-384x288-97d6cb0f_20230228.pth`
+- Config: `external/mmpose/configs/body_2d_keypoint/rtmpose/coco/rtmpose-l_8xb256-420e_aic-coco-384x288.py`
 
-## Model Details
+## Notes
 
-- **Framework**: MMPose
-- **Skeleton**: COCO-17 (body only)
-- **Input Size**: 384x288
-- **Training Data**: COCO + AIC dataset
-- **Checkpoint**: 420 epoch training
-
-## Benchmark Status
-
-Candidate model for body-only real-time pose estimation. Good speed/accuracy tradeoff for multi-person scenarios.
-
-## References
-
-- MMPose RTMPose: https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
-- Paper: https://arxiv.org/abs/2303.07399
+This folder is the canonical local model store for metadata, weights, checksums, and local setup notes.

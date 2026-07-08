@@ -1,0 +1,2695 @@
+{
+  "calibration": {
+    "anchor_pair_count": 7,
+    "appearance_by_pair": {
+      "cam_01|cam_03": {
+        "d_prime": 2.3178677906552445,
+        "fitted": true,
+        "mu_diff": 0.6780606776529168,
+        "mu_same": 0.5389886102136021,
+        "n_diff": 61,
+        "n_same": 541,
+        "sigma_diff": 0.06,
+        "sigma_same": 0.06
+      },
+      "cam_01|cam_07": {
+        "d_prime": 3.6071837526360966,
+        "fitted": true,
+        "mu_diff": 0.7820943474504375,
+        "mu_same": 0.5031558120304316,
+        "n_diff": 383,
+        "n_same": 246,
+        "sigma_diff": 0.09142992073499859,
+        "sigma_same": 0.06
+      },
+      "cam_02|cam_06": {
+        "d_prime": 0.3372191399545739,
+        "fitted": true,
+        "mu_diff": 0.4343795069570914,
+        "mu_same": 0.37087058422881025,
+        "n_diff": 306,
+        "n_same": 74,
+        "sigma_diff": 0.25949444198311633,
+        "sigma_same": 0.06
+      },
+      "cam_06|cam_07": {
+        "d_prime": 0.07245299593685399,
+        "fitted": true,
+        "mu_diff": 0.748278676814136,
+        "mu_same": 0.7439314970579247,
+        "n_diff": 89,
+        "n_same": 206,
+        "sigma_diff": 0.06,
+        "sigma_same": 0.06
+      }
+    },
+    "cues": {
+      "appearance": {
+        "d_prime": 0.9575445248031644,
+        "fitted": true,
+        "mu_diff": 0.6457730376640305,
+        "mu_same": 0.5375082965546788,
+        "n_diff": 4644,
+        "n_same": 1208,
+        "sigma_diff": 0.1482139467227792,
+        "sigma_same": 0.06
+      },
+      "ground_dist_m": {
+        "d_prime": 3.2825549291550544,
+        "fitted": true,
+        "mu_diff": 4.014293337457411,
+        "mu_same": 1.150031437645239,
+        "n_diff": 4644,
+        "n_same": 1208,
+        "sigma_diff": 1.117890676128164,
+        "sigma_same": 0.5225709307724946
+      },
+      "ground_maha": {
+        "d_prime": 3.2877623447523825,
+        "fitted": true,
+        "mu_diff": 6.682305628654995,
+        "mu_same": 1.9301956561874194,
+        "n_diff": 4644,
+        "n_same": 1208,
+        "sigma_diff": 1.8547899621785437,
+        "sigma_same": 0.8591148468546141
+      },
+      "posture_z": {
+        "d_prime": 1.7888543819998317,
+        "fitted": false,
+        "mu_diff": 3.5,
+        "mu_same": 1.1,
+        "n_diff": 0,
+        "n_same": 0,
+        "sigma_diff": 1.8,
+        "sigma_same": 0.6
+      }
+    },
+    "diff_pair_count": 46,
+    "posture_sigma_sys": {
+      "head_top_m": 0.06,
+      "hip_h_m": 0.06,
+      "hip_w_m": 0.0755756028242276,
+      "leg_len_m": 0.07,
+      "shoulder_h_m": 0.06,
+      "shoulder_w_m": 0.12081384821173805,
+      "torso_len_m": 0.10197896211244703
+    },
+    "schema_version": "cue_calibration/v1"
+  },
+  "clusters": {
+    "B001": [
+      [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      [
+        "cam_03",
+        "cam_03_syn_001",
+        0
+      ],
+      [
+        "cam_03",
+        "cam_03_trk_0001",
+        0
+      ],
+      [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      [
+        "cam_05",
+        "cam_05_trk_0001",
+        0
+      ],
+      [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ]
+    ],
+    "B002": [
+      [
+        "cam_01",
+        "cam_01_trk_0002",
+        0
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0023",
+        5
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ]
+    ],
+    "B003": [
+      [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0001",
+        0
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ]
+    ],
+    "B004": [
+      [
+        "cam_01",
+        "cam_01_trk_0004",
+        0
+      ]
+    ],
+    "B005": [
+      [
+        "cam_02",
+        "cam_02_syn_001",
+        0
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0053",
+        0
+      ],
+      [
+        "cam_06",
+        "cam_06_syn_001",
+        0
+      ]
+    ],
+    "B006": [
+      [
+        "cam_03",
+        "cam_03_trk_0002",
+        0
+      ]
+    ],
+    "B007": [
+      [
+        "cam_04",
+        "cam_04_trk_0001",
+        0
+      ]
+    ],
+    "B008": [
+      [
+        "cam_06",
+        "cam_06_trk_0001",
+        0
+      ]
+    ],
+    "B009": [
+      [
+        "cam_07",
+        "cam_07_syn_001",
+        0
+      ]
+    ],
+    "B010": [
+      [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0007",
+        1
+      ],
+      [
+        "cam_02",
+        "cam_02_trk_0023",
+        0
+      ],
+      [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0002",
+        7
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0002",
+        10
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0006",
+        0
+      ],
+      [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ]
+    ],
+    "B011": [
+      [
+        "cam_07",
+        "cam_07_syn_002",
+        0
+      ]
+    ]
+  },
+  "diagnostics": {
+    "clusters_demoted": 87,
+    "fragments_attached": 1,
+    "merges_accepted": 19,
+    "merges_blocked": 6,
+    "purity_splits": 63,
+    "refine_moves": 10,
+    "synthetic_tracklets": 31
+  },
+  "edges": [
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ],
+      "gated_frames": 246,
+      "llr_appearance": 1.5,
+      "llr_ground": 1.5,
+      "llr_motion": 0.687,
+      "llr_posture": 1.5,
+      "llr_total": 5.187,
+      "median_dist_m": 1.185,
+      "posture_z": 0.751
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_03",
+        "cam_03_trk_0001",
+        0
+      ],
+      "gated_frames": 541,
+      "llr_appearance": 1.5,
+      "llr_ground": 1.5,
+      "llr_motion": 0.257,
+      "llr_posture": 1.5,
+      "llr_total": 4.757,
+      "median_dist_m": 1.394,
+      "posture_z": 0.588
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 264,
+      "llr_appearance": 1.5,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 4.5,
+      "median_dist_m": 1.118,
+      "posture_z": 0.445
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 234,
+      "llr_appearance": 0.374,
+      "llr_ground": 1.5,
+      "llr_motion": 0.516,
+      "llr_posture": 1.5,
+      "llr_total": 3.89,
+      "median_dist_m": 1.153,
+      "posture_z": 0.689
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 278,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.75,
+      "llr_posture": 1.5,
+      "llr_total": 3.75,
+      "median_dist_m": 1.576,
+      "posture_z": 0.484
+    },
+    {
+      "a": [
+        "cam_05",
+        "cam_05_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ],
+      "gated_frames": 141,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.75,
+      "llr_posture": 1.5,
+      "llr_total": 3.75,
+      "median_dist_m": 0.93,
+      "posture_z": 1.013
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 81,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.75,
+      "llr_posture": 1.5,
+      "llr_total": 3.75,
+      "median_dist_m": 1.181,
+      "posture_z": 1.045
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 64,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.75,
+      "llr_posture": 1.5,
+      "llr_total": 3.75,
+      "median_dist_m": 0.653,
+      "posture_z": 0.822
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 234,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.727,
+      "llr_posture": 1.5,
+      "llr_total": 3.727,
+      "median_dist_m": 1.67,
+      "posture_z": 0.794
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0007",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 69,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.667,
+      "llr_posture": 1.5,
+      "llr_total": 3.667,
+      "median_dist_m": 1.721,
+      "posture_z": 0.335
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0006",
+        0
+      ],
+      "gated_frames": 62,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.619,
+      "llr_posture": 1.5,
+      "llr_total": 3.619,
+      "median_dist_m": 1.811,
+      "posture_z": 0.607
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 113,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.582,
+      "llr_posture": 1.5,
+      "llr_total": 3.582,
+      "median_dist_m": 0.891,
+      "posture_z": 1.044
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 166,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.55,
+      "llr_posture": 1.5,
+      "llr_total": 3.55,
+      "median_dist_m": 1.45,
+      "posture_z": 1.049
+    },
+    {
+      "a": [
+        "cam_03",
+        "cam_03_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      "gated_frames": 541,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.518,
+      "llr_posture": 1.5,
+      "llr_total": 3.518,
+      "median_dist_m": 1.795,
+      "posture_z": 0.877
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 105,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.514,
+      "llr_posture": 1.5,
+      "llr_total": 3.514,
+      "median_dist_m": 1.338,
+      "posture_z": 1.138
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 278,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.43,
+      "llr_posture": 1.5,
+      "llr_total": 3.43,
+      "median_dist_m": 1.495,
+      "posture_z": 1.387
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 259,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.262,
+      "llr_posture": 1.5,
+      "llr_total": 3.262,
+      "median_dist_m": 1.733,
+      "posture_z": 0.899
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_05",
+        "cam_05_trk_0001",
+        0
+      ],
+      "gated_frames": 495,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.158,
+      "llr_posture": 1.5,
+      "llr_total": 3.158,
+      "median_dist_m": 1.823,
+      "posture_z": 0.744
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      "gated_frames": 600,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.055,
+      "llr_motion": 0.559,
+      "llr_posture": 1.5,
+      "llr_total": 3.114,
+      "median_dist_m": 2.024,
+      "posture_z": 0.533
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 264,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.107,
+      "llr_posture": 1.5,
+      "llr_total": 3.107,
+      "median_dist_m": 1.801,
+      "posture_z": 0.339
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 131,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.022,
+      "llr_posture": 1.5,
+      "llr_total": 3.022,
+      "median_dist_m": 1.934,
+      "posture_z": 0.433
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 117,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 3.0,
+      "median_dist_m": 1.559,
+      "posture_z": 1.353
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 51,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 3.0,
+      "median_dist_m": 1.17,
+      "posture_z": 0.246
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 39,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.925,
+      "median_dist_m": 1.718,
+      "posture_z": 1.365
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "gated_frames": 101,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -0.147,
+      "llr_posture": 1.5,
+      "llr_total": 2.853,
+      "median_dist_m": 1.559,
+      "posture_z": 1.343
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 63,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.75,
+      "llr_posture": 0.558,
+      "llr_total": 2.808,
+      "median_dist_m": 1.527,
+      "posture_z": 1.917
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 83,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.209,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.709,
+      "median_dist_m": 1.939,
+      "posture_z": 1.298
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        5
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 32,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.4,
+      "median_dist_m": 1.364,
+      "posture_z": 1.083
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 34,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.21,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.303,
+      "median_dist_m": 2.116,
+      "posture_z": 1.441
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 42,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.635,
+      "llr_posture": 0.0,
+      "llr_total": 2.135,
+      "median_dist_m": 1.824,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      "b": [
+        "cam_05",
+        "cam_05_trk_0001",
+        0
+      ],
+      "gated_frames": 495,
+      "llr_appearance": 0.0,
+      "llr_ground": 0.138,
+      "llr_motion": 0.406,
+      "llr_posture": 1.5,
+      "llr_total": 2.044,
+      "median_dist_m": 2.165,
+      "posture_z": 0.982
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 27,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.025,
+      "median_dist_m": 0.869,
+      "posture_z": 0.816
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 27,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 2.025,
+      "median_dist_m": 0.912,
+      "posture_z": 0.506
+    },
+    {
+      "a": [
+        "cam_03",
+        "cam_03_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ],
+      "gated_frames": 187,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.217,
+      "llr_motion": -0.731,
+      "llr_posture": 1.5,
+      "llr_total": 1.986,
+      "median_dist_m": 2.142,
+      "posture_z": 0.884
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 105,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -0.831,
+      "llr_posture": 1.278,
+      "llr_total": 1.947,
+      "median_dist_m": 0.764,
+      "posture_z": 1.615
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 27,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.276,
+      "llr_total": 1.874,
+      "median_dist_m": 0.779,
+      "posture_z": 1.616
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 42,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -0.759,
+      "llr_posture": 1.037,
+      "llr_total": 1.778,
+      "median_dist_m": 1.103,
+      "posture_z": 1.727
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 21,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.575,
+      "median_dist_m": 0.924,
+      "posture_z": 1.225
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0053",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_syn_001",
+        0
+      ],
+      "gated_frames": 342,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 1.5,
+      "median_dist_m": 2.144,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_syn_001",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_syn_001",
+        0
+      ],
+      "gated_frames": 258,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 1.5,
+      "median_dist_m": 2.684,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        7
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 93,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.5,
+      "median_dist_m": 1.015,
+      "posture_z": 0.715
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 82,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.5,
+      "median_dist_m": 1.481,
+      "posture_z": 0.904
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0007",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 78,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.5,
+      "median_dist_m": 1.144,
+      "posture_z": 1.099
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 75,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.5,
+      "median_dist_m": 1.293,
+      "posture_z": 1.166
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        7
+      ],
+      "gated_frames": 93,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.543,
+      "llr_posture": 1.5,
+      "llr_total": 1.457,
+      "median_dist_m": 1.851,
+      "posture_z": 0.616
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 19,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.425,
+      "median_dist_m": 1.514,
+      "posture_z": 0.625
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ],
+      "gated_frames": 246,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.611,
+      "llr_posture": 1.5,
+      "llr_total": 1.389,
+      "median_dist_m": 1.934,
+      "posture_z": 0.634
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        7
+      ],
+      "gated_frames": 93,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.38,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.38,
+      "median_dist_m": 1.985,
+      "posture_z": 0.511
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 35,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.312,
+      "median_dist_m": 0.913,
+      "posture_z": 1.257
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "gated_frames": 17,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.275,
+      "median_dist_m": 1.751,
+      "posture_z": 0.299
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "gated_frames": 17,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.275,
+      "median_dist_m": 1.692,
+      "posture_z": 1.213
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "gated_frames": 17,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.275,
+      "median_dist_m": 1.057,
+      "posture_z": 1.026
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "gated_frames": 17,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.275,
+      "median_dist_m": 0.662,
+      "posture_z": 1.428
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 35,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.376,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 1.204,
+      "median_dist_m": 1.834,
+      "posture_z": 1.18
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "gated_frames": 35,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.672,
+      "llr_posture": 1.5,
+      "llr_total": 1.162,
+      "median_dist_m": 1.804,
+      "posture_z": 1.148
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.125,
+      "median_dist_m": 0.981,
+      "posture_z": 1.292
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.125,
+      "median_dist_m": 1.116,
+      "posture_z": 0.675
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.125,
+      "median_dist_m": 1.138,
+      "posture_z": 1.325
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.49,
+      "llr_total": 1.121,
+      "median_dist_m": 0.229,
+      "posture_z": 1.502
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        6
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 56,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.081,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 1.081,
+      "median_dist_m": 1.968,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 160,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.924,
+      "llr_posture": 1.5,
+      "llr_total": 1.076,
+      "median_dist_m": 1.567,
+      "posture_z": 0.861
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 32,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.658,
+      "llr_posture": 1.5,
+      "llr_total": 1.073,
+      "median_dist_m": 1.645,
+      "posture_z": 1.181
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 14,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.05,
+      "median_dist_m": 0.542,
+      "posture_z": 0.69
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.28,
+      "llr_total": 1.043,
+      "median_dist_m": 1.739,
+      "posture_z": 1.614
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 69,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.854,
+      "llr_motion": 0.675,
+      "llr_posture": 1.218,
+      "llr_total": 1.04,
+      "median_dist_m": 2.593,
+      "posture_z": 1.644
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 117,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.467,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 1.033,
+      "median_dist_m": 2.554,
+      "posture_z": 0.383
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 247,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -2.002,
+      "llr_posture": 1.5,
+      "llr_total": 0.998,
+      "median_dist_m": 1.584,
+      "posture_z": 0.89
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0007",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 78,
+      "llr_appearance": 0.0,
+      "llr_ground": 0.997,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": 0.997,
+      "median_dist_m": 1.928,
+      "posture_z": 0.702
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        7
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 13,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.975,
+      "median_dist_m": 1.635,
+      "posture_z": 1.026
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        7
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 13,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.975,
+      "median_dist_m": 1.434,
+      "posture_z": 0.939
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        2
+      ],
+      "gated_frames": 17,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.691,
+      "llr_total": 0.931,
+      "median_dist_m": 1.782,
+      "posture_z": 1.868
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "gated_frames": 34,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.228,
+      "llr_motion": -0.182,
+      "llr_posture": 1.5,
+      "llr_total": 0.927,
+      "median_dist_m": 2.286,
+      "posture_z": 1.029
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        3
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 15,
+      "llr_appearance": 0.0,
+      "llr_ground": 0.877,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.892,
+      "median_dist_m": 1.954,
+      "posture_z": 0.981
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 131,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -2.13,
+      "llr_posture": 1.5,
+      "llr_total": 0.87,
+      "median_dist_m": 1.572,
+      "posture_z": 1.264
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 35,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -2.012,
+      "llr_posture": 1.5,
+      "llr_total": 0.865,
+      "median_dist_m": 1.539,
+      "posture_z": 0.447
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        7
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 23,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.862,
+      "median_dist_m": 1.897,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "gated_frames": 94,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.116,
+      "llr_motion": -1.767,
+      "llr_posture": 1.5,
+      "llr_total": 0.849,
+      "median_dist_m": 2.163,
+      "posture_z": 0.953
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 27,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.252,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.842,
+      "median_dist_m": 2.327,
+      "posture_z": 0.725
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 1.233,
+      "llr_total": 0.82,
+      "median_dist_m": 0.873,
+      "posture_z": 1.638
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        5
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 32,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -0.502,
+      "llr_posture": 0.0,
+      "llr_total": 0.798,
+      "median_dist_m": 1.87,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 160,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -0.057,
+      "llr_posture": -0.647,
+      "llr_total": 0.796,
+      "median_dist_m": 1.484,
+      "posture_z": 2.291
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 129,
+      "llr_appearance": -0.632,
+      "llr_ground": 0.408,
+      "llr_motion": 0.0,
+      "llr_posture": 0.841,
+      "llr_total": 0.617,
+      "median_dist_m": 2.055,
+      "posture_z": 1.809
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 27,
+      "llr_appearance": -2.045,
+      "llr_ground": 1.158,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.414,
+      "median_dist_m": 1.935,
+      "posture_z": 0.861
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        10
+      ],
+      "gated_frames": 11,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.413,
+      "median_dist_m": 1.437,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        10
+      ],
+      "gated_frames": 11,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.413,
+      "median_dist_m": 0.405,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0002",
+        10
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        9
+      ],
+      "gated_frames": 11,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.413,
+      "median_dist_m": 1.223,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": -0.21,
+      "llr_total": 0.387,
+      "median_dist_m": 0.471,
+      "posture_z": 2.167
+    },
+    {
+      "a": [
+        "cam_03",
+        "cam_03_syn_001",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0003",
+        0
+      ],
+      "gated_frames": 10,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.375,
+      "median_dist_m": 1.142,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_03",
+        "cam_03_syn_001",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0079",
+        0
+      ],
+      "gated_frames": 10,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.375,
+      "median_dist_m": 1.337,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_syn_005",
+        0
+      ],
+      "gated_frames": 10,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.375,
+      "median_dist_m": 1.385,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_syn_005",
+        0
+      ],
+      "gated_frames": 10,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.499,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": 0.375,
+      "median_dist_m": 1.902,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        5
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 20,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.784,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.358,
+      "median_dist_m": 2.514,
+      "posture_z": 0.384
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        4
+      ],
+      "gated_frames": 65,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.163,
+      "llr_motion": -1.002,
+      "llr_posture": 1.5,
+      "llr_total": 0.335,
+      "median_dist_m": 2.466,
+      "posture_z": 0.246
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": -0.406,
+      "llr_total": 0.328,
+      "median_dist_m": 1.072,
+      "posture_z": 2.224
+    },
+    {
+      "a": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 16,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.193,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.123,
+      "median_dist_m": 2.639,
+      "posture_z": 0.597
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 24,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.336,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.099,
+      "median_dist_m": 2.635,
+      "posture_z": 0.783
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        7
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 23,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.39,
+      "llr_motion": 0.0,
+      "llr_posture": 1.5,
+      "llr_total": 0.063,
+      "median_dist_m": 2.467,
+      "posture_z": 0.197
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        6
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "gated_frames": 49,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 0.0,
+      "llr_total": 0.0,
+      "median_dist_m": 1.731,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        0
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 42,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 0.0,
+      "llr_total": 0.0,
+      "median_dist_m": 0.554,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        5
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0002",
+        0
+      ],
+      "gated_frames": 32,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 0.0,
+      "llr_total": 0.0,
+      "median_dist_m": 1.13,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        9
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": -1.816,
+      "llr_total": -0.095,
+      "median_dist_m": 1.307,
+      "posture_z": 2.581
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        6
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 13,
+      "llr_appearance": -0.565,
+      "llr_ground": -0.157,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -0.235,
+      "median_dist_m": 2.169,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0022",
+        0
+      ],
+      "gated_frames": 37,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.31,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -0.287,
+      "median_dist_m": 2.26,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        9
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0045",
+        1
+      ],
+      "gated_frames": 11,
+      "llr_appearance": 0.0,
+      "llr_ground": -2.0,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -0.55,
+      "median_dist_m": 2.68,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0001",
+        0
+      ],
+      "b": [
+        "cam_03",
+        "cam_03_syn_001",
+        0
+      ],
+      "gated_frames": 10,
+      "llr_appearance": -4.0,
+      "llr_ground": 1.5,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -0.625,
+      "median_dist_m": 0.824,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.51,
+      "llr_motion": 0.0,
+      "llr_posture": -2.606,
+      "llr_total": -0.935,
+      "median_dist_m": 2.267,
+      "posture_z": 2.752
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        9
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 25,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.637,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -1.023,
+      "median_dist_m": 2.424,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0056",
+        1
+      ],
+      "gated_frames": 12,
+      "llr_appearance": 0.0,
+      "llr_ground": -2.0,
+      "llr_motion": 0.0,
+      "llr_posture": -1.429,
+      "llr_total": -1.029,
+      "median_dist_m": 2.507,
+      "posture_z": 2.49
+    },
+    {
+      "a": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 97,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.59,
+      "llr_motion": -0.959,
+      "llr_posture": 1.5,
+      "llr_total": -1.049,
+      "median_dist_m": 2.686,
+      "posture_z": 0.768
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        9
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        5
+      ],
+      "gated_frames": 19,
+      "llr_appearance": -0.605,
+      "llr_ground": -2.0,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -1.238,
+      "median_dist_m": 2.605,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        0
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        0
+      ],
+      "gated_frames": 14,
+      "llr_appearance": -1.799,
+      "llr_ground": -2.0,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -1.33,
+      "median_dist_m": 2.739,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        6
+      ],
+      "b": [
+        "cam_06",
+        "cam_06_trk_0002",
+        0
+      ],
+      "gated_frames": 82,
+      "llr_appearance": 0.0,
+      "llr_ground": -1.582,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -1.582,
+      "median_dist_m": 2.406,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0042",
+        0
+      ],
+      "gated_frames": 53,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.998,
+      "llr_motion": -1.348,
+      "llr_posture": 0.619,
+      "llr_total": -1.727,
+      "median_dist_m": 2.337,
+      "posture_z": 1.895
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        6
+      ],
+      "b": [
+        "cam_04",
+        "cam_04_trk_0004",
+        1
+      ],
+      "gated_frames": 63,
+      "llr_appearance": 0.0,
+      "llr_ground": -0.753,
+      "llr_motion": -2.5,
+      "llr_posture": 1.5,
+      "llr_total": -1.753,
+      "median_dist_m": 2.349,
+      "posture_z": 0.451
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0002",
+        0
+      ],
+      "b": [
+        "cam_02",
+        "cam_02_trk_0023",
+        8
+      ],
+      "gated_frames": 98,
+      "llr_appearance": 0.0,
+      "llr_ground": -2.0,
+      "llr_motion": -1.5,
+      "llr_posture": 1.486,
+      "llr_total": -2.014,
+      "median_dist_m": 2.678,
+      "posture_z": 1.504
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        7
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 20,
+      "llr_appearance": -3.994,
+      "llr_ground": -1.922,
+      "llr_motion": 0.0,
+      "llr_posture": 0.0,
+      "llr_total": -2.958,
+      "median_dist_m": 2.521,
+      "posture_z": null
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        11
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0074",
+        0
+      ],
+      "gated_frames": 259,
+      "llr_appearance": -3.728,
+      "llr_ground": 0.079,
+      "llr_motion": -1.5,
+      "llr_posture": 1.5,
+      "llr_total": -3.648,
+      "median_dist_m": 2.167,
+      "posture_z": 0.781
+    },
+    {
+      "a": [
+        "cam_01",
+        "cam_01_trk_0008",
+        6
+      ],
+      "b": [
+        "cam_07",
+        "cam_07_trk_0030",
+        3
+      ],
+      "gated_frames": 82,
+      "llr_appearance": -3.963,
+      "llr_ground": 1.5,
+      "llr_motion": -1.5,
+      "llr_posture": 0.0,
+      "llr_total": -3.963,
+      "median_dist_m": 1.689,
+      "posture_z": null
+    }
+  ]
+}

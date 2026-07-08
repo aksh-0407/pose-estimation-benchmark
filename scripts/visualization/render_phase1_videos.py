@@ -82,6 +82,24 @@ class VideoSettings:
     show: str
 
 
+import functools
+
+
+@functools.lru_cache(maxsize=1)
+def _ffmpeg_has_nvenc() -> bool:
+    """True when this ffmpeg build exposes the NVIDIA NVENC H.264 encoder."""
+    if not shutil.which("ffmpeg"):
+        return False
+    try:
+        out = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-encoders"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout
+    except Exception:
+        return False
+    return "h264_nvenc" in out
+
+
 class VideoSink:
     def __init__(
         self,
@@ -103,36 +121,22 @@ class VideoSink:
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
         if use_ffmpeg and shutil.which("ffmpeg"):
-            command = [
-                "ffmpeg",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-y",
-                "-f",
-                "rawvideo",
-                "-vcodec",
-                "rawvideo",
-                "-pix_fmt",
-                "bgr24",
-                "-s",
-                f"{width}x{height}",
-                "-r",
-                str(fps),
-                "-i",
-                "-",
-                "-an",
-                "-vcodec",
-                "libx264",
-                "-preset",
-                preset,
-                "-crf",
-                str(crf),
-                "-pix_fmt",
-                "yuv420p",
-                str(path),
+            common = [
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                "-f", "rawvideo", "-vcodec", "rawvideo", "-pix_fmt", "bgr24",
+                "-s", f"{width}x{height}", "-r", str(fps), "-i", "-", "-an",
             ]
-            self.process = subprocess.Popen(command, stdin=subprocess.PIPE)
+            if _ffmpeg_has_nvenc():
+                # GPU (NVENC) encode: offloads H.264 to the RTX. -cq maps CRF-like
+                # quality; p4/hq is a balanced quality preset. Falls back automatically
+                # if NVENC is unavailable at runtime (encoder errors -> close() raises).
+                codec = [
+                    "-vcodec", "h264_nvenc", "-preset", "p4", "-tune", "hq",
+                    "-rc", "vbr", "-cq", str(crf), "-b:v", "0", "-pix_fmt", "yuv420p",
+                ]
+            else:
+                codec = ["-vcodec", "libx264", "-preset", preset, "-crf", str(crf), "-pix_fmt", "yuv420p"]
+            self.process = subprocess.Popen([*common, *codec, str(path)], stdin=subprocess.PIPE)
         else:
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.writer = cv2.VideoWriter(str(path), fourcc, fps, (width, height))
@@ -198,6 +202,11 @@ def parse_args() -> argparse.Namespace:
             "Camera looking WITH the delivery (behind the bowler's arm). "
             "Overrides the automatic bowling-end inference for the mosaic layout."
         ),
+    )
+    parser.add_argument(
+        "--roles-path",
+        default=None,
+        help="P5 roles.json (default: probes <run-dir>/../p5/roles.json then <run-dir>/p5/roles.json)",
     )
     parser.add_argument("--mode", choices=["all", "per-camera", "mosaic", "ground"], default="all")
     parser.add_argument("--show", choices=["p2", "p3", "p4"], default=None)
@@ -509,9 +518,22 @@ def draw_players(
         else:
             identity = player.get("local_track_id") or f"det-{player_index}"
         label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
-        # Keep chips clear of the header band drawn afterwards.
-        label_y = max(60 if compact else 86, y - 8)
-        next_x, _ = draw_chip(image, label, (max(8, x), label_y), color=color, scale=font_scale)
+        # Adaptive placement: above the box when there is room under the header,
+        # otherwise below the box, otherwise inside it — and always horizontally
+        # clamped so the id is never cut off at a tile edge.
+        (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)
+        chip_w, chip_h = text_w + 20, text_h + 14
+        height_limit, width_limit = image.shape[:2]
+        top_clear = 52 if compact else 78
+        bottom_clear = height_limit - (32 if compact else 42)
+        if y - 8 - chip_h >= top_clear:
+            label_y = y - 8                      # above the box
+        elif y2 + 10 + chip_h <= bottom_clear:
+            label_y = y2 + 10 + text_h           # below the box
+        else:
+            label_y = max(top_clear + chip_h, min(y + chip_h + 4, bottom_clear))  # inside
+        label_x = int(np.clip(x, 6, max(6, width_limit - chip_w - 6)))
+        next_x, _ = draw_chip(image, label, (label_x, label_y), color=color, scale=font_scale)
         bar_w = 56 if compact else 84
         bar_h = 5 if compact else 7
         bar_x = next_x
@@ -660,7 +682,17 @@ def render_feed_frame(
         show=show,
     )
     if ghosts:
-        draw_ghost_markers(frame, ghosts, sx=sx, sy=sy)
+        avoid_rects = [
+            (
+                int(player["bbox_xywh_px"][0] * sx),
+                int(player["bbox_xywh_px"][1] * sy),
+                int((player["bbox_xywh_px"][0] + player["bbox_xywh_px"][2]) * sx),
+                int((player["bbox_xywh_px"][1] + player["bbox_xywh_px"][3]) * sy),
+            )
+            for player in record.get("players", [])
+            if player.get("bbox_xywh_px") is not None
+        ]
+        draw_ghost_markers(frame, ghosts, sx=sx, sy=sy, avoid_rects=avoid_rects)
     if ball_trail:
         draw_ball_trail(frame, ball_trail, compact=compact)
     camera_title = record["camera_id"].replace("_", " ").upper()
@@ -685,17 +717,29 @@ def draw_ghost_markers(
     *,
     sx: float,
     sy: float,
+    avoid_rects: list[tuple[int, int, int, int]] | None = None,
 ) -> None:
     """Mark players occluded in THIS camera but tracked by the others.
 
     The detector produces nothing while one player fully covers another, so the
     binding's fused ground position (from the other cameras) is reprojected here
     and drawn as an explicitly-labelled ghost — a viewer aid only; no synthetic
-    detection ever enters the pipeline data.
+    detection ever enters the pipeline data. The chip dodges detection boxes and
+    previously-placed ghost chips so it never covers a visible player or another
+    ghost label (the occluder usually stands exactly where the ghost is).
     """
 
     height, width = image.shape[:2]
-    for player_id, (foot_x, foot_y) in ghosts:
+    occupied: list[tuple[int, int, int, int]] = list(avoid_rects or [])
+
+    def overlaps(rect: tuple[int, int, int, int]) -> bool:
+        rx1, ry1, rx2, ry2 = rect
+        for ox1, oy1, ox2, oy2 in occupied:
+            if rx1 < ox2 and rx2 > ox1 and ry1 < oy2 and ry2 > oy1:
+                return True
+        return False
+
+    for player_id, (foot_x, foot_y) in sorted(ghosts):
         x, y = int(round(foot_x * sx)), int(round(foot_y * sy))
         if not (0 <= x < width and 0 <= y < height):
             continue
@@ -704,8 +748,31 @@ def draw_ghost_markers(
         cv2.ellipse(image, (x, y), (18, 7), 0, 0, 360, color, 1, cv2.LINE_AA)
         for angle in range(0, 360, 45):  # dashed inner ring: reads as "not a detection"
             cv2.ellipse(image, (x, y), (11, 4), 0, angle, angle + 22, color, 1, cv2.LINE_AA)
-        draw_chip(image, f"{player_id}  occluded", (max(8, x - 40), max(60, y - 18)),
-                  color=color, scale=0.4)
+
+        label = f"{player_id}  occluded"
+        (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+        chip_w, chip_h = text_w + 20, text_h + 14
+        candidates = (
+            (x - chip_w // 2, y + 14 + text_h),          # below the ellipse
+            (x - chip_w // 2, y - 18),                   # above
+            (x + 24, y + 4),                             # right
+            (x - chip_w - 24, y + 4),                    # left
+        )
+        chosen = None
+        for cx, cy in candidates:
+            cx = int(np.clip(cx, 6, max(6, width - chip_w - 6)))
+            cy = int(np.clip(cy, 52 + chip_h, height - 34))
+            rect = (cx, cy - chip_h, cx + chip_w, cy + 6)
+            if not overlaps(rect):
+                chosen = (cx, cy, rect)
+                break
+        if chosen is None:  # everything is crowded: fall back to below, clamped
+            cx = int(np.clip(x - chip_w // 2, 6, max(6, width - chip_w - 6)))
+            cy = int(np.clip(y + 14 + text_h, 52 + chip_h, height - 34))
+            chosen = (cx, cy, (cx, cy - chip_h, cx + chip_w, cy + 6))
+        cx, cy, rect = chosen
+        occupied.append(rect)
+        draw_chip(image, label, (cx, cy), color=color, scale=0.4)
 
 
 def cam_short(camera_id: str) -> str:
@@ -715,8 +782,26 @@ def cam_short(camera_id: str) -> str:
         return camera_id
 
 
+def load_roles(path: Path) -> dict[str, str]:
+    """Roles from a P5 ``roles.json`` artifact; {} when the phase has not run."""
+
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    roles = {}
+    for player_id, entry in (payload.get("roles") or {}).items():
+        role = (entry or {}).get("role")
+        if role and role != "unknown":
+            roles[str(player_id)] = str(role)
+    return roles
+
+
 def build_delivery_roster(
     records_by_camera: dict[str, list[dict[str, Any]]],
+    roles: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
     """Every global id seen anywhere in the delivery, in first-appearance order."""
 
@@ -734,8 +819,9 @@ def build_delivery_roster(
                 entry["first"] = min(entry["first"], frame_index)
                 entry["last"] = max(entry["last"], frame_index)
                 entry["frames"] += 1
+    roles = roles or {}
     return [
-        {"id": player_id, **entry}
+        {"id": player_id, "role": roles.get(player_id), **entry}
         for player_id, entry in sorted(stats.items(), key=lambda kv: (kv[1]["first"], kv[0]))
     ]
 
@@ -846,8 +932,113 @@ def draw_info_panel(
     return panel
 
 
+def draw_bev_panel(
+    *,
+    size: tuple[int, int],
+    frame_grounds: dict[str, tuple[float, float]],
+    extents: tuple[float, float, float, float],
+    frame_index: int,
+    trails: dict[str, list[tuple[int, int]]],
+    single_ids: set[str] | None = None,
+    trail_len: int = 120,
+) -> np.ndarray:
+    """QT-style bird's-eye tile: each player's world (x,y) as an id-coloured dot + trail.
+
+    Replaces the text delivery-monitor tile in the mosaic. ``trails`` is mutated across
+    frames so short motion tails persist. ``extents`` is the fixed world window.
+    """
+
+    width, height = size
+    margin = 40
+    x_min, x_max, y_min, y_max = extents
+    panel = np.full((height, width, 3), (14, 45, 25), dtype=np.uint8)  # grass
+
+    def w2p(x: float, y: float) -> tuple[int, int]:
+        px = margin + (x - x_min) / max(x_max - x_min, 1e-6) * (width - 2 * margin)
+        py = height - margin - (y - y_min) / max(y_max - y_min, 1e-6) * (height - 2 * margin)
+        return int(round(px)), int(round(py))
+
+    # boundary + pitch strip + centre lines
+    cv2.rectangle(panel, (margin, margin), (width - margin, height - margin), (95, 170, 105), 2, cv2.LINE_AA)
+    cx, cy = (x_min + x_max) / 2.0, (y_min + y_max) / 2.0
+    axes = (int((width - 2 * margin) * 0.49), int((height - 2 * margin) * 0.49))
+    cv2.ellipse(panel, w2p(cx, cy), axes, 0, 0, 360, (70, 120, 85), 1, cv2.LINE_AA)
+    cv2.rectangle(panel, w2p(-1.525, 10.06), w2p(1.525, -10.06), (185, 205, 190), 1, cv2.LINE_AA)
+
+    live = sorted(frame_grounds)
+    for player_id in live:
+        x, y = frame_grounds[player_id]
+        if not (np.isfinite(x) and np.isfinite(y)):
+            continue
+        pixel = w2p(float(x), float(y))
+        trail = trails.setdefault(str(player_id), [])
+        trail.append(pixel)
+        if len(trail) > trail_len:
+            del trail[:-trail_len]
+        color = color_for_global_id(str(player_id))
+        if len(trail) >= 2:
+            cv2.polylines(panel, [np.asarray(trail, np.int32)], False, color, 1, cv2.LINE_AA)
+        cv2.circle(panel, pixel, 6, (10, 18, 13), -1, cv2.LINE_AA)
+        if single_ids is not None and str(player_id) in single_ids:
+            cv2.circle(panel, pixel, 5, color, 2, cv2.LINE_AA)  # hollow = single-camera
+        else:
+            cv2.circle(panel, pixel, 4, color, -1, cv2.LINE_AA)
+        draw_text(panel, str(player_id), (pixel[0] + 7, pixel[1] - 6), scale=0.4, color=color)
+    cv2.line(panel, (0, 0), (width, 0), (82, 220, 255), 4, cv2.LINE_AA)
+    draw_text(panel, "BIRD'S-EYE VIEW", (16, 30), scale=0.62, color=(250, 252, 255), thickness=2)
+    draw_text(panel, f"frame {frame_index}   players {len(live)}   (hollow=1cam)",
+              (16, height - 16), scale=0.4, color=(204, 214, 230))
+    return panel
+
+
+def compute_ground_extents(
+    ground_positions: dict[int, dict[str, tuple[float, float]]],
+    *,
+    margin_m: float = 8.0,
+) -> tuple[float, float, float, float]:
+    xs, ys = [], []
+    for frame in ground_positions.values():
+        for x, y in frame.values():
+            if np.isfinite(x) and np.isfinite(y):
+                xs.append(float(x)); ys.append(float(y))
+    if not xs:
+        return -50.0, 50.0, -50.0, 50.0
+    return min(xs) - margin_m, max(xs) + margin_m, min(ys) - margin_m, max(ys) + margin_m
+
+
+@functools.lru_cache(maxsize=1)
+def _gpu_jpeg_decoder():
+    """Return (torch, decode_jpeg, read_file) if GPU JPEG decode is usable, else None.
+
+    Offloads the dominant per-frame CPU cost (entropy-decoding 7 large JPEGs) to the
+    GPU's nvJPEG engine, leaving the CPU only the drawing/compositing. Set
+    ``QT_RENDER_GPU_DECODE=0`` to force the CPU path.
+    """
+    import os
+    if os.environ.get("QT_RENDER_GPU_DECODE", "1") == "0":
+        return None
+    try:
+        import torch
+        from torchvision.io import decode_jpeg, read_file
+        if not torch.cuda.is_available():
+            return None
+        return (torch, decode_jpeg, read_file)
+    except Exception:
+        return None
+
+
 def load_image_for_record(camera_dir: Path, record: dict[str, Any]) -> np.ndarray:
     image_path = camera_dir / record["frame_name"]
+    gpu = _gpu_jpeg_decoder()
+    if gpu is not None and str(image_path).lower().endswith((".jpg", ".jpeg")):
+        try:
+            torch, decode_jpeg, read_file = gpu
+            data = read_file(str(image_path))
+            rgb_chw = decode_jpeg(data, device="cuda")           # (3, H, W) RGB uint8 on GPU
+            bgr_hwc = rgb_chw.flip(0).permute(1, 2, 0).contiguous()  # -> BGR, HWC (cv2 layout)
+            return bgr_hwc.cpu().numpy()
+        except Exception:
+            pass  # fall back to CPU decode on any GPU/codec hiccup
     image = cv2.imread(str(image_path))
     if image is None:
         raise RuntimeError(f"failed to read image: {image_path}")
@@ -930,6 +1121,7 @@ def render_mosaic_video(
     projections: dict[str, np.ndarray] | None = None,
     ground_positions: dict[int, dict[str, tuple[float, float]]] | None = None,
     ghost_window_frames: int = 150,
+    roles: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     width, height = settings.mosaic_size
     cell_width = width // 3
@@ -940,9 +1132,12 @@ def render_mosaic_video(
     }
     common_frames = sorted(set.intersection(*(set(items) for items in record_maps.values())))
     frame_count = len(common_frames)
-    roster = build_delivery_roster(records_by_camera)
+    roster = build_delivery_roster(records_by_camera, roles)
     projections = projections or {}
     ground_positions = ground_positions or {}
+    # Bird's-eye tile replaces the text delivery monitor: fixed world window + per-id trails.
+    bev_extents = compute_ground_extents(ground_positions)
+    bev_trails: dict[str, list[tuple[int, int]]] = {}
 
     # Per (camera, id) detection frames — used to decide when a missing player is
     # "occluded HERE" (seen in this camera nearby in time) vs simply out of view.
@@ -1057,19 +1252,21 @@ def render_mosaic_video(
             if layout.bowling_direction_xy is not None:
                 dx, dy = layout.bowling_direction_xy
                 direction_note = f"({dx:+.2f}, {dy:+.2f})"
-            monitor = draw_info_panel(
+            # An id detected in exactly one camera this frame is single-camera-localised
+            # (no cross-camera correction) -> drawn hollow so a lone-camera placement is
+            # visible at a glance.
+            id_cam_counts: dict[str, int] = {}
+            for ids in detected_by_camera.values():
+                for pid in ids:
+                    id_cam_counts[pid] = id_cam_counts.get(pid, 0) + 1
+            single_ids = {pid for pid, n in id_cam_counts.items() if n <= 1}
+            monitor = draw_bev_panel(
                 size=(cell_width, cell_height),
-                title="DELIVERY MONITOR",
-                lines=[
-                    delivery_id,
-                    f"run: {run_id}",
-                    f"frame: {synchronized_frame}",
-                    f"feeds: {len(records_by_camera)} cameras"
-                    + (f"  |  {len(layout.mirrored)} mirrored" if layout.mirrored else ""),
-                    f"detections: {total_players}",
-                    f"bowling direction: {direction_note}",
-                ],
-                accent=(82, 220, 255),
+                frame_grounds={str(pid): xy for pid, xy in frame_grounds.items()},
+                extents=bev_extents,
+                frame_index=synchronized_frame,
+                trails=bev_trails,
+                single_ids=single_ids,
             )
             roster_panel = draw_roster_panel(
                 size=(cell_width, cell_height),
@@ -1392,6 +1589,14 @@ def main() -> int:
                         frame_grounds[str(player_id)] = (float(xy[0]), float(xy[1]))
                 if frame_grounds:
                     ground_positions[int(row["frame_index"])] = frame_grounds
+        if args.roles_path:
+            roles = load_roles(Path(args.roles_path))
+        else:
+            roles = load_roles(run_dir.parent / "p5" / "roles.json") or load_roles(
+                run_dir / "p5" / "roles.json"
+            )
+        if roles:
+            print("roles loaded: " + ", ".join(f"{pid}={role}" for pid, role in sorted(roles.items())))
         outputs["mosaic"] = render_mosaic_video(
             records_by_camera=records_by_camera,
             camera_dirs=camera_dirs,
@@ -1403,6 +1608,7 @@ def main() -> int:
             layout=layout,
             projections=mosaic_projections,
             ground_positions=ground_positions,
+            roles=roles,
         )
     if args.mode in {"all", "ground"}:
         ground_path = run_dir / "diagnostics" / "ground_tracks.jsonl"

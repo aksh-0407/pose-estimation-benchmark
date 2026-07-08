@@ -231,6 +231,27 @@ class TrackManager:
             unmatched_tracks.discard(int(column))
         return matches, unmatched_observations, unmatched_tracks
 
+    def _try_absorb(
+        self,
+        observation: Correspondence,
+        cams_hit: dict[int, set[str]],
+    ) -> GlobalTrack | None:
+        """Best already-updated track this observation is a same-frame shadow of."""
+
+        observation_cams = set(observation.members)
+        best: GlobalTrack | None = None
+        best_distance = float("inf")
+        for track in self.tracks:
+            if track.state not in {CONFIRMED, TENTATIVE, LOST}:
+                continue
+            covered = cams_hit.get(id(track))
+            if not covered or covered & observation_cams:
+                continue  # not updated this frame, or would double-book a camera
+            mahalanobis = track.kalman.mahalanobis_sq(observation.ground_xy)
+            if mahalanobis <= self.config.p4a.chi2_gate_2dof and mahalanobis < best_distance:
+                best, best_distance = track, mahalanobis
+        return best
+
     def _try_reentry(self, ground_xy: np.ndarray, frame_index: int) -> GlobalTrack | None:
         """Revive a deleted track whose coasted state still explains this observation."""
 
@@ -301,6 +322,12 @@ class TrackManager:
         assignments: dict[int, GlobalTrack] = {}
         hit: set[int] = set()
         claimed: set[int] = set()
+        # Cameras each track has been observed in THIS frame — an absorb may only
+        # add coverage from cameras the track has no member in yet.
+        cams_hit: dict[int, set[str]] = {}
+
+        def record_cams(track: GlobalTrack, observation: Correspondence) -> None:
+            cams_hit.setdefault(id(track), set()).update(observation.members)
 
         # --- Stage 0: tracklet-graph binding continuity ------------------------
         # The graph solved identity globally; a binding maps 1:1 to a persistent
@@ -343,6 +370,7 @@ class TrackManager:
                         self.diagnostics["binding_ground_outliers"] += 1
                 self.diagnostics["binding_matches"] += 1
             hit.add(id(track))
+            record_cams(track, observation)
             assignments[observation.cluster_id] = track
             claimed.add(observation.cluster_id)
 
@@ -370,6 +398,7 @@ class TrackManager:
                 )
                 self.diagnostics["local_identity_ground_outliers"] += 1
             hit.add(id(track))
+            record_cams(track, observation)
             assignments[observation.cluster_id] = track
             claimed.add(observation.cluster_id)
             self.diagnostics["local_identity_matches"] += 1
@@ -382,11 +411,34 @@ class TrackManager:
             observation, track = remaining[observation_index], available[track_index]
             self._apply_match(observation, track, frame_index)
             hit.add(id(track))
+            record_cams(track, observation)
             assignments[observation.cluster_id] = track
             self.diagnostics["geometry_matches"] += 1
 
-        # --- Stage 3: re-entry from the deleted pool, else birth --------------
+        # --- Stage 2.5: absorb instead of birthing a shadow -------------------
+        # An unmatched observation inside the chi2 gate of a track that was
+        # ALREADY updated this frame is that same player seen by a camera the
+        # track has no member in (its position matches the "ghost"). It joins
+        # that track identity-only; it must never mint a duplicate id.
+        still_unmatched: list[int] = []
         for observation_index in sorted(unmatched_obs):
+            observation = remaining[observation_index]
+            track = self._try_absorb(observation, cams_hit)
+            if track is None:
+                still_unmatched.append(observation_index)
+                continue
+            local_ids = self._local_ids(observation)
+            self._claim_local_ids(track, local_ids, frame_index)
+            track.apply_identity_only_hit(
+                self._representative_bbox(observation), frame_index,
+                local_track_ids_by_cam=local_ids,
+            )
+            record_cams(track, observation)
+            assignments[observation.cluster_id] = track
+            self.diagnostics["shadow_absorbs"] += 1
+
+        # --- Stage 3: re-entry from the deleted pool, else birth --------------
+        for observation_index in still_unmatched:
             observation = remaining[observation_index]
             track = self._try_reentry(observation.ground_xy, frame_index)
             if track is not None:
@@ -396,6 +448,7 @@ class TrackManager:
             else:
                 track = self._spawn(observation, frame_index)
             hit.add(id(track))
+            record_cams(track, observation)
             assignments[observation.cluster_id] = track
 
         # --- Ground-less correspondences: identity continuity only -----------
@@ -428,10 +481,54 @@ class TrackManager:
         self._promote_and_prune()
         return assignments
 
+    def _confirmation_blocked(self, track: GlobalTrack) -> bool:
+        """A tentative may not confirm while it shadows an existing identity.
+
+        A duplicate born on top of a tracked player sits inside the shadow gate
+        of a CONFIRMED track; it stays tentative (invisible) until it either
+        separates or persists long enough (override) to be a real player — e.g.
+        two batsmen legitimately standing together confirm via the override. At
+        the roster cap (cricket: 15 on the field), a new id additionally needs
+        clear separation from every confirmed track.
+        """
+
+        if track.hits >= self.config.p4a.shadow_confirm_override_hits:
+            return False
+        position = track.kalman.pos_world_xy
+        if not np.isfinite(position).all():
+            return False
+        confirmed = [
+            other for other in self.tracks
+            if other is not track and other.global_player_id is not None
+            and other.state in {CONFIRMED, LOST}
+        ]
+        distances = [
+            float(np.linalg.norm(other.kalman.pos_world_xy - position))
+            for other in confirmed
+            if np.isfinite(other.kalman.pos_world_xy).all()
+        ]
+        if distances and min(distances) <= self.config.p4a.shadow_confirm_gate_m:
+            self.diagnostics["shadow_confirmations_blocked"] += 1
+            return True
+        if (
+            len(confirmed) >= self.config.p4a.expected_roster_max
+            and distances
+            and min(distances) <= self.config.p4a.roster_cap_min_separation_m
+        ):
+            self.diagnostics["roster_cap_confirmations_blocked"] += 1
+            return True
+        return False
+
     def _promote_and_prune(self) -> None:
         survivors = []
         for track in self.tracks:
-            if track.maybe_confirm(self.config.p4a.confirm_hits):
+            if (
+                track.state == TENTATIVE
+                and track.hits >= self.config.p4a.confirm_hits
+                and self._confirmation_blocked(track)
+            ):
+                pass  # stays tentative: emits no id until it separates/persists
+            elif track.maybe_confirm(self.config.p4a.confirm_hits):
                 track.global_player_id = self._mint_id()
                 self.diagnostics["tracks_confirmed"] += 1
             if track.should_delete(

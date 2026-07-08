@@ -140,20 +140,30 @@ def bbox_bottom_center_px(bbox_xywh_px: list[float]) -> np.ndarray:
     return np.array([x + w / 2.0, y + h], dtype=float)
 
 
-def ground_contact_pixel(
+def ground_contact_pixel_ex(
     bbox_xywh_px: list[float],
     keypoints_px: np.ndarray,
     keypoint_confidence: np.ndarray,
     *,
     ankle_confidence_min: float = 0.6,
     max_ankle_above_bbox_fraction: float = 0.25,
-) -> np.ndarray:
-    """Return a conservative image-space foot contact for a COCO-17 pose.
+    mode: str = "legacy",
+    ankle_height_m: float = 0.10,
+    horizontal_margin_frac: float = 0.15,
+    level_frac: float = 0.15,
+) -> tuple[np.ndarray, float, str]:
+    """Foot contact pixel + the world height of the landmark used + its source.
 
-    The lower confident ankle is preferable to the bbox bottom, but only when it
-    is geometrically plausible.  Pose models frequently hallucinate one ankle
-    around a knee or a raised foot; accepting that point unconditionally moves a
-    ground-plane projection by several metres with the long cricket lenses.
+    Returns ``(pixel, height_m, source)`` where ``height_m`` is the metric height of
+    the projected landmark above the ground (so a caller can back-project the ankle
+    onto the ``z = height_m`` plane instead of ``z = 0``, removing the ~10 cm
+    ankle-above-ground bias, F2) and ``source`` is one of ``ankle_mid`` /
+    ``ankle_planted`` / ``bbox_bottom``.
+
+    ``mode="legacy"`` reproduces the historical behaviour exactly (lower confident
+    ankle, else bbox bottom-centre; ``height_m`` always 0). ``mode="v2"`` fixes the
+    foot-pixel defects (F3 tighter + horizontal plausibility, F4/F6 midpoint as the
+    cross-camera-consistent reference, F2 ankle height reported).
     """
 
     bbox = np.asarray(bbox_xywh_px, dtype=float)
@@ -161,28 +171,84 @@ def ground_contact_pixel(
     confidence = np.asarray(keypoint_confidence, dtype=float)
     bottom = bbox_bottom_center_px(list(bbox))
     if bbox.shape != (4,) or points.shape != (17, 2) or confidence.shape != (17,):
-        return bottom
+        return bottom, 0.0, "bbox_bottom"
     if not np.isfinite(bbox).all() or bbox[2] <= 0.0 or bbox[3] <= 0.0:
-        return bottom
+        return bottom, 0.0, "bbox_bottom"
 
     tolerance = max(20.0, max_ankle_above_bbox_fraction * float(bbox[3]))
-    plausible: list[np.ndarray] = []
-    for index in (15, 16):
-        point = points[index]
-        if (
-            np.isfinite(point).all()
-            and np.isfinite(confidence[index])
-            and float(confidence[index]) >= ankle_confidence_min
-            and bottom[1] - tolerance <= point[1] <= bottom[1] + 0.1 * bbox[3]
-        ):
-            plausible.append(point)
-    if not plausible:
-        return bottom
-    if len(plausible) == 2 and abs(float(plausible[0][1] - plausible[1][1])) <= 0.05 * bbox[3]:
-        return np.mean(np.asarray(plausible, dtype=float), axis=0)
-    # Image y increases downward, so the largest-y ankle is the planted/lower
-    # foot when the player is walking, bowling, or batting with one foot raised.
-    return np.asarray(max(plausible, key=lambda point: float(point[1])), dtype=float).copy()
+
+    def vertically_ok(point: np.ndarray) -> bool:
+        return bottom[1] - tolerance <= point[1] <= bottom[1] + 0.1 * bbox[3]
+
+    if mode != "v2":
+        plausible = [
+            points[i]
+            for i in (15, 16)
+            if np.isfinite(points[i]).all()
+            and np.isfinite(confidence[i])
+            and float(confidence[i]) >= ankle_confidence_min
+            and vertically_ok(points[i])
+        ]
+        if not plausible:
+            return bottom, 0.0, "bbox_bottom"
+        if len(plausible) == 2 and abs(float(plausible[0][1] - plausible[1][1])) <= 0.05 * bbox[3]:
+            return np.mean(np.asarray(plausible, dtype=float), axis=0), 0.0, "ankle_mid"
+        return np.asarray(max(plausible, key=lambda p: float(p[1])), dtype=float).copy(), 0.0, "ankle_planted"
+
+    # --- v2 -----------------------------------------------------------------
+    x_min = float(bbox[0]) - horizontal_margin_frac * float(bbox[2])
+    x_max = float(bbox[0]) + (1.0 + horizontal_margin_frac) * float(bbox[2])
+
+    def plausible_ankle(i: int) -> bool:
+        p = points[i]
+        return (
+            np.isfinite(p).all()
+            and np.isfinite(confidence[i])
+            and float(confidence[i]) >= ankle_confidence_min
+            and vertically_ok(p)                 # F3 vertical
+            and x_min <= float(p[0]) <= x_max     # F3 horizontal (new)
+        )
+
+    good = [i for i in (15, 16) if plausible_ankle(i)]
+    if not good:
+        return bottom, 0.0, "bbox_bottom"
+    if len(good) == 2:
+        a, b = points[15], points[16]
+        # F4/F6: when both feet are on the ground (roughly level) the MIDPOINT is a
+        # body-centric reference every camera agrees on; only when clearly striding
+        # (one foot well above the other) do we drop to the planted (lower) foot.
+        if abs(float(a[1] - b[1])) <= level_frac * float(bbox[3]):
+            return np.mean(np.asarray([a, b], dtype=float), axis=0), ankle_height_m, "ankle_mid"
+        planted = a if float(a[1]) > float(b[1]) else b
+        return np.asarray(planted, dtype=float).copy(), ankle_height_m, "ankle_planted"
+    return np.asarray(points[good[0]], dtype=float).copy(), ankle_height_m, "ankle_planted"
+
+
+def ground_contact_pixel(
+    bbox_xywh_px: list[float],
+    keypoints_px: np.ndarray,
+    keypoint_confidence: np.ndarray,
+    *,
+    ankle_confidence_min: float = 0.6,
+    max_ankle_above_bbox_fraction: float = 0.25,
+    mode: str = "legacy",
+    ankle_height_m: float = 0.10,
+    horizontal_margin_frac: float = 0.15,
+    level_frac: float = 0.15,
+) -> np.ndarray:
+    """Backward-compatible foot-contact pixel (see :func:`ground_contact_pixel_ex`)."""
+
+    return ground_contact_pixel_ex(
+        bbox_xywh_px,
+        keypoints_px,
+        keypoint_confidence,
+        ankle_confidence_min=ankle_confidence_min,
+        max_ankle_above_bbox_fraction=max_ankle_above_bbox_fraction,
+        mode=mode,
+        ankle_height_m=ankle_height_m,
+        horizontal_margin_frac=horizontal_margin_frac,
+        level_frac=level_frac,
+    )[0]
 
 
 def ground_homography_from_projection(projection_matrix: np.ndarray) -> np.ndarray:
@@ -391,6 +457,234 @@ def fuse_ground_estimates(
     except np.linalg.LinAlgError:
         return np.full(2, np.nan), np.diag([np.inf, np.inf])
     return fused_cov @ weighted, fused_cov
+
+
+def robust_fuse_ground(
+    points_xy: np.ndarray,
+    covariances: np.ndarray,
+    *,
+    huber_delta: float = 2.0,
+    max_iters: int = 5,
+    tol_m: float = 1e-3,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Outlier-robust inverse-covariance fusion of per-camera ground estimates.
+
+    IRLS over the members: start from the plain inverse-covariance fusion, then
+    iteratively down-weight any member whose Mahalanobis residual to the current
+    estimate exceeds ``huber_delta`` (Huber weight = delta / r), and re-fuse. This
+    is the ground-plane analogue of robust multi-view triangulation (Lee & Civera
+    2020): one camera whose foot pixel is garbage (a hallucinated ankle, a bbox cut
+    off at the frame edge) is progressively rejected instead of dragging an
+    unweighted median/mean by a metre.
+
+    Returns ``(fused_xy, fused_cov, weights)``. ``weights`` are the final per-member
+    Huber weights in [0, 1] (NaN/degenerate members get 0). Falls back to the
+    non-robust fusion when fewer than two members are usable.
+    """
+
+    points = np.asarray(points_xy, dtype=float).reshape(-1, 2)
+    covs = np.asarray(covariances, dtype=float).reshape(-1, 2, 2)
+    n = points.shape[0]
+    usable = np.array(
+        [np.isfinite(points[i]).all() and np.isfinite(covs[i]).all() for i in range(n)],
+        dtype=bool,
+    )
+    weights = np.zeros(n, dtype=float)
+    if int(usable.sum()) == 0:
+        return np.full(2, np.nan), np.diag([np.inf, np.inf]), weights
+    if int(usable.sum()) < 2:
+        fused_xy, fused_cov = fuse_ground_estimates(points, covs)
+        weights[usable] = 1.0
+        return fused_xy, fused_cov, weights
+
+    delta = max(float(huber_delta), 1e-6)
+    current, _ = fuse_ground_estimates(points, covs)
+    if not np.isfinite(current).all():
+        return np.full(2, np.nan), np.diag([np.inf, np.inf]), weights
+
+    for _ in range(max(1, int(max_iters))):
+        new_weights = np.zeros(n, dtype=float)
+        for i in range(n):
+            if not usable[i]:
+                continue
+            r2 = ground_mahalanobis_sq(points[i], np.zeros((2, 2)), current, covs[i])
+            r = float(np.sqrt(r2)) if np.isfinite(r2) else float("inf")
+            new_weights[i] = 1.0 if r <= delta else max(delta / r, 1e-3)
+        information = np.zeros((2, 2), dtype=float)
+        weighted = np.zeros(2, dtype=float)
+        for i in range(n):
+            if new_weights[i] <= 0.0:
+                continue
+            try:
+                inv = np.linalg.inv(covs[i]) * new_weights[i]
+            except np.linalg.LinAlgError:
+                continue
+            information += inv
+            weighted += inv @ points[i]
+        try:
+            fused_cov = np.linalg.inv(information)
+        except np.linalg.LinAlgError:
+            return np.full(2, np.nan), np.diag([np.inf, np.inf]), weights
+        updated = fused_cov @ weighted
+        weights = new_weights
+        if not np.isfinite(updated).all():
+            return np.full(2, np.nan), np.diag([np.inf, np.inf]), weights
+        if float(np.linalg.norm(updated - current)) < float(tol_m):
+            current = updated
+            break
+        current = updated
+
+    return current, fused_cov, weights
+
+
+def ground_from_reprojection(
+    feet_px: np.ndarray,
+    projection_matrices: np.ndarray,
+    confidences: np.ndarray | None = None,
+    *,
+    plane_heights: np.ndarray | None = None,
+    huber_delta_px: float = 8.0,
+    max_iters: int = 10,
+    tol_m: float = 1e-4,
+) -> np.ndarray:
+    """Ground ``(x, y)`` that minimizes robust reprojection error with ``z`` fixed at 0.
+
+    Solves ``argmin_{x,y} Σ_c w_c ρ(‖ project_c([x, y, 0]) − foot_c ‖)`` by Gauss–Newton
+    with Huber IRLS, using every camera's full 3×4 projection matrix jointly. Unlike
+    free-space triangulation this stays well-conditioned on the low-parallax *facing*
+    pairs (C1↔C4, C2↔C6, C3↔C5) because the depth DOF is removed by the ground
+    constraint; unlike the median of per-camera homography back-projections it is the
+    reprojection-optimal point, so with calibrated cameras it lands on the true foot to
+    a few centimetres. Initialised from the median homography back-projection.
+
+    Returns ``[x, y]`` in world metres, or NaNs if no usable view / singular system.
+    """
+
+    feet = np.asarray(feet_px, dtype=float).reshape(-1, 2)
+    projections = np.asarray(projection_matrices, dtype=float).reshape(-1, 3, 4)
+    n = feet.shape[0]
+    if projections.shape[0] != n or n == 0:
+        return np.full(2, np.nan)
+    if confidences is None:
+        confidences = np.ones(n, dtype=float)
+    confidences = np.asarray(confidences, dtype=float).reshape(-1)
+    if plane_heights is None:
+        heights = np.zeros(n, dtype=float)
+    else:
+        heights = np.asarray(plane_heights, dtype=float).reshape(-1)
+        if heights.shape[0] != n:
+            heights = np.zeros(n, dtype=float)
+
+    valid = np.array(
+        [np.isfinite(feet[i]).all() and np.isfinite(projections[i]).all() for i in range(n)],
+        dtype=bool,
+    )
+    if int(valid.sum()) == 0:
+        return np.full(2, np.nan)
+
+    inits = []
+    for i in range(n):
+        if not valid[i]:
+            continue
+        # Back-project onto the landmark's own height plane (z = h_i), so an ankle
+        # gives the (x, y) directly below it -- i.e. the true ground contact (F2).
+        xy = (
+            pixel_to_plane_xy(feet[i], projections[i], float(heights[i]))
+            if abs(float(heights[i])) > 1e-9
+            else pixel_to_ground_xy(feet[i], projections[i])
+        )
+        if np.isfinite(xy).all():
+            inits.append(xy)
+    if not inits:
+        return np.full(2, np.nan)
+    xy = np.median(np.asarray(inits, dtype=float), axis=0).astype(float)
+    if int(valid.sum()) == 1:
+        return xy  # single view: the homography back-projection is exact
+
+    delta = max(float(huber_delta_px), 1e-6)
+
+    def gauss_newton(active: np.ndarray, start: np.ndarray) -> np.ndarray:
+        point = start.astype(float).copy()
+        for _ in range(max(1, int(max_iters))):
+            JTJ = np.zeros((2, 2), dtype=float)
+            JTr = np.zeros(2, dtype=float)
+            for i in range(n):
+                if not active[i]:
+                    continue
+                P = projections[i]
+                homogeneous = P @ np.array([point[0], point[1], float(heights[i]), 1.0])
+                if abs(homogeneous[2]) < 1e-9:
+                    continue
+                projected = homogeneous[:2] / homogeneous[2]
+                residual = projected - feet[i]
+                jac = np.zeros((2, 2), dtype=float)
+                for axis in (0, 1):
+                    column = P[:, axis]
+                    jac[:, axis] = (
+                        column[:2] * homogeneous[2] - homogeneous[:2] * column[2]
+                    ) / (homogeneous[2] ** 2)
+                residual_norm = float(np.linalg.norm(residual))
+                weight = float(max(confidences[i], 1e-3))
+                if residual_norm > delta:
+                    weight *= delta / max(residual_norm, 1e-6)  # Huber IRLS
+                JTJ += weight * jac.T @ jac
+                JTr += weight * jac.T @ residual
+            try:
+                step = np.linalg.solve(JTJ + 1e-6 * np.eye(2), JTr)
+            except np.linalg.LinAlgError:
+                break
+            point = point - step
+            if not np.isfinite(point).all():
+                return np.full(2, np.nan)
+            if float(np.linalg.norm(step)) < float(tol_m):
+                break
+        return point
+
+    xy = gauss_newton(valid, xy)
+    if not np.isfinite(xy).all():
+        return np.full(2, np.nan)
+
+    # Hard inlier refit: the Huber pass down-weights a gross outlier (a hallucinated
+    # ankle can be 50-200 px off) but never fully rejects it. Drop views whose
+    # reprojection residual is a clear outlier and re-solve on the consensus, so one
+    # bad foot pixel cannot bias the metre-scale ground point at all.
+    residuals = np.full(n, np.nan)
+    for i in range(n):
+        if not valid[i]:
+            continue
+        homogeneous = projections[i] @ np.array([xy[0], xy[1], float(heights[i]), 1.0])
+        if abs(homogeneous[2]) < 1e-9:
+            continue
+        residuals[i] = float(np.linalg.norm(homogeneous[:2] / homogeneous[2] - feet[i]))
+    finite = residuals[np.isfinite(residuals)]
+    if finite.size >= 3:
+        reject = max(3.0 * delta, 2.5 * float(np.median(finite)))
+        inliers = valid & np.isfinite(residuals) & (residuals <= reject)
+        if 2 <= int(inliers.sum()) < int(valid.sum()):
+            refit = gauss_newton(inliers, xy)
+            if np.isfinite(refit).all():
+                xy = refit
+    return xy
+
+
+def ground_point_and_cov(
+    foot_pixel_xy: np.ndarray,
+    projection_matrix: np.ndarray,
+    *,
+    sigma_px: float = 2.0,
+    var_floor_m: float = 0.4,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Convenience: back-project a foot pixel to the ground and attach its covariance.
+
+    Pairs :func:`pixel_to_ground_xy` with :func:`ground_covariance` so callers get a
+    ``(xy, 2x2)`` estimate in one step, ready for :func:`robust_fuse_ground`.
+    """
+
+    xy = pixel_to_ground_xy(foot_pixel_xy, projection_matrix)
+    cov = ground_covariance(
+        foot_pixel_xy, projection_matrix, sigma_px=sigma_px, var_floor_m=var_floor_m
+    )
+    return xy, cov
 
 
 def huber_cost(r: float, delta: float) -> float:

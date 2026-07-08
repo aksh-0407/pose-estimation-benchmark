@@ -2,11 +2,11 @@
   "camera_count": 7,
   "completeness": {
     "confirmed_frame_completeness": {
-      "count": 13,
-      "max": 0.9966666666666667,
-      "mean": 0.8441365507344888,
+      "count": 12,
+      "max": 0.9983333333333333,
+      "mean": 0.8483771543306516,
       "p50": 0.9966666666666667,
-      "p95": 0.9966666666666667
+      "p95": 0.9974166666666666
     },
     "per_track": {
       "P001": {
@@ -17,8 +17,8 @@
           "cam_04",
           "cam_06"
         ],
-        "confirmed_frame_completeness": 0.9966666666666667,
-        "confirmed_frames": 598,
+        "confirmed_frame_completeness": 0.9983333333333333,
+        "confirmed_frames": 599,
         "first_frame": 212334,
         "last_frame": 212933,
         "observed_frames": 600,
@@ -126,67 +126,56 @@
         "cameras": [
           "cam_01"
         ],
-        "confirmed_frame_completeness": 0.8428571428571429,
-        "confirmed_frames": 295,
-        "first_frame": 212334,
+        "confirmed_frame_completeness": 0.8481375358166189,
+        "confirmed_frames": 296,
+        "first_frame": 212335,
         "last_frame": 212683,
-        "observed_frames": 299,
-        "span_frames": 350
+        "observed_frames": 298,
+        "span_frames": 349
       },
-      "P011": {
+      "P010": {
         "camera_count": 1,
         "cameras": [
           "cam_05"
         ],
-        "confirmed_frame_completeness": 0.44329896907216493,
-        "confirmed_frames": 172,
+        "confirmed_frame_completeness": 0.44072164948453607,
+        "confirmed_frames": 171,
         "first_frame": 212389,
         "last_frame": 212776,
-        "observed_frames": 174,
+        "observed_frames": 173,
         "span_frames": 388
+      },
+      "P011": {
+        "camera_count": 2,
+        "cameras": [
+          "cam_03",
+          "cam_05"
+        ],
+        "confirmed_frame_completeness": 0.16666666666666666,
+        "confirmed_frames": 20,
+        "first_frame": 212667,
+        "last_frame": 212786,
+        "observed_frames": 22,
+        "span_frames": 120
       },
       "P012": {
         "camera_count": 1,
         "cameras": [
-          "cam_05"
-        ],
-        "confirmed_frame_completeness": 0.5,
-        "confirmed_frames": 13,
-        "first_frame": 212667,
-        "last_frame": 212692,
-        "observed_frames": 17,
-        "span_frames": 26
-      },
-      "P014": {
-        "camera_count": 1,
-        "cameras": [
-          "cam_05"
-        ],
-        "confirmed_frame_completeness": 0.5,
-        "confirmed_frames": 2,
-        "first_frame": 212694,
-        "last_frame": 212697,
-        "observed_frames": 4,
-        "span_frames": 4
-      },
-      "P015": {
-        "camera_count": 1,
-        "cameras": [
           "cam_07"
         ],
-        "confirmed_frame_completeness": 0.7142857142857143,
-        "confirmed_frames": 5,
-        "first_frame": 212874,
+        "confirmed_frame_completeness": 0.75,
+        "confirmed_frames": 6,
+        "first_frame": 212873,
         "last_frame": 212880,
-        "observed_frames": 7,
-        "span_frames": 7
+        "observed_frames": 8,
+        "span_frames": 8
       }
     },
-    "track_count": 13
+    "track_count": 12
   },
-  "created_at": "2026-07-06T10:58:09.708032+00:00",
+  "created_at": "2026-07-07T14:16:54.759395+00:00",
   "cross_camera_agreeing_pair_count": 13543,
-  "cross_camera_agreement_rate": 0.9525249683499789,
+  "cross_camera_agreement_rate": 0.9522570665166643,
   "cross_camera_disagreement_examples": [
     {
       "camera_ids": [
@@ -409,9 +398,9 @@
       ]
     }
   ],
-  "cross_camera_pair_count": 14218,
+  "cross_camera_pair_count": 14222,
   "delivery_id": "CCPL080626M1_1_14_1",
-  "distinct_global_id_count": 13,
+  "distinct_global_id_count": 12,
   "dominant_tracks": [
     {
       "camera_count": 5,
@@ -455,8 +444,8 @@
         "cam_04",
         "cam_06"
       ],
-      "confirmed_frame_completeness": 0.9966666666666667,
-      "confirmed_frames": 598,
+      "confirmed_frame_completeness": 0.9983333333333333,
+      "confirmed_frames": 599,
       "first_frame": 212334,
       "global_player_id": "P001",
       "last_frame": 212933,
@@ -464,9 +453,9 @@
       "span_frames": 600
     }
   ],
-  "excess_id_fragment_count_proxy": 8,
+  "excess_id_fragment_count_proxy": 7,
   "expected_frames": 600,
-  "feasible_stitch_edge_count": 333,
+  "feasible_stitch_edge_count": 291,
   "frames_processed": 600,
   "group_radius_m": 1.5,
   "match_id": "CCPL080626",
@@ -474,25 +463,32 @@
   "maximum_simultaneous_id_count_per_camera": 5,
   "online_tracker": {
     "binding_ground_outliers": 7,
-    "binding_matches": 4828,
-    "binding_tracks_spawned": 18,
-    "geometry_matches": 456,
+    "binding_matches": 4792,
+    "binding_tracks_spawned": 8,
+    "geometry_matches": 474,
+    "local_identity_matches": 20,
     "local_track_ownership_transfers": 1,
     "local_track_reassignment_conflicts_prevented": 51,
-    "reentries": 2,
-    "tracks_confirmed": 15,
-    "tracks_deleted": 14,
-    "tracks_spawned": 20
+    "reentries": 3,
+    "shadow_absorbs": 2,
+    "tracks_confirmed": 12,
+    "tracks_deleted": 10,
+    "tracks_spawned": 15
+  },
+  "quality_verdict": {
+    "expected_roster_max": 15,
+    "reasons": [],
+    "verdict": "pass"
   },
   "same_camera_duplicate_identity_assignments": 0,
   "same_camera_identity_collision_examples": [],
   "same_camera_identity_collision_frames": 0,
   "schema_version": "global_id_metrics/v1",
-  "segment_count": 64,
-  "selected_stitch_link_count": 2,
+  "segment_count": 58,
+  "selected_stitch_link_count": 0,
   "status": "pass",
-  "stitched_id_switch_proxy_count": 2,
-  "teleport_event_count": 9,
+  "stitched_id_switch_proxy_count": 0,
+  "teleport_event_count": 11,
   "teleport_examples": [
     {
       "frames": [
@@ -515,23 +511,39 @@
         212688,
         212689
       ],
-      "global_player_id": "P012",
+      "global_player_id": "P011",
       "speed_mps": 19.510665381137244
+    },
+    {
+      "frames": [
+        212692,
+        212694
+      ],
+      "global_player_id": "P011",
+      "speed_mps": 21.960918357416542
     },
     {
       "frames": [
         212695,
         212696
       ],
-      "global_player_id": "P014",
+      "global_player_id": "P011",
       "speed_mps": 18.23505201672074
+    },
+    {
+      "frames": [
+        212873,
+        212874
+      ],
+      "global_player_id": "P012",
+      "speed_mps": 149.37216176975804
     },
     {
       "frames": [
         212874,
         212875
       ],
-      "global_player_id": "P015",
+      "global_player_id": "P012",
       "speed_mps": 31.514255015665526
     },
     {
@@ -539,7 +551,7 @@
         212875,
         212876
       ],
-      "global_player_id": "P015",
+      "global_player_id": "P012",
       "speed_mps": 24.912473952747664
     },
     {
@@ -547,7 +559,7 @@
         212877,
         212878
       ],
-      "global_player_id": "P015",
+      "global_player_id": "P012",
       "speed_mps": 23.90996860123091
     },
     {
@@ -555,7 +567,7 @@
         212878,
         212879
       ],
-      "global_player_id": "P015",
+      "global_player_id": "P012",
       "speed_mps": 34.4908252807108
     },
     {
@@ -563,12 +575,12 @@
         212879,
         212880
       ],
-      "global_player_id": "P015",
+      "global_player_id": "P012",
       "speed_mps": 20.036812972289866
     }
   ],
   "track_state_record_counts": {
-    "confirmed": 13432,
-    "tentative": 61
+    "confirmed": 13442,
+    "tentative": 51
   }
 }

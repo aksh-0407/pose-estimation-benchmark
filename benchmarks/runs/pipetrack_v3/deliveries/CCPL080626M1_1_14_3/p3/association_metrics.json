@@ -4,7 +4,7 @@
   "anchor_switch_frequency": 0.0,
   "appearance_images_missing": 0,
   "association_mode": "tracklet_graph",
-  "binding_count": 31,
+  "binding_count": 11,
   "calibration_anchor_pair_count": 3,
   "calibration_diff_pair_count": 35,
   "calibration_preflight": {
@@ -22,7 +22,7 @@
     "p95": 4.0
   },
   "cluster_count": 6380,
-  "created_at": "2026-07-06T11:09:58.232236+00:00",
+  "created_at": "2026-07-07T14:23:47.067749+00:00",
   "cue_d_prime": {
     "appearance": 0.0,
     "ground_dist_m": 4.248,
@@ -90,6 +90,7 @@
   },
   "frames_processed": 600,
   "graph_diagnostics": {
+    "clusters_demoted": 20,
     "merges_accepted": 19,
     "merges_blocked": 8,
     "purity_splits": 18,

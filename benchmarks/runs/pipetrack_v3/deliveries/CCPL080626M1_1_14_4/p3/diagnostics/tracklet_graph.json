@@ -237,44 +237,10 @@
         "cam_06_trk_0001",
         0
       ]
-    ],
-    "B011": [
-      [
-        "cam_07",
-        "cam_07_syn_001",
-        0
-      ]
-    ],
-    "B012": [
-      [
-        "cam_07",
-        "cam_07_syn_002",
-        0
-      ]
-    ],
-    "B013": [
-      [
-        "cam_07",
-        "cam_07_trk_0005",
-        0
-      ]
-    ],
-    "B014": [
-      [
-        "cam_02",
-        "cam_02_trk_0088",
-        0
-      ]
-    ],
-    "B015": [
-      [
-        "cam_05",
-        "cam_05_trk_0002",
-        1
-      ]
     ]
   },
   "diagnostics": {
+    "clusters_demoted": 5,
     "merges_accepted": 13,
     "purity_splits": 2,
     "refine_moves": 1,

@@ -27,6 +27,7 @@ environment:
   env_name: cricket-rtmw-x
   profile: mmpose_v1
   smoke_profile: mmpose
+  benchmark_runner: mmpose_topdown
   config: external/mmpose/configs/wholebody_2d_keypoint/rtmpose/cocktail14/rtmw-x_8xb320-270e_cocktail14-384x288.py
   checkpoint: models/rtmw_x/weights/rtmw-x_simcc-cocktail14_pt-ucoco_270e-384x288-f840f204_20231122.pth
   assets:

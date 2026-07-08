@@ -9,6 +9,7 @@ from scripts.association.associator import (
     _foot_pixel,
     build_cost_matrix,
     select_anchor,
+    smooth_emit_feet,
     solve_optional_assignment,
 )
 from scripts.association.config import P3AssociationConfig
@@ -108,3 +109,28 @@ def test_degenerate_pair_reallocates_epipolar_weight_to_ground():
     assert _cost(True) == pytest.approx(expected, abs=1e-9)
     # A healthy pair keeps a separate, F-dependent epipolar term -> different value.
     assert _cost(False) != pytest.approx(expected, abs=1e-6)
+
+
+def _foot_det(track_id, ankle_x, player_index=0):
+    kp = np.zeros((17, 2)); kp[15] = [ankle_x - 5, 435.0]; kp[16] = [ankle_x + 5, 435.0]
+    cf = np.zeros(17); cf[15] = 0.9; cf[16] = 0.9
+    return Detection3(
+        cam_id="cam_01", player_index=player_index,
+        bbox_xywh_px=[100.0, 200.0, 80.0, 240.0], keypoints_px=kp, keypoint_conf=cf,
+        confidence=0.9, local_track_id=track_id,
+    )
+
+
+def test_smooth_emit_feet_median_kills_spike_and_is_identity_safe():
+    cfg = P3AssociationConfig(foot_contact_mode="v2", foot_smooth_window=3)
+    xs = [140.0, 141.0, 300.0, 142.0, 143.0]  # frame 2 is a hallucinated-ankle spike
+    frames = {f: {"cam_01": [_foot_det("cam_01_trk_1", x)]} for f, x in enumerate(xs)}
+
+    out = smooth_emit_feet(frames, cfg)
+    spiked = out[2]["cam_01"][0].emit_foot_px
+    assert spiked is not None and 130.0 < float(spiked[0]) < 155.0  # spike suppressed
+    for f in frames:  # emit-only: the gate input (ground_xy) is untouched
+        assert out[f]["cam_01"][0].ground_xy is frames[f]["cam_01"][0].ground_xy
+
+    off = smooth_emit_feet(frames, P3AssociationConfig(foot_smooth_window=1))
+    assert off[2]["cam_01"][0].emit_foot_px is None  # window=1 is a no-op

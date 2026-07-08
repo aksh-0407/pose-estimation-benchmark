@@ -110,7 +110,13 @@ def run_global_id(
                     player_track_references.append((player, member_track))
                 touched.add((camera_id, detection.player_index))
             if track is not None and np.isfinite(correspondence.ground_xy).all():
-                ground_observations.append((track, frame_index, correspondence.ground_xy.copy()))
+                # manager.update() has already run this frame's Kalman update, so
+                # track.kalman.pos_world_xy is the filtered (chi2-gated) posterior.
+                if config.p4a.emit_kalman_posterior and np.isfinite(track.kalman.pos_world_xy).all():
+                    emitted = track.kalman.pos_world_xy.copy()
+                else:
+                    emitted = correspondence.ground_xy.copy()
+                ground_observations.append((track, frame_index, emitted))
         for camera_id, record in camera_records.items():
             for player_index, player in enumerate(record.get("players", [])):
                 if (camera_id, player_index) not in touched:
@@ -302,11 +308,42 @@ def run_global_id(
         key=lambda item: (item["observed_frames"], item["camera_count"]),
         reverse=True,
     )[:3]
+    # Clip-level verdict from the two metrics a human can trust blind: how many
+    # identities were minted for a field that holds at most `expected_roster_max`
+    # people, and how often an identity teleported. A clip failing here needs
+    # work (usually upstream detection quality), not delivery to reviewers.
+    roster_max = config.p4a.expected_roster_max
+    distinct_ids = identity_proxy["distinct_global_id_count"]
+    teleports = teleport_metrics["teleport_event_count"]
+    verdict_reasons: list[str] = []
+    verdict = "pass"
+    if distinct_ids > 2 * roster_max:
+        verdict = "fail"
+        verdict_reasons.append(f"id_overmint: {distinct_ids} ids for <= {roster_max} people")
+    elif distinct_ids > int(1.2 * roster_max):
+        verdict = "warn"
+        verdict_reasons.append(f"id_overmint: {distinct_ids} ids for <= {roster_max} people")
+    if teleports > 60:
+        verdict = "fail"
+        verdict_reasons.append(f"teleport_storm: {teleports} events")
+    elif teleports > 20 and verdict != "fail":
+        verdict = "warn"
+        verdict_reasons.append(f"teleports_elevated: {teleports} events")
+    if collision_metrics["same_camera_identity_collision_frames"] > 0:
+        verdict = "fail"
+        verdict_reasons.append("same_camera_id_collision")
+    quality_verdict = {
+        "verdict": verdict,
+        "reasons": verdict_reasons,
+        "expected_roster_max": roster_max,
+    }
+
     metrics = {
         "schema_version": "global_id_metrics/v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "match_id": infer_match_id(delivery_id),
         "delivery_id": delivery_id,
+        "quality_verdict": quality_verdict,
         "status": (
             "pass"
             if identity_proxy["distinct_global_id_count"] > 0

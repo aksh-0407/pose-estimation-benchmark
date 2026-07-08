@@ -20,9 +20,34 @@ if str(ROOT) not in sys.path:
 from pose_estimation.cricket.contract import validate_group1_frame  # noqa: E402
 from pose_estimation.schemas import CameraCalibration  # noqa: E402
 from pose_estimation.triangulation import (  # noqa: E402
+    _COCO17_PARENT,
     confidence_ema_smooth,
+    fill_from_skeletal_prior,
+    fill_occluded_joints,
     triangulate_skeleton_ransac,
 )
+
+
+def _most_complete_pose(sequence: np.ndarray) -> np.ndarray:
+    """The identity's frame with the most triangulated joints (skeletal-prior reference)."""
+    if len(sequence) == 0:
+        return np.full((17, 3), np.nan)
+    counts = [int(np.isfinite(sequence[t]).all(axis=1).sum()) for t in range(len(sequence))]
+    return sequence[int(np.argmax(counts))]
+
+
+def _median_bone_lengths(sequence: np.ndarray) -> dict[tuple[int, int], float]:
+    """Median length of each COCO-17 bone across the identity's triangulated frames."""
+    out: dict[tuple[int, int], float] = {}
+    for child, parent in _COCO17_PARENT.items():
+        lengths = []
+        for t in range(len(sequence)):
+            c, p = sequence[t, child], sequence[t, parent]
+            if np.isfinite(c).all() and np.isfinite(p).all():
+                lengths.append(float(np.linalg.norm(c - p)))
+        if lengths:
+            out[(child, parent)] = float(np.median(lengths))
+    return out
 from scripts.association.jsonl_io import load_synchronized_records  # noqa: E402
 from scripts.tracking.calibration import load_projection_matrices_from_drive  # noqa: E402
 from scripts.tracking.runner import discover_prediction_files, infer_match_id  # noqa: E402
@@ -119,21 +144,43 @@ def triangulate_canonical_run(
     for frame_index, player_id in raw:
         per_identity[player_id].append(frame_index)
     smoothed: dict[tuple[int, str], np.ndarray] = {}
+    smoothed_conf: dict[tuple[int, str], np.ndarray] = {}
     for player_id, frames in per_identity.items():
         frames = sorted(set(frames))
         sequence = np.asarray([raw[(frame, player_id)][0] for frame in frames], dtype=float)
         confidences = np.asarray([raw[(frame, player_id)][1] for frame in frames], dtype=float)
+        # Extrapolate joints missing in scattered frames (occluded / <2 views) from their
+        # temporal neighbours, then last-resort skeletal prior, so the emitted 3D pose is
+        # complete instead of dropping the whole frame for one NaN joint.
+        sequence, confidences = fill_occluded_joints(sequence, confidences)
+        reference = _most_complete_pose(sequence)
+        bones = _median_bone_lengths(sequence)
+        for index in range(len(frames)):
+            if not np.isfinite(sequence[index]).all():
+                sequence[index], confidences[index] = fill_from_skeletal_prior(
+                    sequence[index], confidences[index], bones, reference
+                )
         filtered = confidence_ema_smooth(sequence, confidences, alpha=ema_alpha)
         smoothed.update({(frame, player_id): filtered[index] for index, frame in enumerate(frames)})
+        smoothed_conf.update({(frame, player_id): confidences[index] for index, frame in enumerate(frames)})
 
     successful = 0
+    extrapolated_joint_frames = 0
     for key, views in observations.items():
         if key not in raw:
             continue
         points = smoothed[key]
-        confidences, errors = raw[key][1], raw[key][2]
-        if not (np.isfinite(points).all() and np.isfinite(confidences).all() and np.isfinite(errors).all()):
-            continue
+        confidences = smoothed_conf[key]
+        if not np.isfinite(points).all():
+            continue  # a joint the temporal + skeletal fill still could not recover
+        # Extrapolated joints have no measured reprojection error -> finite sentinel so
+        # the contract validates; their low confidence already flags them as priors.
+        errors = np.asarray(raw[key][2], dtype=float).copy()
+        was_measured = np.isfinite(errors)
+        errors[~was_measured] = 100.0
+        if not was_measured.all():
+            extrapolated_joint_frames += 1
+        confidences = np.nan_to_num(confidences, nan=0.0)
         pose_3d = {
             "keypoints_world_m": points.tolist(),
             "confidence": np.clip(confidences, 0.0, 1.0).tolist(),
@@ -166,6 +213,7 @@ def triangulate_canonical_run(
         ),
         "triangulated_identity_frames": len(raw),
         "fully_valid_identity_frames": successful,
+        "frames_with_extrapolated_joints": extrapolated_joint_frames,
         "triangulation_success_rate": successful / len(raw) if raw else 0.0,
     }
     manifest = {

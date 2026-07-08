@@ -54,6 +54,18 @@ class P4AConfig:
     # many frames without being re-asserted, so one bad P3 merge can no longer
     # weld two players together permanently. 0 keeps the legacy permanent claims.
     ownership_ttl_frames: int = 50
+    # Shadow-id suppression: an unmatched observation within the chi2 gate of a
+    # track that was already updated this frame is ABSORBED (identity-only)
+    # instead of birthing a duplicate; a tentative sitting on top of a confirmed
+    # track is not allowed to confirm until it either separates or persists
+    # long enough to be a real player.
+    shadow_confirm_gate_m: float = 1.2
+    shadow_confirm_override_hits: int = 30
+    # Cricket capacity prior: at most 15 people can be on the field (11 fielders
+    # + 2 batsmen + 2 umpires). At the cap, a new id may only confirm well clear
+    # of every existing confirmed track.
+    expected_roster_max: int = 15
+    roster_cap_min_separation_m: float = 3.0
     # Pose-shape temporal tie-breaker: added to the Stage-2 cost INSIDE the chi2
     # gate only, so it re-ranks admissible candidates but never opens/blocks a
     # match. 0 disables. Needs empirical tuning (no identity ground truth).
@@ -61,6 +73,12 @@ class P4AConfig:
     pose_descriptor_ema: float = 0.15
     pose_min_updates: int = 5
     pose_min_shared_segments: int = 4
+    # Emit the chi2-gated Kalman POSTERIOR as the ground position instead of the raw
+    # per-frame fused observation (ISSUE-5). The posterior cannot jump faster than the
+    # gate allows, so a single bad/mis-associated measurement can no longer teleport the
+    # reported track; it also removes the double-averaging in the emit path. False keeps
+    # the legacy raw-observation emit byte-for-byte.
+    emit_kalman_posterior: bool = False
     role_params: dict[str, dict[str, float]] = field(default_factory=_default_role_params)
 
     def __post_init__(self) -> None:
@@ -71,6 +89,11 @@ class P4AConfig:
                 raise ValueError(f"{name} must be a positive integer")
         if type(self.ownership_ttl_frames) is not int or self.ownership_ttl_frames < 0:
             raise ValueError("ownership_ttl_frames must be a non-negative integer")
+        for name in ("shadow_confirm_override_hits", "expected_roster_max"):
+            if type(getattr(self, name)) is not int or getattr(self, name) <= 0:
+                raise ValueError(f"{name} must be a positive integer")
+        for name in ("shadow_confirm_gate_m", "roster_cap_min_separation_m"):
+            _positive(name, getattr(self, name))
         for name in ("chi2_gate_2dof", "reentry_mahalanobis_gate", "reentry_gap_scale_frames",
                      "reentry_kinematic_slack", "cap_max_pos_var",
                      "local_identity_mahalanobis_gate"):

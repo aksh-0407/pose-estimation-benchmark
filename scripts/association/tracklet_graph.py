@@ -762,15 +762,28 @@ class TrackletGraphBuilder:
         moves = self._refine(cluster_members, cluster_of, llr_lookup)
         self.diagnostics["refine_moves"] = moves
         self._rescue_singletons(cluster_members, cluster_of, edges, llr_lookup)
+        self._attach_fragments_by_trajectory(cluster_members, cluster_of)
 
+        # Only clusters with real identity evidence EARN a binding id: seen by
+        # two cameras, or one long stable single-camera track (an umpire). Short
+        # fragments emit as unbound low-confidence detections — P4 absorbs or
+        # ignores them instead of minting a fresh global id per fragment (the
+        # mechanism that produced 54 ids for ~9 people on shattered-P2 clips).
         clusters_raw = sorted(
             cluster_members.values(),
             key=lambda keys: (min(self._chunks[k].first_frame for k in keys), keys[0]),
         )
         binding_of_chunk: dict[ChunkKey, str] = {}
         clusters: dict[str, list[ChunkKey]] = {}
-        for index, keys in enumerate(clusters_raw):
-            binding = f"B{index + 1:03d}"
+        index = 0
+        for keys in clusters_raw:
+            cameras = {key[0] for key in keys}
+            longest = max(len(self._chunks[key].frames) for key in keys)
+            if len(cameras) < 2 and longest < self.config.binding_min_single_frames:
+                self.diagnostics["clusters_demoted"] += 1
+                continue
+            index += 1
+            binding = f"B{index:03d}"
             clusters[binding] = sorted(keys)
             for key in keys:
                 binding_of_chunk[key] = binding
@@ -901,6 +914,95 @@ class TrackletGraphBuilder:
             del cluster_members[old_id]
             cluster_of[singleton] = target
             self.diagnostics["rescued_singletons"] += 1
+
+    def _attach_fragments_by_trajectory(
+        self,
+        cluster_members: dict[int, list[ChunkKey]],
+        cluster_of: dict[ChunkKey, int],
+    ) -> None:
+        """Attach leftover fragments to the binding whose TRAJECTORY they lie on.
+
+        When P2 shatters (low light, sprints), a player's camera-track breaks into
+        many short chunks with too little pairwise co-visibility for normal edges.
+        But the player's multi-camera binding still traces a fused trajectory
+        through every one of those fragments — the same information the ghost
+        markers draw. A fragment is attached when it rides one binding's
+        trajectory (median distance within the gate for most of its life),
+        no same-camera overlap contradicts it, posture does not veto it, and no
+        second binding competes.
+        """
+
+        def is_anchor_cluster(keys: list[ChunkKey]) -> bool:
+            cameras = {key[0] for key in keys}
+            longest = max(len(self._chunks[key].frames) for key in keys)
+            return len(cameras) >= 2 or longest >= self.config.binding_min_single_frames
+
+        postures = self._chunk_postures()
+        for _ in range(2):  # attached fragments extend trajectories; one repeat
+            targets: dict[int, dict[int, np.ndarray]] = {}
+            for cid, keys in cluster_members.items():
+                if not is_anchor_cluster(keys):
+                    continue
+                trajectory: dict[int, list[np.ndarray]] = defaultdict(list)
+                for key in keys:
+                    for frame, ground in self._chunks[key].ground_by_frame.items():
+                        trajectory[frame].append(ground)
+                targets[cid] = {
+                    frame: np.mean(np.asarray(points), axis=0)
+                    for frame, points in trajectory.items()
+                }
+            changed = False
+            for cid in sorted(cluster_members):
+                keys = cluster_members.get(cid)
+                if keys is None or is_anchor_cluster(keys):
+                    continue
+                candidates: list[tuple[float, int]] = []
+                for target_id, trajectory in sorted(targets.items()):
+                    if target_id == cid:
+                        continue
+                    if not self._cluster_compatible(keys, cluster_members[target_id], {}):
+                        continue  # same-camera overlap: a different person
+                    distances: list[float] = []
+                    fragment_frames = 0
+                    for key in keys:
+                        chunk = self._chunks[key]
+                        fragment_frames += len(chunk.frames)
+                        for frame, ground in chunk.ground_by_frame.items():
+                            reference = trajectory.get(frame)
+                            if reference is not None:
+                                distances.append(float(np.linalg.norm(ground - reference)))
+                    if len(distances) < max(10, fragment_frames // 2):
+                        continue
+                    median_distance = float(np.median(distances))
+                    if median_distance > self.config.graph_traj_attach_gate_m:
+                        continue
+                    # Posture veto: a fragment that clearly belongs to a different
+                    # build must not ride a nearby trajectory.
+                    veto = False
+                    for target_key in cluster_members[target_id]:
+                        z = posture_distance_z(
+                            postures.get(keys[0]), postures.get(target_key),
+                        )
+                        if z is not None and z[0] > 3.5:
+                            veto = True
+                            break
+                    if not veto:
+                        candidates.append((median_distance, target_id))
+                if not candidates:
+                    continue
+                candidates.sort()
+                best_distance, best_target = candidates[0]
+                if len(candidates) > 1 and candidates[1][0] < best_distance * 1.5:
+                    self.diagnostics["fragment_attach_ambiguous"] += 1
+                    continue
+                cluster_members[best_target] = sorted(cluster_members[best_target] + keys)
+                for key in keys:
+                    cluster_of[key] = best_target
+                del cluster_members[cid]
+                self.diagnostics["fragments_attached"] += 1
+                changed = True
+            if not changed:
+                break
 
     # --------------------------------------------------------------- emit
 

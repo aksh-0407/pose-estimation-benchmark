@@ -336,7 +336,9 @@ def test_graph_cannot_link_same_camera_overlap():
 
 
 def test_purity_split_on_teleporting_tracklet():
-    config = _graph_config()
+    # Low binding_min_single_frames: this test exercises the split->separate
+    # identities mechanics; demotion of short fragments is tested separately.
+    config = _graph_config(binding_min_single_frames=25)
     builder = TrackletGraphBuilder(config, PROJECTIONS)
     rng = np.random.default_rng(9)
     for frame in range(60):
@@ -485,3 +487,34 @@ def test_synthetic_tracklets_chain_untracked_detections_and_bind():
     corr = builder.emit_frame(40, dets, solution, PROJECTIONS)
     bound = [c for c in corr if c.binding_id is not None]
     assert len(bound) == 1 and set(bound[0].members) == {"cam_01", "cam_04"}
+
+
+def test_short_fragments_are_demoted_and_trajectory_attach_recovers_them():
+    config = _graph_config()
+    builder = TrackletGraphBuilder(config, PROJECTIONS)
+    rng = np.random.default_rng(17)
+    # A player crosses the ground, seen continuously by both cameras — but in
+    # cam_01 the P2 track shatters into disjoint short tracklets (dark-footage
+    # failure mode). Fragments must ride the binding's trajectory, not mint ids.
+    for frame in range(240):
+        pos = np.array([-4.0 + frame * 0.03, 0.0]) + rng.normal(0, 0.05, 2)
+        dets = {"cam_04": [_detection("cam_04", 0, pos, "cam_04_trk_A")], "cam_01": []}
+        fragment = frame // 40  # six fragments too short to earn normal edges
+        if frame % 40 < 15:
+            dets["cam_01"].append(
+                _detection("cam_01", 0, pos + rng.normal(0, 0.05, 2), f"cam_01_trk_f{fragment}")
+            )
+        builder.observe_frame(frame, dets)
+    # A stray far-away short fragment must NOT attach anywhere.
+    for frame in range(60, 80):
+        dets = {"cam_01": [_detection("cam_01", 1, np.array([10.0, 8.0]), "cam_01_trk_stray")]}
+        builder.observe_frame(frame, dets)
+    solution = builder.solve(CueCalibration())
+
+    bindings = {solution.binding_of_chunk.get(key)
+                for key in solution.binding_of_chunk if key[1] != "cam_01_trk_stray"}
+    assert len({b for b in bindings if b}) == 1  # one identity for the player
+    attached = builder.diagnostics.get("fragments_attached", 0)
+    assert attached >= 4  # the shattered cam_01 fragments joined the binding
+    stray_chunks = [k for k in solution.binding_of_chunk if k[1] == "cam_01_trk_stray"]
+    assert not stray_chunks  # demoted: no binding id for a 20-frame stray

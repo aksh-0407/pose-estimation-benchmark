@@ -31,8 +31,15 @@ environment:
   env_name: cricket-yolo26x-pose
   profile: ultralytics_pose
   smoke_profile: ultralytics
+  benchmark_runner: yolo
   checkpoint: models/yolo26x_pose/weights/yolo26x-pose.pt
   model_name: models/yolo26x_pose/weights/yolo26x-pose.pt
   smoke_image: external/mmpose/projects/rtmpose/examples/onnxruntime/human-pose.jpeg
+  assets:
+  - kind: url
+    url: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26x-pose.pt
+    path: models/yolo26x_pose/weights/yolo26x-pose.pt
+    required_for_smoke: true
   notes:
-  - Ultralytics downloads official weights on first use.
+  - Ultralytics pose weights are mirrored from the official assets release so setup
+    can prefetch them.

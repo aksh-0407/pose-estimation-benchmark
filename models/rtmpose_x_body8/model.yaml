@@ -1,0 +1,47 @@
+schema_version: 1
+model:
+  id: rtmpose_x_body8
+  name: RTMPose-x Body8 Halpe26 384x288
+  family: OpenMMLab RTMPose
+  role: best_rtmpose_body_candidate
+  framework: mmpose
+  skeleton: halpe26
+  input_size:
+  - 384
+  - 288
+  checkpoint: models/rtmpose_x_body8/weights/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth
+  config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py
+  export_targets:
+  - onnx
+  license: Apache-2.0 for code; verify checkpoint terms
+  status: candidate
+  expected_strengths:
+  - Largest (x) RTMPose body backbone; highest-capacity RTMPose body checkpoint available
+  - Native Halpe-26 output whose first 17 joints are exactly COCO-17 (indices 0-16),
+    so it drops into the COCO-17 pipeline unchanged
+  - Halpe-26 adds head/neck/hip and 6 foot keypoints (heels + big/small toes), directly
+    useful for 3D ground-contact work
+  - 384x288 input for higher keypoint pixel accuracy
+  expected_risks:
+  - Heaviest and slowest RTMPose body variant
+  - No pure COCO-17 x checkpoint exists upstream; the only x body model is Body8/Halpe-26,
+    sliced to COCO-17 downstream
+  sources:
+  - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
+  - https://arxiv.org/abs/2303.07399
+environment:
+  env_name: cricket-rtmpose-l
+  profile: mmpose_v1
+  smoke_profile: mmpose
+  benchmark_runner: mmpose_topdown
+  config: external/mmpose/configs/body_2d_keypoint/rtmpose/body8/rtmpose-x_8xb256-700e_body8-halpe26-384x288.py
+  checkpoint: models/rtmpose_x_body8/weights/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth
+  assets:
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth
+    path: models/rtmpose_x_body8/weights/rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288-7fb6e239_20230606.pth
+    required_for_smoke: true
+  - kind: url
+    url: https://download.openmmlab.com/mmpose/v1/projects/rtmpose/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+    path: models/rtmdet_m_person/weights/rtmdet_m_8xb32-100e_coco-obj365-person-235e8209.pth
+    required_for_smoke: true

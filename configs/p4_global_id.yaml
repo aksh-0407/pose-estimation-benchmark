@@ -2,6 +2,10 @@ frame_rate_fps: 50.0
 kinematic_v_max_mps: 9.0
 
 p4a:
+  # Emit the chi2-gated Kalman posterior as the ground position (ISSUE-5). Verified on
+  # all 8: trajectory jitter (disp p95) ~halved, worst emitted jump 14.0 m -> 0.36 m
+  # (_7), collisions still 0. The reported track can no longer teleport on one bad frame.
+  emit_kalman_posterior: true
   confirm_hits: 3
   lost_window_frames: 30
   bowler_lost_window_frames: 60
@@ -22,6 +26,11 @@ p4a:
   # (camera, P2-tracklet) ownership claims expire after this many frames without
   # re-assertion, so one bad merge can heal instead of poisoning the tracklet.
   ownership_ttl_frames: 50
+  # Shadow-id suppression + cricket capacity prior (max 15 people on the field).
+  shadow_confirm_gate_m: 1.2
+  shadow_confirm_override_hits: 30
+  expected_roster_max: 15
+  roster_cap_min_separation_m: 3.0
   # Pose-shape temporal tie-breaker (added to the Stage-2 cost inside the chi2 gate
   # only). pose_match_weight scales a [0,1] bone-ratio distance; 0 disables. A track
   # must accumulate pose_min_updates confident descriptors before its pose is trusted,

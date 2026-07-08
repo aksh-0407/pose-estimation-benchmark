@@ -74,6 +74,8 @@ graph_move_margin: 0.5
 graph_refine_passes: 2
 graph_cannot_link_overlap_frames: 3
 graph_rescue_min_covis: 30
+graph_traj_attach_gate_m: 1.5
+binding_min_single_frames: 150
 graph_hard_dist_gate_m: 2.75
 graph_motion_enabled: true
 graph_min_app_samples: 5
@@ -81,6 +83,13 @@ ground_sigma_px_base: 2.0
 ground_sigma_px_bbox_frac: 0.01
 # Floor absorbs cross-camera calibration bias (~0.7-1.2 m same-player residuals).
 ground_var_floor_m: 0.4
+# Emitted cluster ground position. z0_reproj = joint z=0-constrained robust (Huber +
+# inlier refit) reprojection minimisation over every member's projection matrix; uses
+# the (cm-accurate) calibration directly and is well-posed on the low-parallax facing
+# pairs, unlike free triangulation. Merge GATE unchanged, so clustering is identical.
+# Verified on delivery 1: emitted point 0.176->0.145 m from the triangulated foot,
+# reprojection 84->74 px vs the historical median. See wip/3d_location_redesign.md.
+ground_fusion_mode: z0_reproj
 # Feet-unusable recovery (cut-off bboxes) + synthetic tracklets for persistent
 # untracked detections (umpires): both required to bind the close-to-camera
 # figures whose bbox-bottom ground projections are garbage.

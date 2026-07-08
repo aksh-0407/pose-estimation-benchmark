@@ -1,0 +1,37 @@
+{
+  "artifact_dir": "artifacts/pipetrack_v4/mosaics/CCPL080626M1_1_14_7",
+  "delivery_id": "CCPL080626M1_1_14_7",
+  "mosaic": {
+    "fps": 25.0,
+    "frames": 600,
+    "layout": "cam_04 | cam_02 | cam_03; cam_01 | cam_06 | cam_05; __monitor__ | cam_07 | __roster__  (mirrored: cam_02, cam_03)",
+    "layout_notes": [
+      "bowling direction inferred from tracklet motion"
+    ],
+    "path": "artifacts/pipetrack_v4/mosaics/CCPL080626M1_1_14_7/CCPL080626M1_1_14_7__all_cameras.mp4",
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "run_id": "p4_v4_CCPL080626M1_1_14_7",
+  "schema_version": "cricket_pipetrack_video_manifest/v2",
+  "settings": {
+    "crf": 22,
+    "encoder": "ffmpeg/libx264",
+    "fps": 25.0,
+    "keypoint_threshold": 0.2,
+    "max_frames": null,
+    "mosaic_size": [
+      1920,
+      1080
+    ],
+    "per_camera_size": [
+      1280,
+      720
+    ],
+    "preset": "veryfast",
+    "sample_every": 1,
+    "show": "p4"
+  }
+}

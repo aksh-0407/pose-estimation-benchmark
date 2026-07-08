@@ -195,6 +195,104 @@ def triangulate_skeleton_ransac(
     return points3d, confidences, mean_reprojection_errors
 
 
+_COCO17_PARENT = {
+    # child -> parent, for skeletal-prior extrapolation of a never-triangulated joint
+    1: 0, 2: 0, 3: 1, 4: 2,          # eyes/ears <- nose
+    5: 6, 6: 12, 7: 5, 8: 6,          # shoulders/elbows
+    9: 7, 10: 8,                      # wrists <- elbows
+    11: 12, 13: 11, 14: 12,           # hips/knees
+    15: 13, 16: 14,                   # ankles <- knees
+}
+
+
+def fill_occluded_joints(
+    sequence_xyz: np.ndarray,
+    confidences: np.ndarray,
+    *,
+    max_gap_frames: int = 25,
+    fill_confidence_scale: float = 0.5,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Fill joints missing in some frames (occluded / seen in <2 views) for one identity.
+
+    A joint triangulates only when >= 2 cameras see it, so a briefly-occluded or
+    frame-edge joint is NaN in scattered frames while its neighbours are solid. This
+    fills those holes **temporally** — linear interpolation between the nearest valid
+    frames within ``max_gap_frames`` (hold at sequence ends) — which is the logical
+    extrapolation for a joint that was and will again be observed. Filled entries carry
+    reduced confidence (``fill_confidence_scale``) so downstream weights them less.
+
+    Input/output ``(T, J, 3)`` positions and ``(T, J)`` confidences. Joints never valid
+    across the whole sequence are left NaN (caller may apply a skeletal prior).
+    """
+
+    seq = np.asarray(sequence_xyz, dtype=float).copy()
+    conf = np.asarray(confidences, dtype=float).copy()
+    if seq.ndim != 3 or seq.shape[2] != 3:
+        raise ValueError("sequence_xyz must be (T, J, 3)")
+    frames, joints, _ = seq.shape
+
+    for joint in range(joints):
+        valid = np.array([bool(np.isfinite(seq[t, joint]).all()) for t in range(frames)])
+        valid_idx = np.flatnonzero(valid)
+        if valid_idx.size == 0:
+            continue
+        for t in range(frames):
+            if valid[t]:
+                continue
+            before = valid_idx[valid_idx < t]
+            after = valid_idx[valid_idx > t]
+            if before.size and after.size:
+                a, b = int(before[-1]), int(after[0])
+                if b - a <= max_gap_frames:
+                    w = (t - a) / (b - a)
+                    seq[t, joint] = (1.0 - w) * seq[a, joint] + w * seq[b, joint]
+                    conf[t, joint] = fill_confidence_scale * ((1.0 - w) * conf[a, joint] + w * conf[b, joint])
+            elif before.size and (t - int(before[-1])) <= max_gap_frames:
+                seq[t, joint] = seq[int(before[-1]), joint]  # hold last
+                conf[t, joint] = fill_confidence_scale * conf[int(before[-1]), joint]
+            elif after.size and (int(after[0]) - t) <= max_gap_frames:
+                seq[t, joint] = seq[int(after[0]), joint]  # hold next
+                conf[t, joint] = fill_confidence_scale * conf[int(after[0]), joint]
+    return seq, conf
+
+
+def fill_from_skeletal_prior(
+    points_xyz: np.ndarray,
+    confidences: np.ndarray,
+    median_bone_length_m: dict[tuple[int, int], float],
+    reference_pose: np.ndarray,
+    *,
+    fill_confidence: float = 0.15,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Place a still-missing joint using its parent + a bone vector from a reference pose.
+
+    Last-resort extrapolation for a joint temporal-fill could not recover (never seen
+    across the sequence in that gap): offset the (valid) parent joint by the bone vector
+    taken from ``reference_pose`` (the identity's most-complete triangulated frame),
+    scaled to the identity's median bone length. Very low confidence — it is a prior,
+    not a measurement.
+    """
+
+    points = np.asarray(points_xyz, dtype=float).copy()
+    conf = np.asarray(confidences, dtype=float).copy()
+    reference = np.asarray(reference_pose, dtype=float)
+    for child, parent in _COCO17_PARENT.items():
+        if np.isfinite(points[child]).all():
+            continue
+        if not np.isfinite(points[parent]).all():
+            continue
+        if not (np.isfinite(reference[child]).all() and np.isfinite(reference[parent]).all()):
+            continue
+        bone = reference[child] - reference[parent]
+        norm = float(np.linalg.norm(bone))
+        target = median_bone_length_m.get((child, parent))
+        if norm > 1e-6 and target:
+            bone = bone / norm * target
+        points[child] = points[parent] + bone
+        conf[child] = fill_confidence
+    return points, conf
+
+
 def confidence_ema_smooth(
     sequence_xyz: np.ndarray,
     confidences: np.ndarray | None = None,

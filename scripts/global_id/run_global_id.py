@@ -43,9 +43,13 @@ def main(argv: list[str] | None = None) -> int:
         expected_frames=args.expected_frames,
         ground_truth=args.ground_truth,
     )
+    quality = metrics.get("quality_verdict", {})
     print(
         f"P4: {metrics['status']}  frames={metrics['frames_processed']} "
-        f"global_ids={metrics['distinct_global_id_count']} merges={metrics['stitched_id_switch_proxy_count']}",
+        f"global_ids={metrics['distinct_global_id_count']} merges={metrics['stitched_id_switch_proxy_count']} "
+        f"teleports={metrics['teleport_event_count']} "
+        f"quality={quality.get('verdict', '?')}"
+        + (f" ({'; '.join(quality.get('reasons', []))})" if quality.get("reasons") else ""),
         flush=True,
     )
     return 0 if metrics["status"] == "pass" else 1

@@ -582,6 +582,12 @@ def player_records(results, source_skeleton: str, width: int, height: int,
         keypoints_px, confidence = select_coco17_pose(source_keypoints_px, source_confidence, coco17_indices)
         keypoints_norm = [[x / width, y / height] for x, y in keypoints_px]
 
+        # Preserve every native keypoint the model emits (e.g. all 26 Halpe joints for
+        # RTMPose-x, incl. head/neck/hip + feet) alongside the COCO-17 contract pose.
+        # Downstream/future phases can consume the richer skeleton; `pose_2d` stays
+        # COCO-17 so existing consumers and validate_group1_frame are unaffected.
+        source_keypoints_norm = [[x / width, y / height] for x, y in source_keypoints_px]
+
         players.append({
             "bbox_xywh_px": [x1, y1, bw, bh],
             "bbox_xywh_norm": [x1 / width, y1 / height, bw / width, bh / height],
@@ -595,6 +601,12 @@ def player_records(results, source_skeleton: str, width: int, height: int,
                 "keypoints_px": keypoints_px,
                 "keypoints_norm": keypoints_norm,
                 "confidence": confidence,
+            },
+            "pose_2d_native": {
+                "skeleton": source_skeleton,
+                "keypoints_px": source_keypoints_px,
+                "keypoints_norm": source_keypoints_norm,
+                "confidence": source_confidence,
             },
             "pose_3d": None,
         })
@@ -705,6 +717,10 @@ def main() -> int:
     pose_config_lower = pose_config.lower()
     if "wholebody" in pose_config_lower:
         source_skeleton = "coco_wholebody_133"
+    elif "halpe" in pose_config_lower:
+        # Halpe-26 configs (e.g. RTMPose-x body8-halpe26) emit 26 keypoints whose
+        # first 17 are COCO-17; the keypoint mapping slices them back to COCO-17.
+        source_skeleton = "halpe26"
     elif any(token in pose_config_lower for token in ("coco", "body8", "body7")):
         source_skeleton = "coco_17"
     coco17_indices = coco17_source_indices(source_skeleton)

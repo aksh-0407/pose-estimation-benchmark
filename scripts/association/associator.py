@@ -25,10 +25,14 @@ from scipy.optimize import linear_sum_assignment
 from pose_estimation.cricket.geometry import (
     bbox_bottom_center_px,
     ground_contact_pixel,
+    ground_contact_pixel_ex,
+    ground_covariance,
+    ground_from_reprojection,
     parallax_angle_deg,
     parallax_weight,
     pixel_to_ground_xy,
     reprojection_error_px,
+    robust_fuse_ground,
     sampson_distance,
     triangulate_dlt,
 )
@@ -65,6 +69,10 @@ class Detection3:
     # True when ground_xy came from an upper-body height-plane estimate because
     # the feet were cut off / occluded — carries extra positional uncertainty.
     ground_approx: bool = False
+    # Temporally-smoothed foot-contact pixel for the EMITTED position only (F7). Set by
+    # a per-(camera, tracklet) smoothing pre-pass; None => use the per-frame foot. Never
+    # feeds the clustering gate, so identity stays invariant.
+    emit_foot_px: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -165,13 +173,110 @@ def _priority_rank(cam_id: str, config: P3AssociationConfig) -> int:
 def _foot_pixel(det: Detection3, config: P3AssociationConfig) -> np.ndarray:
     """Ground-contact reference shared with P2."""
 
+    # The GATE / cost / triangulation-consistency path always uses the LEGACY foot so
+    # that which detections cluster is byte-identical regardless of foot_contact_mode.
+    # Only the emitted cluster position (z0_reproj) uses the v2 foot -- see
+    # _emit_foot_and_height. This decoupling keeps identity stable (verified: foot v2
+    # feeding the gate inflated cluster counts +25% on some deliveries).
     return ground_contact_pixel(
         det.bbox_xywh_px,
         det.keypoints_px,
         det.keypoint_conf,
         ankle_confidence_min=config.ankle_conf_min,
         max_ankle_above_bbox_fraction=config.max_ankle_above_bbox_fraction,
+        mode="legacy",
     )
+
+
+def _emit_foot_and_height(det: Detection3, config: P3AssociationConfig) -> tuple[np.ndarray, float]:
+    """Foot pixel + landmark height for the EMITTED position only (honours foot_contact_mode).
+
+    Uses the temporally-smoothed foot pixel (F7) when a smoothing pre-pass has set it,
+    keeping the per-frame landmark height/source.
+    """
+
+    pixel, height, _source = ground_contact_pixel_ex(
+        det.bbox_xywh_px,
+        det.keypoints_px,
+        det.keypoint_conf,
+        ankle_confidence_min=config.ankle_conf_min,
+        max_ankle_above_bbox_fraction=config.max_ankle_above_bbox_fraction,
+        mode=config.foot_contact_mode,
+        ankle_height_m=config.ankle_height_m,
+        horizontal_margin_frac=config.foot_horizontal_margin_frac,
+        level_frac=config.foot_level_frac,
+    )
+    smoothed = getattr(det, "emit_foot_px", None)
+    if smoothed is not None:
+        smoothed = np.asarray(smoothed, dtype=float)
+        if smoothed.shape == (2,) and np.isfinite(smoothed).all():
+            pixel = smoothed
+    return pixel, height
+
+
+def smooth_emit_feet(
+    detections_by_frame: dict[int, dict[str, list[Detection3]]],
+    config: P3AssociationConfig,
+) -> dict[int, dict[str, list[Detection3]]]:
+    """Attach a temporally-smoothed emit-foot pixel per (camera, tracklet) time series (F7).
+
+    Per-frame pose jitter (a foot bouncing ±5-15 px, an occasional hallucinated ankle)
+    turns into ground jitter and the odd teleport. Here each (camera, local_track_id)
+    foot-pixel series is passed through a short **median** filter (window
+    ``config.foot_smooth_window``, robust to single-frame spikes) and, optionally, a
+    light EMA; the result is stored on the detection as ``emit_foot_px`` for the EMITTED
+    position only. Untracked detections and windows of 1 are left untouched. Nothing here
+    feeds the clustering gate, so identity is unchanged.
+    """
+
+    from dataclasses import replace as _dc_replace
+
+    window = int(getattr(config, "foot_smooth_window", 1) or 1)
+    if window <= 1:
+        return detections_by_frame
+    half = window // 2
+
+    # Collect each (camera, tracklet) foot series in frame order.
+    series: dict[tuple[str, str], list[tuple[int, int, np.ndarray]]] = {}
+    for frame_index in sorted(detections_by_frame):
+        for camera_id, dets in detections_by_frame[frame_index].items():
+            for det_idx, det in enumerate(dets):
+                if not det.local_track_id:
+                    continue
+                foot, _height = _emit_foot_and_height(det, config)
+                foot = np.asarray(foot, dtype=float)
+                if foot.shape == (2,) and np.isfinite(foot).all():
+                    series.setdefault((camera_id, det.local_track_id), []).append(
+                        (frame_index, det_idx, foot)
+                    )
+
+    # Median-smooth each series -> lookup keyed by (frame, camera, det_idx).
+    smoothed: dict[tuple[int, str, int], np.ndarray] = {}
+    for (camera_id, _track_id), entries in series.items():
+        entries.sort(key=lambda item: item[0])
+        feet = np.asarray([entry[2] for entry in entries], dtype=float)
+        count = len(entries)
+        for position, (frame_index, det_idx, _foot) in enumerate(entries):
+            lo = max(0, position - half)
+            hi = min(count, position + half + 1)
+            smoothed[(frame_index, camera_id, det_idx)] = np.median(feet[lo:hi], axis=0)
+
+    if not smoothed:
+        return detections_by_frame
+
+    out: dict[int, dict[str, list[Detection3]]] = {}
+    for frame_index, cams in detections_by_frame.items():
+        out[frame_index] = {}
+        for camera_id, dets in cams.items():
+            new_dets = []
+            for det_idx, det in enumerate(dets):
+                key = (frame_index, camera_id, det_idx)
+                if key in smoothed:
+                    new_dets.append(_dc_replace(det, emit_foot_px=smoothed[key]))
+                else:
+                    new_dets.append(det)
+            out[frame_index][camera_id] = new_dets
+    return out
 
 
 def _detection_ground_xy(
@@ -457,21 +562,78 @@ def _gather_member_arrays(members, dets_per_cam, proj_matrices, config):
     return np.asarray(feet, float), np.asarray(projections, float), np.asarray(confidences, float)
 
 
+def _member_ground_sigma_px(detection, config: P3AssociationConfig) -> float:
+    """Foot-pixel noise (px) for this detection: base + bbox-scaled + confidence-scaled.
+
+    A small, well-detected foot near the camera is sharp; a large/low-confidence one is
+    fuzzy. This sigma feeds the ray-plane Jacobian in :func:`ground_covariance`, so a
+    grazing far foot correctly gets a large, elongated ground covariance.
+    """
+
+    bbox = np.asarray(getattr(detection, "bbox_xywh_px", None), dtype=float)
+    bbox_h = float(bbox[3]) if bbox.shape == (4,) and np.isfinite(bbox[3]) else 0.0
+    sigma = float(config.ground_sigma_px_base) + float(config.ground_sigma_px_bbox_frac) * bbox_h
+    return max(sigma, 1e-3)
+
+
 def _ground_consensus_members(members, dets_per_cam, proj_matrices, config):
     points = []
+    covs = []
     for camera_id, index in members.items():
-        point = _detection_ground_xy(
-            dets_per_cam[camera_id][index], proj_matrices[camera_id], config
-        )
+        detection = dets_per_cam[camera_id][index]
+        projection = proj_matrices[camera_id]
+        point = _detection_ground_xy(detection, projection, config)
         if not np.isfinite(point).all():
             return None, float("inf")
         points.append(point)
+        if config.ground_fusion_mode == "robust_cov":
+            covs.append(
+                ground_covariance(
+                    _foot_pixel(detection, config),
+                    projection,
+                    sigma_px=_member_ground_sigma_px(detection, config),
+                    var_floor_m=float(config.ground_var_floor_m),
+                )
+            )
     if not points:
         return None, float("inf")
     values = np.asarray(points, dtype=float)
-    centre = np.median(values, axis=0)
+    # The merge GATE is always the max pairwise spread across members -- unchanged, so
+    # which clusters form is byte-identical regardless of fusion mode.
     pairwise = np.linalg.norm(values[:, None, :] - values[None, :, :], axis=2)
-    return centre, float(np.max(pairwise))
+    max_spread = float(np.max(pairwise))
+
+    # z0_reproj also handles the SINGLE-camera case (len == 1): projecting the ankle
+    # onto its z = ankle_height plane instead of z = 0 removes the ~0.94 m grazing-angle
+    # bias that a lone camera cannot otherwise correct (measured: mean 0.94 m, p95 1.3 m).
+    # A single-member cluster has max_spread == 0, so this never affects the merge gate.
+    if config.ground_fusion_mode == "z0_reproj" and len(values) >= 1:
+        feet_heights = [_emit_foot_and_height(dets_per_cam[cam][idx], config) for cam, idx in members.items()]
+        feet = np.asarray([fh[0] for fh in feet_heights], dtype=float)
+        heights = np.asarray([fh[1] for fh in feet_heights], dtype=float)
+        projections = np.asarray([proj_matrices[cam] for cam in members], dtype=float)
+        confidences = np.asarray(
+            [max(getattr(dets_per_cam[cam][idx], "confidence", 1.0), 1e-3) for cam, idx in members.items()],
+            dtype=float,
+        )
+        solved = ground_from_reprojection(
+            feet,
+            projections,
+            confidences,
+            plane_heights=heights,
+            huber_delta_px=float(config.ground_reproj_huber_px),
+        )
+        centre = solved if np.isfinite(solved).all() else np.median(values, axis=0)
+    elif config.ground_fusion_mode == "robust_cov" and len(values) >= 2:
+        fused_xy, _fused_cov, _w = robust_fuse_ground(
+            values,
+            np.asarray(covs, dtype=float),
+            huber_delta=float(config.ground_fusion_huber_delta),
+        )
+        centre = fused_xy if np.isfinite(fused_xy).all() else np.median(values, axis=0)
+    else:
+        centre = np.median(values, axis=0)
+    return centre, max_spread
 
 
 def _triangulate_members(members, dets_per_cam, proj_matrices, config):

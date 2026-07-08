@@ -60,6 +60,10 @@ def record_to_detections(
     *,
     ankle_confidence_min: float = 0.6,
     max_ankle_above_bbox_fraction: float = 0.25,
+    foot_contact_mode: str = "legacy",
+    ankle_height_m: float = 0.10,
+    foot_horizontal_margin_frac: float = 0.15,
+    foot_level_frac: float = 0.15,
 ) -> list[Detection3]:
     """Convert detection-bearing contract players to the association domain type."""
 
@@ -91,6 +95,10 @@ def record_to_detections(
                 confidences,
                 ankle_confidence_min=ankle_confidence_min,
                 max_ankle_above_bbox_fraction=max_ankle_above_bbox_fraction,
+                mode=foot_contact_mode,
+                ankle_height_m=ankle_height_m,
+                horizontal_margin_frac=foot_horizontal_margin_frac,
+                level_frac=foot_level_frac,
             )
             ground_xy = calibrator.image_to_ground_xy(contact)
         appearance = (

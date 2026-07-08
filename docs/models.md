@@ -21,13 +21,15 @@ These are different things, and a model can have one without the other:
 So readiness has two levels: smoke-ready (all 10) and benchmark-ready (the four below).
 Downloaded assets (`check_assets.py`) are a separate precondition for both.
 
-Benchmark-ready today: `yolo26x_pose`, `rtmw_l`, `rtmw_x`, `rtmpose_l_wholebody`.
+Benchmark-ready today: `yolo26x_pose`, `rtmpose_x_body8`, `rtmw_l`, `rtmw_x`,
+`rtmpose_l_wholebody`.
 
 ## Readiness matrix
 
 | Model | Framework | Native skeleton | Smoke | Benchmark (COCO-17) | Notes |
 | ----- | --------- | --------------- | ----- | ------------------- | ----- |
 | `yolo26x_pose` | Ultralytics | COCO-17 | yes | yes (end-to-end) | Detects and poses in one pass. |
+| `rtmpose_x_body8` | MMPose | Halpe-26 | yes | yes (top-down, GT bbox) | Largest RTMPose body model; first 17 kpts = COCO-17. See note. |
 | `rtmw_l` | MMPose | WholeBody-133 | yes | yes (top-down, GT bbox) | |
 | `rtmw_x` | MMPose | WholeBody-133 | yes | yes (top-down, GT bbox) | Heaviest RTMW. |
 | `rtmpose_l_wholebody` | MMPose | WholeBody-133 | yes | yes (top-down, GT bbox) | |
@@ -77,6 +79,39 @@ checkpoint path, use a compatibility symlink back into `models/<id>/weights/` ra
 than duplicating the file or reviving the old top-level `checkpoints/` folder.
 
 ## Model-specific notes
+
+### RTMPose-x (`rtmpose_x_body8`)
+
+The largest (x) RTMPose body checkpoint — the highest-capacity RTMPose body model
+available, and the accuracy-first upgrade candidate for Phase-1 2D pose over
+`rtmpose_l_body8`. Two things to know up front:
+
+- **"body8" is the training set, not the output format.** Body8 = 8 combined body
+  datasets. `rtmpose_l_body8` is Body8-trained but *outputs* COCO-17. There is **no
+  pure COCO-17 RTMPose-x** upstream — the only x-size body checkpoint is
+  `body8-halpe26`, which outputs **Halpe-26** (26 keypoints).
+- **Halpe-26 is a strict superset of COCO-17.** Its first 17 keypoints are exactly
+  COCO-17 in COCO order; joints 17–25 add head/neck/hip and 6 foot keypoints
+  (heels + big/small toes). The `halpe26` entry in
+  [`configs/keypoint_mappings.yaml`](configuration.md#keypoint_mappingsyaml) slices it
+  back to COCO-17, so it drops into the existing pipeline unchanged. The extra foot
+  keypoints are available natively if the 3D ground-contact work ever wants them.
+
+Runs in the shared `cricket-rtmpose-l` Conda env (same `mmpose_v1` profile as the other
+RTMPose models — no new env). Setup:
+
+```bash
+# weights only (env already exists); drop --skip-envs to also (re)build the env
+python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8 --skip-envs --download-assets
+python3 scripts/setup/sync_model_store.py                 # regenerate model.yaml/README/checksums
+python3 scripts/benchmark/benchmark.py smoke --models rtmpose_x_body8
+
+# Phase-1 inference (identical CLI to rtmpose_l_body8, just swap the id)
+conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+    --model-id rtmpose_x_body8 --deliveries <id> --cameras 01
+```
+
+Checkpoint: `rtmpose-x_simcc-body7_pt-body7-halpe26_700e-384x288` (384×288, ~200 MB).
 
 ### OpenPose (`openpose_body25`)
 
