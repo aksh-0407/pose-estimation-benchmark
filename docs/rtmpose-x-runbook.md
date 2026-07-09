@@ -5,8 +5,8 @@ Phase-1 2D-pose model. This is the end-to-end guide to stand it up on a fresh ma
 (e.g. a remote GPU server) and run the full detection over every delivery at peak
 throughput.
 
-See also: [models.md](models.md#rtmpose-x-rtmpose_x_body8) for the model-identity note
-and the Halpe-26 vs COCO-17 explanation.
+RTMPose-X emits **Halpe-26** (26 keypoints): the first 17 are exactly COCO-17 in COCO
+order; 18–26 add head/neck/hip + 6 foot keypoints (heels, big/small toes).
 
 ---
 
@@ -64,26 +64,18 @@ python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing
 ## 4. Smoke test (one image)
 
 ```bash
-python3 scripts/benchmark/benchmark.py smoke --models rtmpose_x_body8
+python3 scripts/setup/run_model_smoke.py --model rtmpose_x_body8
 ```
 
 Expect `status: ok`, `instances: 1`, `keypoints: 26`.
 
-## 5. Tune batch/io/prefetch for THIS machine (a few minutes, writes no predictions)
+## 5. Tune batch/io/prefetch for THIS machine
 
-Throughput depends on the GPU, CPU core count, and disk speed, so tune on the actual
-box. The sweep runs `--benchmark-only` (no output written) and ranks by median FPS:
-
-```bash
-conda run -n cricket-rtmpose-l python scripts/tuning/tune_rtmpose_batches.py \
-  --model-id rtmpose_x_body8 \
-  --det-batches 16 24 32 --pose-batches 96 160 256 \
-  --io-workers-list 8 16 24 --prefetch-list 2 4 \
-  --repeats 2
-```
-
-It prints the top settings and writes `results/rtmpose_batch_tuning.csv` +
-`.summary.json`. Note the winning `det_batch / pose_batch / io_workers / prefetch`.
+Throughput depends on the GPU, CPU core count, and disk speed, so tune on the actual box.
+The P1 runner itself exposes the knobs directly — do a short scoped run
+(`--deliveries <one> --frame-limit 200 --no-resume`) at a few `--det-batch-size` /
+`--pose-batch-size` / `--io-workers` / `--prefetch-batches` settings and compare the FPS
+recorded in `run_manifest.json`. Note the winning combination for the full run below.
 
 > **Why sweep io/prefetch too?** Top-down RTMDet+RTMPose are batch-invariant in eval
 > (batch size changes speed only, never output). On this dataset the frames are large

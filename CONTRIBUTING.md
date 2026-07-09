@@ -1,49 +1,52 @@
 # Contributing
 
-This repository is a shared benchmarking workspace. Results land on `main` through pull
-requests so they can be reviewed and so the published comparison report stays current.
+This repository is the **Group-1 cricket 3D-pose & identity pipeline**. Changes land on
+`main` through pull requests so they can be reviewed and so the pipeline stays runnable
+end-to-end. (The COCO benchmarking framework lives on the `benchmark` branch.)
 
 ## Prerequisites
 
 A Linux machine with an NVIDIA GPU and conda. Cloning gives you code, configs, and docs;
-model weights and datasets are not committed and are downloaded locally during setup.
-See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
+model weights and the frame dataset are **not** committed and are set up locally. See
+[docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
 
 ## One-time setup
 
 ```bash
-git clone https://github.com/aksh-0407/pose-estimation-benchmark
-cd pose-estimation-benchmark
+git clone <this-repo> pose-estimation && cd pose-estimation
 pip install -r requirements.txt
-python3 scripts/benchmark/benchmark.py prepare --models all --datasets coco17_val2017
-python3 scripts/setup/check_assets.py --models all --fail-missing
-python3 scripts/benchmark/benchmark.py smoke --models all
+
+# P1 model env + weights (RTMPose-X + RTMDet detector)
+python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8 --download-assets
+python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing
 ```
 
-The `prepare` step builds a conda environment per model and downloads weights plus COCO.
-It takes a while and some mirrors can be flaky; see
-[docs/troubleshooting.md](docs/troubleshooting.md) if a download fails.
+The tracking/association/global-ID/triangulation stages (P2–P6) run in an env with
+NumPy ≥ 1.23.5 and SciPy ≥ 1.10 (e.g. `cricket-yolo26x-pose`). See the per-stage commands
+in [docs/scripts.md](docs/scripts.md).
 
 ## Workflow
 
 1. Create a branch: `git checkout -b <your-name>/<task>`.
-2. Do the work:
-   - Run a benchmark: `python3 scripts/benchmark/benchmark.py run --models <id> --datasets coco17_val2017`.
-   - Or add a model adapter: see [docs/adding-a-model.md](docs/adding-a-model.md).
+2. Do the work. Run the relevant stage(s) on the reference delivery
+   `CCPL080626M1_1_14_1` and eyeball the mosaic / bird's-eye render.
 3. Before committing, run the checks:
    ```bash
-   python3 scripts/setup/audit_repo.py --fail
    python3 -m pytest -q
+   python3 scripts/setup/audit_repo.py --fail
    ```
-4. Commit only source and compact evidence: the new `benchmarks/runs/<run_id>/` folder and
-   any config changes. Do not commit weights, datasets, raw artifacts, or generated
-   `results/` and `benchmarks/reports/` files. They are gitignored, and CI regenerates the
-   report.
-5. Push your branch and open a pull request. A maintainer merges it into `main`, and CI
-   republishes the report.
+4. Commit only source, configs, docs, and the small committed run metrics
+   (`benchmarks/runs/<run>/**/​*_metrics.json`, manifests). Do **not** commit weights,
+   frames, or raw per-frame prediction dumps — they are gitignored.
+5. Push and open a pull request.
 
-## What goes in git
+## Ground rules for pipeline changes
 
-The full policy is in [docs/collaboration.md](docs/collaboration.md). Short version:
-commit code, configs, docs, and `benchmarks/runs/<run_id>/`; keep weights, datasets,
-upstream clones, and raw artifacts local.
+- **Behaviour-changing stage logic goes behind a config flag** where practical, so an
+  A/B against the frozen baseline is possible (the pattern used throughout `configs/`).
+- **Prove it, don't assume it.** Re-run the affected stage(s) and compare the committed
+  proxy metrics (cross-camera agreement, distinct-ID count, teleports, ground-reprojection)
+  against the baseline snapshot before claiming a win. See
+  [docs/metrics.md](docs/metrics.md) and [docs/improving-models.md](docs/improving-models.md).
+- **The same-camera identity invariant is hard**: two detections in the same camera-frame
+  must never share a global ID. Don't weaken it.

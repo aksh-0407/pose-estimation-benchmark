@@ -1,152 +1,106 @@
 # Getting started
 
-This guide takes you from a fresh checkout to your first real benchmark result.
-Every step ends with a **✓ Check** so you know it worked before moving on.
+This guide takes you from a fresh checkout to a **rendered mosaic** on one cricket
+delivery. Every step ends with a **✓ Check** so you know it worked before moving on.
 
-If you want the *why* behind any of this, read [concepts.md](concepts.md) alongside it.
+The reference delivery throughout is `CCPL080626M1_1_14_1` (7 cameras × 600 frames).
 
 ## Prerequisites
 
-You need:
+- **Linux with an NVIDIA GPU** (P1 pose inference is the throughput bottleneck).
+- **Conda** on your `PATH`.
+- **Python 3** plus the small dependency set in [requirements.txt](../requirements.txt):
+  `pip install -r requirements.txt`.
+- The frame dataset laid out as
+  `drive/dataset/bt_0{1,2,3}/<delivery>/camera<NN>/frame_*.jpg` and calibration under
+  `drive/dataset/calibration-data/` (not committed — provided out of band).
 
-- **Linux with an NVIDIA GPU** for real runs. (You can do most of the setup and the
-  YOLO path on CPU, but speed numbers are only meaningful on GPU — see the note in the
-  [README](../README.md).)
-- **Conda** (Miniconda/Anaconda) on your `PATH`. Each model lives in its own Conda
-  env; the tooling creates them for you.
-- **Python 3** for the orchestrator itself, plus the small dependency set in
-  [requirements.txt](../requirements.txt): `pip install -r requirements.txt`.
-- Build tools only if you intend to run **OpenPose** (a C++/Caffe build) — `cmake`,
-  a C++ compiler, and BLAS. Skip this unless you need OpenPose.
-
-Quick environment probe (binaries, Python packages, GPU):
+Quick environment probe:
 
 ```bash
 python3 scripts/setup/check_environment.py
 ```
 
-**✓ Check:** it prints your Python version and, if a GPU is visible, your CUDA device
-under `nvidia-smi`. Missing entries here tell you what to install.
+**✓ Check:** it prints your Python version and, if a GPU is visible, your CUDA device.
 
-## Step 0 — Confirm the orchestrator runs
+## Step 0 — Confirm the checkout is healthy
 
 ```bash
 python3 -m pytest -q
 python3 scripts/setup/audit_repo.py --fail
 ```
 
-**✓ Check:** tests pass and the audit prints `Repository hygiene audit passed`. You're
-working from a clean, consistent checkout.
+**✓ Check:** tests pass and the audit prints `Repository hygiene audit passed`.
 
-## Step 1 — Prepare environments and the dataset
+## Step 1 — Set up the P1 model (RTMPose-X + RTMDet detector)
 
-This creates the per-model Conda envs, downloads model weights, and downloads COCO.
-It's the longest step (weights + COCO are several GB).
-
-```bash
-# Everything (envs + assets + COCO). Add --download-large-assets for Sapiens2.
-python3 scripts/benchmark/benchmark.py prepare --models all --datasets coco17_val2017
-```
-
-Doing a lot the first time? Two smaller, faster paths:
+P1 is top-down: an RTMDet person detector feeds the RTMPose-X pose model. Both are set up
+together in the `cricket-rtmpose-l` conda env.
 
 ```bash
-# Just the YOLO path, to get to a result quickly:
-python3 scripts/benchmark/benchmark.py prepare --models yolo26x_pose --datasets coco17_val2017
-
-# See what would run, without doing it:
-python3 scripts/benchmark/benchmark.py prepare --models all --datasets coco17_val2017 --dry-run
+python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8 --download-assets
+python3 scripts/setup/sync_model_store.py
+python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing
 ```
 
-Weights land in local-only `models/<id>/weights/`; COCO lands in `data/raw/coco/`.
-Neither is committed.
+**✓ Check:** `check_assets` exits 0 with the RTMPose-X pose weights and the RTMDet
+detector weights both present under `models/`.
 
-**✓ Check:** `data/raw/coco/val2017/` contains ~5000 `.jpg` files and
-`data/raw/coco/annotations/person_keypoints_val2017.json` exists.
+For a full install/run/tune walkthrough (incl. remote GPU boxes), see
+[rtmpose-x-runbook.md](rtmpose-x-runbook.md).
 
-> Downloads can fail on some networks (notably `download.openmmlab.com`). That's
-> expected and recoverable — see [troubleshooting.md](troubleshooting.md).
-
-## Step 2 — Confirm assets are present
+## Step 2 — P1: 2D pose over the delivery
 
 ```bash
-python3 scripts/setup/check_assets.py --models all --fail-missing
+conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+  --model-id rtmpose_x_body8 --deliveries CCPL080626M1_1_14_1 \
+  --run-id p1_demo --run-dir benchmarks/runs/p1_demo
 ```
 
-**✓ Check:** exit code 0 and a table showing each required checkpoint as present. If a
-model is missing weights, this tells you exactly which file and where it should go.
+**✓ Check:** `benchmarks/runs/p1_demo/predictions/` has 7 JSONL files (one per camera),
+each ~600 lines. Every player record carries `pose_2d` (COCO-17) and `pose_2d_native`
+(Halpe-26, 26 kpts incl. feet).
 
-## Step 3 — Smoke test (one image per model)
+## Step 3 — P2 → P4: tracking, association, global identity
 
-Smoke pushes a single image through each model to prove the env, config, and
-checkpoint load and produce keypoints. It is **not** a benchmark — it's a 30-second
-"is this wired up?" check.
+Run the identity stages in an env with NumPy ≥ 1.23.5 / SciPy ≥ 1.10:
 
 ```bash
-# One model first is the fastest signal:
-python3 scripts/benchmark/benchmark.py smoke --models yolo26x_pose
+PY=/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python
+D=CCPL080626M1_1_14_1 ; ROOT=benchmarks/runs/demo
 
-# Then everything:
-python3 scripts/benchmark/benchmark.py smoke --models all
+$PY -m scripts.tracking.run_per_camera_tracking \
+  --input-run-dir benchmarks/runs/p1_demo --output-run-dir $ROOT/p2 \
+  --drive-root drive --delivery-id $D --config configs/p2_tracking.yaml
+
+$PY -m scripts.association.run_cross_camera_association \
+  --input-run-dir $ROOT/p2 --output-run-dir $ROOT/p3 \
+  --drive-root drive --delivery-id $D --config configs/p3_association.yaml
+
+$PY -m scripts.global_id.run_global_id \
+  --input-run-dir $ROOT/p3 --output-run-dir $ROOT/p4 \
+  --drive-root drive --delivery-id $D --config configs/p4_global_id.yaml
 ```
 
-Some models have device/size caveats:
+**✓ Check:** `$ROOT/p4/` contains `predictions/*.jsonl` with `global_player_id`,
+`diagnostics/ground_tracks.jsonl`, and `global_id_metrics.json`. Open the metrics: distinct
+IDs should be near the ~13–15 roster and same-camera collisions should be 0.
+
+## Step 4 — Render the mosaic
 
 ```bash
-python3 scripts/benchmark/benchmark.py smoke --models openpose_body25 --device cpu
-python3 scripts/benchmark/benchmark.py smoke --models sapiens2_1b_pose --allow-heavy --device cuda:0
+$PY -m scripts.visualization.render_phase1_videos \
+  --drive-root drive --run-dir $ROOT/p4 --delivery-id $D --mode mosaic --show p4
 ```
 
-**✓ Check:** each model reports a passing status — `ok`, or `ready_heavy_skipped` /
-`ready_runtime_limited` for the heavy models on a laptop. Results are logged to
-`results/smoke_results.csv` (local scratch) and a per-model manifest under
-`benchmarks/runs/<smoke_run_id>/`. A non-passing status points you at
-[troubleshooting.md](troubleshooting.md).
-
-## Step 4 — Run a real benchmark
-
-Four models are benchmark-ready on `coco17_val2017`: **`yolo26x_pose`** (end-to-end) and
-**`rtmw_l` / `rtmw_x` / `rtmpose_l_wholebody`** (top-down with GT boxes — see the
-protocol note in [models.md](models.md)). We'll use `yolo26x_pose` here. Start small with
-`--limit` to confirm the whole pipeline, then do the full set.
-
-```bash
-# A fast 100-image sanity run:
-python3 scripts/benchmark/benchmark.py run --models yolo26x_pose --datasets coco17_val2017 --limit 100 --batch-size 8
-
-# The full COCO val (5000 images):
-python3 scripts/benchmark/benchmark.py run --models yolo26x_pose --datasets coco17_val2017 --batch-size 8
-```
-
-The run id is generated for you (timestamped, readable). If a run stops partway,
-re-running the **same command with the same `--run-id`** resumes the remaining images
-— it doesn't start over (details in [results-format.md](results-format.md)).
-
-**✓ Check:** the command prints `Wrote immutable benchmark run: benchmarks/runs/<run_id>`
-and that folder contains `run_manifest.json`, `hardware.json`, `software.json`, and
-`metrics/yolo26x_pose__coco17_val2017.json` with real `coco_oks_ap` / latency numbers.
-
-> Run a model without a benchmark adapter yet (anything outside the four benchmark-ready
-> models) and the run still succeeds, but its metrics file is marked `adapter_pending`
-> instead of holding scores. That's expected — see [models.md](models.md).
-
-## Step 5 — Preview the comparison
-
-`aggregate` collects every run folder's metrics into one CSV; `report` renders it as
-HTML. On `main`, **CI does this for everyone** — but running it locally is the way to
-preview your own numbers.
-
-```bash
-python3 scripts/benchmark/benchmark.py aggregate
-python3 scripts/benchmark/benchmark.py report
-```
-
-**✓ Check:** `results/aggregate_metrics.csv` has a row per run, and
-`benchmarks/reports/aggregate/index.html` opens as a table in your browser. Both files
-are local/derived — you do **not** commit them (see [collaboration.md](collaboration.md)).
+**✓ Check:** `$ROOT/p4/visualizations/videos/<delivery>__all_cameras.mp4` plays: 7 camera
+tiles + a bird's-eye ground monitor + a roster panel, with skeletons coloured by stable
+global ID. A top-down-only view is `--mode ground`.
 
 ## You're done — now what?
 
-- Ready to share results with the team? → [collaboration.md](collaboration.md)
-- Want to benchmark a model that isn't here yet? → [adding-a-model.md](adding-a-model.md)
-- Curious what each flag/script does? → [scripts.md](scripts.md)
+- Understand *why* each stage does what it does, and where it's weak → the
+  **[critical analysis](critical-analysis/README.md)**.
+- Run all identity stages over every delivery at once →
+  [`scripts.pipetrack.run_id_pipeline`](scripts.md#the-batch-identity-driver).
+- Improve jitter / identity / 3D location → [improving-models.md](improving-models.md).

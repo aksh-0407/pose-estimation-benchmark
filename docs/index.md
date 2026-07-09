@@ -1,50 +1,53 @@
 # Documentation
 
-This workspace benchmarks pose estimation models so a team can compare them on the
-same datasets, with the same metrics, and merge results cleanly into `main`.
+This is the **Group-1 cricket 3D-pose & identity pipeline**: 7-camera cricket footage →
+per-player 2D pose → cross-camera identity → 3D pose & ground location → mosaic render.
 
-If you only read one page, read **[getting-started.md](getting-started.md)**.
+If you only read one page, read **[getting-started.md](getting-started.md)**. If you want
+the engineering depth, read the **[critical analysis](critical-analysis/README.md)**.
 
-## Read these in order (Start here)
+## Start here
 
 | # | Doc | What you get |
 | - | --- | ------------ |
-| 1 | [getting-started.md](getting-started.md) | Install prerequisites and run your first benchmark end to end, with a success check after every step. |
-| 2 | [concepts.md](concepts.md) | The mental model: tracked vs. local, what a "run" is, the five-stage pipeline, and why it's built this way. |
-| 3 | [workflow.md](workflow.md) | The `prepare → smoke → run → aggregate → report` pipeline in depth — what each stage does and when to use it. |
-| 4 | [collaboration.md](collaboration.md) | The single source of truth for what goes to GitHub vs. stays local, plus the multi-person branch/merge workflow. |
+| 1 | [getting-started.md](getting-started.md) | From a fresh checkout to a rendered mosaic on one delivery, step by step. |
+| 2 | [critical-analysis/phases.md](critical-analysis/phases.md) | The ordered pipeline (current **and** proposed), inputs/outputs, and flowcharts. |
+| 3 | [critical-analysis/README.md](critical-analysis/README.md) | Per-phase methods, math, weaknesses, and the prioritised fix roadmap. |
 
-## Look these up when you need them (Reference)
+## Reference
 
 | Doc | Use it when… |
 | --- | ------------ |
-| [improving-models.md](improving-models.md) | …you're reducing noise, smoothing, fusing cameras, or fine-tuning. This is the core project work. |
-| [scripts.md](scripts.md) | …you want to know exactly what a script does, its inputs/outputs, and its key flags. |
-| [configuration.md](configuration.md) | …you need to read or edit a `configs/*.yaml` file. |
-| [models.md](models.md) | …you're choosing a model or hit a model-specific quirk (OpenPose, Sapiens2, ViTPose). |
-| [rtmpose-x-runbook.md](rtmpose-x-runbook.md) | …you're installing, running, or tuning RTMPose-x (the largest RTMPose, 26-kpt) Phase-1 detection on a new/remote machine. |
-| [datasets.md](datasets.md) | …you need to download or understand a dataset. |
-| [metrics.md](metrics.md) | …you want to know what a metric means or which ones are reported. |
-| [results-format.md](results-format.md) | …you're inspecting a run folder or wondering what's safe to commit. |
-| [adding-a-model.md](adding-a-model.md) | …you want to benchmark a model that isn't in the registry yet. |
-| [troubleshooting.md](troubleshooting.md) | …something failed (downloads, OpenPose build, CUDA, empty benchmarks). |
+| [scripts.md](scripts.md) | …you want to know exactly what a pipeline script does, its I/O, and key flags. |
+| [rtmpose-x-runbook.md](rtmpose-x-runbook.md) | …you're installing/running/tuning P1 (RTMPose-X) on a new or remote machine. |
+| [configuration.md](configuration.md) | …you need to read or edit a `configs/*.yaml` (p2/p3/p4, model envs, keypoint maps). |
+| [metrics.md](metrics.md) | …you want to know what a reported number or proxy means. |
+| [improving-models.md](improving-models.md) | …you're reducing jitter, fixing identity, or improving 3D location. |
+| [troubleshooting.md](troubleshooting.md) | …something broke (model download, env, CUDA). |
+
+## The pipeline stages
+
+`P1` 2D inference → `P2` per-camera tracking → `P3` cross-camera association → `P4` global
+identity → `P5` roles → `P6` 3D lift → UE export / mosaic render. Each stage reads and
+writes a canonical run directory. Full detail in
+[critical-analysis/phases.md](critical-analysis/phases.md).
 
 ## Common commands
 
 ```bash
-# 1. one-time: install model envs + download COCO
-python3 scripts/benchmark/benchmark.py prepare --models all --datasets coco17_val2017
+# P1 — 2D pose over a delivery (RTMPose-X, top-down); emits COCO-17 + Halpe-26
+conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+  --model-id rtmpose_x_body8 --deliveries CCPL080626M1_1_14_1 \
+  --run-id rtmpose-x --run-dir benchmarks/runs/rtmpose-x
 
-# 2. confirm assets are present
-python3 scripts/setup/check_assets.py --models all --fail-missing
+# P2→P4 identity (batch driver over deliveries), then inspect the metric panel
+PY=/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python
+$PY -m scripts.pipetrack.run_id_pipeline \
+  --input-tree benchmarks/runs/pipetrack_v3 --output-tree benchmarks/runs/pipetrack_v5 --jobs 8
 
-# 3. quick readiness check
-python3 scripts/benchmark/benchmark.py smoke --models all
-
-# 4. a real benchmark (benchmark-ready: yolo26x_pose, rtmw_l, rtmw_x, rtmpose_l_wholebody)
-python3 scripts/benchmark/benchmark.py run --models yolo26x_pose --datasets coco17_val2017
-
-# 5. preview the comparison locally (CI does this for real on main)
-python3 scripts/benchmark/benchmark.py aggregate
-python3 scripts/benchmark/benchmark.py report
+# Render the mosaic (7 tiles + bird's-eye monitor + roster), coloured by global ID
+$PY -m scripts.visualization.render_phase1_videos \
+  --drive-root drive --run-dir <p4-run> --delivery-id CCPL080626M1_1_14_1 --mode mosaic --show p4
 ```
+
+See [scripts.md](scripts.md) for the full per-stage command sequence (P2→P3→P4→P6).

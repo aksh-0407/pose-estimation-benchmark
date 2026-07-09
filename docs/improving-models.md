@@ -1,128 +1,67 @@
-# Reducing noise and improving model outputs
+# Improving the pipeline
 
-Picking a model is the starting point, not the goal. Off-the-shelf 2D keypoints are
-noisy: they jitter frame to frame, drop out under occlusion, and produce false or
-swapped detections in crowded scenes. The production value comes from improving those
-outputs: filtering bad detections, fusing multiple cameras, smoothing over time, and
-fine-tuning on the target domain. This page explains how the repo supports that work.
+Getting a good model is the starting point, not the goal. Off-the-shelf 2D keypoints
+jitter, drop out under occlusion, and get swapped in crowds; multi-view fusion and identity
+are where the production value is. This page is the map of *where the quality lives now* and
+how to work on it. The definitive, evidence-backed analysis is in the
+[critical analysis](critical-analysis/README.md); this is the practical loop.
 
-The benchmark harness is the measurement tool. The improvement work is a loop:
-
-```
-baseline run  ->  apply an intervention  ->  re-measure  ->  compare
-                  (filter / fuse /            (same metrics)   (did jitter and
-                   smooth / fine-tune)                          error go down?)
-```
-
-Every intervention should be proven, not assumed. Run a baseline, apply the change,
-run again, and compare the committed numbers. That is what the immutable run folders,
-aggregation, and report exist for.
-
-## What the repo gives you
-
-### 1. Measuring noise and quality
-
-Implemented and tested in [`pose_estimation/metrics.py`](../pose_estimation/metrics.py):
-
-- `temporal_jitter(sequence_xyz, fps)`: mean frame-to-frame joint displacement. The core
-  "how noisy is this" number.
-- `reprojection_error(...)`: how far a triangulated 3D point lands from its 2D
-  observations. Low reprojection error means consistent multi-view geometry.
-- `mpjpe` / `p_mpjpe`: 3D position error against ground truth (raw and Procrustes-aligned).
-- `weighted_model_score(...)`: the selection score that already weights
-  `stability_jitter` (0.10) alongside accuracy, so a less jittery model scores higher.
-
-The full robustness inventory (occlusion, motion-blur, low-light buckets, dropped-track
-rate, temporal jitter) and the acceptance thresholds (reprojection <= 10 px, MPJPE
-<= 25 mm) live in [`configs/benchmark_protocol.yaml`](configuration.md#benchmark_protocolyaml).
-
-### 2. Reducing noise
-
-Implemented and tested in [`pose_estimation/triangulation.py`](../pose_estimation/triangulation.py):
-
-- **Multi-view geometric denoising.** `ransac_triangulate_point(...)` and
-  `triangulate_skeleton_ransac(...)` triangulate each joint with pairwise RANSAC and
-  re-fit on inlier views, rejecting any 2D observation whose reprojection error exceeds
-  `reprojection_threshold_px`. This removes per-camera detection noise using the geometry
-  of the other cameras. Exposed end to end by
-  [`scripts/triangulate_predictions.py`](scripts.md#triangulate_predictionspy)
-  (`--reprojection-threshold-px`, `--min-views`).
-- **Temporal smoothing.** `confidence_ema_smooth(sequence_xyz, confidences, alpha)`
-  applies confidence-aware exponential smoothing to a `T x J x 3` sequence: high-confidence
-  frames update quickly, low-confidence frames lean on the previous estimate, and missing
-  joints are carried forward. This is the direct lever on `temporal_jitter`.
-
-### 3. Making the models better
-
-- **Teachers for pseudo-labeling and distillation.** `vitpose_h` (accuracy teacher) and
-  `sapiens2_1b_pose` (offline teacher) are in the registry precisely so you can generate
-  high-quality labels on hard cricket frames and distill them into a faster student.
-- **Domain fine-tuning.** `fine_tuning_augmentations` in
-  [`configs/benchmark_protocol.yaml`](configuration.md#benchmark_protocolyaml) lists the
-  augmentations aimed at cricket noise (equipment-occlusion overlay, motion blur, partial
-  crops, low-confidence masking). Fine-tune, then re-benchmark to prove the gain.
-
-## Where denoising sits in the pipeline
-
-For multi-camera cricket production the path is:
+## The improvement loop
 
 ```
-2D keypoints (per camera)
-   -> per-view confidence gating / filtering
-   -> multi-view triangulation  (RANSAC, geometric outlier rejection)  [triangulation.py]
-   -> temporal smoothing         (confidence-aware EMA)                 [triangulation.py]
-   -> 3D pose
-   -> Unreal Engine export                                             [export_ue_packets.py]
+baseline run  ->  apply one change (behind a flag)  ->  re-run affected stage(s)  ->  diff the panel
+                  (detector / smooth / cue / gate)      (same deliveries)            (broad win? no regressions?)
 ```
 
-Each arrow is a place to measure jitter and reprojection error before and after, and to
-try a better method.
+Every intervention should be **proven, not assumed**: run the baseline, apply the change,
+re-run, and compare the committed proxy metrics
+([`run_id_pipeline.py`](scripts.md#the-batch-identity-driver) prints them jointly). A change
+is a win only if it helps broadly across the 8 deliveries without regressing a hard
+invariant or another clip. See [metrics.md](metrics.md).
 
-## What exists vs. what you will build
+## Where the quality lives (measured)
 
-Honest status, so nobody assumes more than is there:
+The calibration is centimetre-accurate and **3D location is largely solved** (the emitted
+ground error is down ~36% and jitter is halved). **Identity is now the dominant ceiling** —
+mosaics place players correctly but their IDs swap and fragment. In rough priority:
 
-- **Built and tested:** the triangulation, RANSAC outlier rejection, confidence-aware
-  smoothing, and the jitter / reprojection / MPJPE metrics above
-  ([`tests/test_triangulation.py`](../tests/test_triangulation.py),
-  [`tests/test_metrics.py`](../tests/test_metrics.py)).
-- **Your work:** wiring these into an end-to-end "denoise then re-benchmark" flow on
-  cricket multi-view video, and improving the methods themselves (better filters, learned
-  smoothing, occlusion handling, fine-tuned students). The temporal and multi-view metrics
-  need video sequences with calibration, which the 2D COCO still-image benchmarks do not
-  have; that is the `cricket_internal` dataset and calibration described in
-  [datasets.md](datasets.md). The 2D COCO benchmarks give you the per-frame model-quality
-  baseline to build on.
+1. **Cross-camera under-merge** on the low-parallax facing pairs (`cam_01↔04`, `02↔06`,
+   `03↔05`) — the epipolar geometry is weak and the colour cue is dead, so two views of one
+   player become two IDs.
+2. **Fragmentation / over-segmentation** — players lost through occlusion are re-born as new
+   IDs; stitching under-merges. 18–25 IDs vs a ~13 roster.
+3. **The colour-appearance cue is effectively dead** (d′ ≈ 0) — both teams wear near-identical
+   kit and the footage is desaturated. Body proportions (pose-shape) and a learned,
+   kit-robust re-ID embedding are the substitutes to invest in.
+4. **Teleports** — an ID jumps to a different nearby person in crowds/occlusion.
 
-## A concrete improvement loop
+The open issues, their evidence, and prioritised fixes are enumerated per phase in the
+[critical analysis](critical-analysis/README.md) and in `wip/id_issues.md` /
+`wip/3d_location_issues_v2.md`.
 
-Multi-view predictions in hand, triangulate with two outlier thresholds and compare the
-reprojection error and triangulation success rate:
+## The levers the code already gives you
 
-```bash
-python3 scripts/triangulate_predictions.py \
-  --predictions preds.jsonl --calibration cameras.json \
-  --output tri_loose.jsonl --reprojection-threshold-px 12
+- **2D denoising** — the P1 output feeds everything, so cleaner 2D helps every stage.
+  Confidence gating, outlier rejection, and temporal smoothing of keypoints (One-Euro /
+  Savitzky-Golay) are the front-line jitter levers.
+- **Multi-view geometric denoising** — `pose_estimation/triangulation.py`
+  (`ransac_triangulate_point`, `triangulate_skeleton_ransac`) rejects a bad view using the
+  geometry of the others; `confidence_ema_smooth` smooths the 3D trajectory.
+- **Ground-plane solving** — `pose_estimation/cricket/geometry.py` (`ground_from_reprojection`
+  = the `z0_reproj` emitter, `ground_covariance`, `robust_fuse_ground`) turns multi-view foot
+  pixels into a position with uncertainty on the low-parallax facing geometry.
+- **Cue fusion** — the P3 tracklet graph fuses ground/epipolar/appearance/pose-shape/motion
+  as log-likelihood ratios; the P4 Singer-KF + min-cost-flow stitcher maintain identity.
+  Most improvements are new/stronger cues or better gates behind a `configs/*` flag.
 
-python3 scripts/triangulate_predictions.py \
-  --predictions preds.jsonl --calibration cameras.json \
-  --output tri_tight.jsonl --reprojection-threshold-px 6
-```
+## Practical starting points
 
-Then, in a short script, load a sequence, measure `temporal_jitter` before smoothing,
-apply `confidence_ema_smooth`, and measure again:
+- Reduce 2D jitter at the source (a stabilization pass on the P1 stream) and re-measure
+  `temporal_jitter` before/after.
+- Promote **pose-shape / a learned re-ID descriptor** from a soft tie-breaker to a primary
+  cross-camera cue where colour is dead (fixes under-merge on facing pairs).
+- Give the clustering a way to **split** a chimera (correlation clustering / a reprojection
+  -gated refine pass), since single-linkage can merge but never un-merge.
 
-```python
-from pose_estimation.metrics import temporal_jitter
-from pose_estimation.triangulation import confidence_ema_smooth
-
-before = temporal_jitter(sequence_xyz, fps=50)
-smoothed = confidence_ema_smooth(sequence_xyz, confidences, alpha=0.65)
-after = temporal_jitter(smoothed, fps=50)
-print("jitter:", before, "->", after)
-```
-
-Sweep `alpha` and the reprojection threshold, keep what lowers jitter without hurting
-accuracy, and record the result as a run so the team can compare. See
-[metrics.md](metrics.md) for the metric definitions and [workflow.md](workflow.md) for the
-run/aggregate/report loop.
+Each of these is spelled out with SOTA references and expected effect in the per-phase docs
+under [critical-analysis/](critical-analysis/README.md).

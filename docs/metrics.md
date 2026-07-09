@@ -1,61 +1,65 @@
-# Metrics
+# Metrics & quality proxies
 
-The full metric inventory is defined in
-[`configs/benchmark_protocol.yaml`](configuration.md#benchmark_protocolyaml). This page
-explains the groups in prose. The acceptance thresholds and selection weights that turn
-metrics into pass/fail and rankings are in
-[configuration.md](configuration.md#benchmark_protocolyaml).
+There is **no per-player identity or 3D-location ground truth** for the cricket
+deliveries, so almost every quality number the pipeline reports is an explicitly-labelled
+**proxy** derived from geometry and self-consistency. This page defines them. (If you add
+labels, `--ground-truth` unlocks real MOTA/IDF1 in P4.)
 
-## The golden rule: always report reduced COCO-17
+## Calibration accuracy (the anchor)
 
-Whatever a model's native skeleton, it **must** emit reduced `coco_17` keypoints via
-[`configs/keypoint_mappings.yaml`](configuration.md#keypoint_mappingsyaml). The COCO-17
-column is the apples-to-apples comparison across all models. Native-skeleton metrics
-(whole-body, BODY_25, …) are reported **in addition**, never instead.
+The one hard, externally-checkable number: **ball reprojection error**. Projecting the
+surveyed/known ball position into each camera lands within **mean 1.2–1.9 px, p95 ≤ 4.5 px**
+on all deliveries. This is why identity and location are solved directly on the calibrated
+ground plane — the calibration is centimetre-accurate and can be trusted.
 
-## 2D metrics
+## Identity proxies (P3 / P4)
 
-- **COCO OKS AP / AR** — the headline accuracy numbers (Object Keypoint Similarity,
-  averaged over thresholds; the YOLO/COCO runner reports `ap`, `ap50`, `ap75`,
-  medium/large variants, and `ar`).
-- **PCK@0.05 / 0.10 / 0.20** — fraction of keypoints within a normalized distance.
-- **mean pixel error**, **normalized mean error**, **per-keypoint error**.
-- **detection rate**, **missing keypoint rate**, **confidence calibration error**.
+Reported in `association_metrics.json` and `global_id_metrics.json`:
 
-## Native-capability metrics
+- **cross-camera agreement rate** — fraction of frames where independent bbox-bottom ground
+  projections agree on the clustering. Low agreement ⇒ the same player is split across
+  cameras (under-merge). Ranges ~0.50–0.98 across deliveries.
+- **distinct global-ID count** — total IDs minted. A cricket scene has ~13–15 people
+  (≤7 visible per camera); counts of 18–25 indicate **over-segmentation / fragmentation**.
+- **teleport event count** — an ID moving faster than 9 m/s between frames (a mis-assignment
+  to a different person). Observed 7–155 per delivery.
+- **same-camera identity collisions** — two detections in one camera-frame sharing a global
+  ID. This is a **hard invariant**: it is 0 by construction and must stay 0.
+- **cluster cycle-consistency rate** — fraction of ≥3-view clusters that triangulate to one
+  consistent point (≤12 px). Failures are likely **chimeras** (two people merged).
+- **cue d′ (separability)** — how well a cue (appearance colour histogram, ground distance,
+  pose-shape) separates same-vs-different players. The colour-appearance cue's d′ ≈ 0 on
+  most deliveries (near-identical kit, desaturated footage) — i.e. it carries almost no
+  identity information.
 
-Model-family specific, reported where dataset annotations support them:
+## 3D-location proxies (P3 / P6)
 
-- **body / foot / face / hand AP** (whole-body models on COCO-WholeBody).
-- **native skeleton completeness** and **reduced COCO-17 score**.
+From `eval_ground_accuracy.py` and the P6 triangulation:
 
-Whole-body models report body/foot/face/hand; body-only models report completeness
-against their own skeleton plus the reduced COCO-17 column.
+- **emitted-point reprojection error (px)** — reproject the emitted ground/3D point into the
+  member camera views; distance to the actual foot pixels used.
+- **distance-to-triangulated-foot (m)** — for ≥3-view clusters, the emitted ground point vs
+  the calibration-optimal triangulated foot. The current emitter (`z0_reproj`) achieves
+  ~0.147 m mean (down from ~0.211 m).
+- **per-joint triangulation reprojection** — full-skeleton 3D lift is 2–4 px per joint
+  (p95 5–7 px) where ≥2 cameras see the player.
+- **ground-spread** — max pairwise disagreement (m) between cameras' ground projections for
+  a cluster; a purity/coverage signal.
+- **single-camera rate** — fraction of player-frames seen by only one camera (~0.39–0.61).
+  These get no triangulation and a weakly-corrected position.
 
-## 3D metrics
+## Temporal quality
 
-For the triangulation path (multi-view → 3D):
+- **temporal jitter** — mean frame-to-frame joint displacement (the "how noisy" number),
+  measured on 2D keypoints and on 3D/ground trajectories. `pose_estimation/metrics.py`
+  provides `temporal_jitter`, `reprojection_error`, `mpjpe`/`p_mpjpe`.
+- **emitted-trajectory jump p95** — worst per-frame position jump after the Kalman-posterior
+  emit (halved vs the raw re-mean; worst case cut from 14.0 m to 0.36 m on the hardest clip).
 
-- **MPJPE / PA-MPJPE** (mean per-joint position error, raw and Procrustes-aligned).
-- **PCK3D**, **AUC**, **acceleration error**.
-- **mean reprojection error (px)**, **triangulation success rate**, **per-joint 3D error**.
+## How to use them
 
-## Speed metrics
-
-- **cold start**, **model load time**.
-- **preprocess / inference / postprocess / end-to-end latency**.
-- **p50 / p90 / p95 / p99 latency**, **FPS per camera**.
-- **GPU/CPU memory peak**, **GPU utilization** where available.
-
-> **Speed numbers are only comparable when their context matches.** Hardware, driver,
-> CUDA/runtime, precision, backend, batch size, input size, and warmup policy all
-> change the result. Every run records this in its manifests
-> (see [results-format.md](results-format.md)) — which is exactly why a laptop number
-> and an A100 number can't be compared without that context.
-
-## Robustness metrics
-
-Aimed at the cricket target: occlusion / motion-blur / low-light bucket scores,
-multi-person crowd failure rate, temporal jitter, and dropped-track rate. The cricket
-occlusion tags (gloves, helmet, pads, bat, ball, other players, …) are listed in
-`benchmark_protocol.yaml`.
+No single proxy is optimised in isolation — the batch driver
+([`run_id_pipeline.py`](scripts.md#the-batch-identity-driver)) prints them **jointly** across
+all deliveries and diffs against a frozen baseline. A change is a "win" only if it improves
+the panel broadly without regressing the hard invariants (same-camera collisions = 0) or
+another delivery. See [improving-models.md](improving-models.md).

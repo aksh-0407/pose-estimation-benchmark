@@ -3,96 +3,64 @@
 Common failures and what to do. When in doubt, start with
 `python3 scripts/setup/check_environment.py` to see what's actually installed.
 
-## Downloads
+## Model download
 
 ### `download.openmmlab.com` times out
 
-The OpenMMLab host is unreliable on some networks — this is the single most common
-setup snag. It affects the `.pth` checkpoints for RTMW, RTMO, and ViTPose. Options:
+The OpenMMLab host is unreliable on some networks — it serves the RTMPose-X pose weights
+and the RTMDet person-detector checkpoint. Options:
 
 - Retry — it's often transient.
 - Download the file from another network or a verified mirror, then drop it at the exact
-  `path` listed for that asset in
-  [`configs/model_envs.yaml`](configuration.md#model_envsyaml).
-- Re-check with `python3 scripts/setup/check_assets.py --models <id> --fail-missing`.
+  `path` listed for that asset in [`configs/model_envs.yaml`](configuration.md#model-setup).
+- Re-check with `python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing`.
 
-Some assets ship with a `fallback_urls` mirror in the config (OpenPose, RTMW-X) that the
-downloader tries automatically.
+### mmpose config `_base_` not found
 
-### COCO download size
+P1 resolves mmpose/mmdet configs relative to the vendored source tree at `external/mmpose`.
+If it's missing:
+`git clone -b v1.3.2 https://github.com/open-mmlab/mmpose.git external/mmpose`.
 
-COCO val2017 is ~1 GB of images, plus a transient ~241 MB annotation zip. Use
-`--remove-archives` to delete the `.zip` files after extraction (images/annotations are
-kept).
-
-## Source-control
+## Source control
 
 ### Checkpoints / weights show as untracked
 
-**That's expected and correct.** `models/*/weights/` and `models/*/checksums/` are
-ignored so multi-GB binaries and machine-specific checksums never get committed. The
-metadata (`model.yaml`, `README.md`) is what's tracked. See
-[collaboration.md](collaboration.md).
+**Expected and correct.** `models/*/weights/` and `models/*/checksums/` are gitignored so
+multi-GB binaries never get committed; only `model.yaml` / `README.md` are tracked. Same for
+frames under `drive/` and raw per-frame prediction dumps.
 
 ### `audit_repo.py` reports tracked artifacts
 
-It found a weight, dataset, raw artifact, or derived file (`results/*.csv`,
-`benchmarks/reports/*`) that was committed by mistake. Un-track it:
-`git rm --cached <path>` (the file stays on disk), then commit. `.gitignore` should keep
-it out going forward.
+It found a weight, frame, or raw artifact that was committed by mistake. Un-track it with
+`git rm --cached <path>` (the file stays on disk), then commit; `.gitignore` keeps it out
+going forward.
 
-## Models
+## Pipeline runs
 
-### Smoke passes but the benchmark is empty / says `adapter_pending`
+### P2–P6 import errors (NumPy/SciPy)
 
-Smoke is a one-image readiness check, not a benchmark. A model with no benchmark
-adapter still produces a run folder, but its metrics file is marked `adapter_pending`
-instead of holding scores. Four models are benchmark-ready on `coco17_val2017`
-(`yolo26x_pose`, `rtmw_l`, `rtmw_x`, `rtmpose_l_wholebody`) — everything else is
-smoke-only for now. See the readiness matrix in [models.md](models.md) and the recipe in
-[adding-a-model.md](adding-a-model.md).
+The tracking → global-ID → triangulation stages need NumPy ≥ 1.23.5 and SciPy ≥ 1.10. Run
+them in an env that has them (e.g. `cricket-yolo26x-pose`), not the mmpose env.
 
-### OpenPose runtime missing (`missing_runtime`)
+### The mosaic render is missing tiles / roles / ground monitor
 
-The CMU OpenPose binary isn't built. Build the CPU-only validation binary:
+The renderer reads several artifacts from the P4 run: `predictions/*.jsonl`,
+`diagnostics/correspondences.jsonl` (P3 badges), `diagnostics/ground_tracks.jsonl` (the
+bird's-eye monitor), and `../p5/roles.json` (the roster). A missing panel usually means the
+corresponding stage didn't write its diagnostic — re-run that stage. Camera 07 has a
+different native resolution (~3775×960); if a tile looks wrong, check the per-camera image
+size handling.
 
-```bash
-python3 scripts/setup/setup_model_envs.py --models openpose_body25 --skip-assets
-python3 scripts/setup/setup_openpose.py --gpu-mode CPU_ONLY --jobs 2
-python3 scripts/benchmark/benchmark.py smoke --models openpose_body25 --device cpu
-```
+### FFmpeg / NVENC
 
-The expected binary path is `external/openpose/build/examples/openpose/openpose.bin`.
-
-### OpenPose: "Atlas not found"
-
-Bundled Caffe defaults to the Atlas BLAS library, but this Ubuntu machine has OpenBLAS
-dev libraries instead. [`setup_openpose.py`](scripts.md#setup_openposepy) patches the
-CMake config to pass `-DBLAS=Open` — so use the script rather than running CMake by hand
-from a fresh clone.
-
-### Sapiens2 says `ready_runtime_limited`
-
-A **passing** laptop result: the Sapiens2 package, config, detector, and checkpoint are
-all present, but full inference wasn't launched because CUDA isn't visible inside the
-Sapiens env. Run the actual 1B inference on a larger GPU with adequate VRAM. See the
-Sapiens2 note in [models.md](models.md#sapiens2-1b-sapiens2_1b_pose).
-
-### ViTPose env errors after an upgrade
-
-`vitpose_h` now targets MMPose v1. If its Conda env was built from the older legacy
-ViTPose profile, rebuild or force-install it:
-`python3 scripts/setup/setup_model_envs.py --models vitpose_h --force-install`.
-
-### DWPose can't find its ONNX files
-
-Upstream DWPose expects the ONNX files inside its cloned repo. The canonical files live
-in `models/dwpose_l_384/weights/`; compatibility symlinks point the upstream `ckpts/`
-folder back to the store. Don't recreate the old top-level `checkpoints/` folder.
+The renderer encodes via `h264_nvenc` with an `mp4v` fallback. If encoding fails, confirm
+`ffmpeg` is on `PATH` (`check_environment.py`) and that the NVENC-capable driver is present;
+the fallback path works without a GPU encoder, just slower.
 
 ## Hardware / speed sanity
 
-If speed numbers look implausible, check the run's `hardware.json` / `software.json` —
-laptop and A100 numbers aren't comparable, CPU-only OpenPose timings are validation-only,
-and precision/backend/batch-size all move latency. [metrics.md](metrics.md) lists what
-has to match for two speed numbers to be comparable.
+Speed depends on GPU, CPU cores, and disk. P1 top-down inference scales with the number of
+players per frame; on large 2560×1440 JPEGs read cold, disk-read + decode is often the
+limiter, not the GPU — tune `--io-workers` / `--prefetch-batches` (see
+[rtmpose-x-runbook.md](rtmpose-x-runbook.md)). Batch sizes change speed only, never the
+predicted keypoints.
