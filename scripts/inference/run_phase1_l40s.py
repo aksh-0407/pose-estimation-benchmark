@@ -39,6 +39,7 @@ import subprocess
 import sys
 import time
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
@@ -112,6 +113,13 @@ def parse_args() -> argparse.Namespace:
     rt.add_argument("--det-batch-size", type=int, default=24, help="Frames per detector call")
     rt.add_argument("--pose-batch-size", type=int, default=256, help="Crops per RTMPose call")
     rt.add_argument("--io-workers", type=int, default=12, help="Decode prefetch threads")
+    rt.add_argument("--cv2-threads", type=int, default=2,
+                    help="OpenCV internal threads per decode call (default: 2). Kept low so "
+                         "io-workers x cv2 threads does not oversubscribe the CPU.")
+    rt.add_argument("--prefetch-batches", type=int, default=3,
+                    help="Detector batches to read+decode ahead on the io-workers while the "
+                         "GPU runs the current batch (default: 3). Overlaps cold-disk reads "
+                         "with GPU compute so the GPU stays fed.")
     rt.add_argument("--no-resume", dest="resume", action="store_false",
                     help="Recompute frames already present in the camera JSONL")
     rt.add_argument("--no-progress", dest="show_progress", action="store_false",
@@ -291,6 +299,9 @@ def resolve_skeleton(pose_config: str, pose_model) -> tuple[str, list[int] | Non
     low = pose_config.lower()
     if "wholebody" in low:
         source = "coco_wholebody_133"
+    elif "halpe" in low:
+        # Halpe-26 (e.g. RTMPose-x body8-halpe26): 26 kpts whose first 17 are COCO-17.
+        source = "halpe26"
     elif any(tok in low for tok in ("coco", "body8", "body7")):
         source = "coco_17"
     return source, p1.coco17_source_indices(source)
@@ -608,6 +619,9 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
     print(f"Processing {total_frames} frames across {len(targets)} cameras -> {pred_dir}",
           flush=True)
 
+    # One decode thread-pool for the whole run: io-worker threads read + decode the next
+    # --prefetch-batches batches while the GPU runs detection/pose on the current one.
+    decode_pool = ThreadPoolExecutor(max_workers=max(1, args.io_workers))
     for t in targets:
         cam_id, delivery_id, group = t["camera_id"], t["delivery_id"], t["group"]
         camera_name = f"{group}/{delivery_id}/{cam_id}"
@@ -631,18 +645,17 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
         cam_processed = cam_skipped = cam_failed = 0
         cam_people = existing_people
         with out_jsonl.open(mode, encoding="utf-8") as handle:
-            indexed = list(enumerate(t["frames"]))
-            for frame_batch in p1.chunked(indexed, args.det_batch_size):
-                pending = [(idx, fp) for idx, fp in frame_batch if fp.name not in done]
-                cam_skipped += len(frame_batch) - len(pending)
-                if progress is not None:
-                    progress.update(len(frame_batch) - len(pending))
-                if not pending:
-                    continue
+            # Resolve resume-skips up front, then stream the rest through the prefetch
+            # pipeline so cold-disk read + decode overlaps detection + pose on the GPU.
+            pending_all = [(idx, fp) for idx, fp in enumerate(t["frames"]) if fp.name not in done]
+            skipped_here = len(t["frames"]) - len(pending_all)
+            cam_skipped += skipped_here
+            if progress is not None and skipped_here:
+                progress.update(skipped_here)
 
-                start = time.perf_counter()
-                loaded, load_failures = p1.load_frame_batch(pending, args.io_workers)
-                timings["decode_seconds"] += time.perf_counter() - start
+            for loaded, load_failures in p1.prefetch_decoded_batches(
+                pending_all, decode_pool, args.det_batch_size, args.prefetch_batches, timings
+            ):
                 for _, frame_path, exc in load_failures:
                     cam_failed += 1
                     _record_failure(failures, t, frame_path.name, "decode", exc)
@@ -742,6 +755,7 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
         failed_frames += cam_failed
         total_people += cam_people
 
+    decode_pool.shutdown(wait=True)
     if progress is not None:
         progress.close()
 
@@ -792,7 +806,8 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
         "prediction_dir": p1.rel(pred_dir),
         "detector": "rtmdet_m_person",
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,
-        "io_workers": args.io_workers, "perf": args.perf,
+        "io_workers": args.io_workers, "cv2_threads": args.cv2_threads,
+        "prefetch_batches": args.prefetch_batches, "perf": args.perf,
         "bbox_thr": args.bbox_thr, "nms_thr": args.nms_thr,
         "git_sha": git_sha(),
         "summary": summary,
@@ -826,6 +841,22 @@ def main() -> int:
         raise SystemExit("--det-batch-size and --pose-batch-size must be positive")
     if args.io_workers < 0:
         raise SystemExit("--io-workers must be >= 0")
+    if args.cv2_threads < 1:
+        raise SystemExit("--cv2-threads must be >= 1")
+    if args.prefetch_batches < 0:
+        raise SystemExit("--prefetch-batches must be >= 0")
+    # Stop OpenCV/torch from each spawning a per-core pool inside every io-worker (which
+    # thrashes the CPU and starves the GPU); the GPU carries detect/pose, the CPU decodes.
+    try:
+        import cv2
+        cv2.setNumThreads(args.cv2_threads)
+    except Exception:
+        pass
+    try:
+        import torch
+        torch.set_num_threads(max(1, args.cv2_threads))
+    except Exception:
+        pass
 
     targets = discover_targets(args)
     if not targets:

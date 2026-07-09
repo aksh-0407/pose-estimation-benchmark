@@ -129,6 +129,67 @@ ls benchmarks/runs/rtmpose-x/predictions/*.jsonl | wc -l
 
 ---
 
+## Running on the L40S / remote capture machine
+
+The remote capture box stores frames in a different native layout —
+`/home/ubuntu/pose_data/{bt1,bt2,bt3}/<delivery>/camera<NN>/frame_*.jpg` — and writes to
+a caller-chosen output dir. Use the dedicated runner
+[`run_phase1_l40s.py`](../scripts/inference/run_phase1_l40s.py) (it reuses the exact same
+mmdet/mmpose building blocks and P1 schema, incl. the 26-keypoint `pose_2d_native`, and
+has the same prefetch + thread-cap optimisation). RTMPose-x is fully wired: just pass
+`--model-id rtmpose_x_body8`.
+
+**One-time setup on the remote machine** (same as §1–4 above): clone the repo, create the
+`cricket-rtmpose-l` env, download the RTMPose-x weights + RTMDet detector,
+`sync_model_store.py`, then smoke. Confirm the GPU: `run_phase1_l40s.py --list` prints the
+selection with no GPU needed; add `--device cuda:0` runs to check CUDA.
+
+**1. Tune batch sizes for the L40S** (in-process, single model load, writes only `best.json`):
+
+```bash
+conda activate cricket-rtmpose-l
+python scripts/inference/run_phase1_l40s.py \
+  --model-id rtmpose_x_body8 --output-dir /home/ubuntu/pose-rtm-x \
+  --sweep --grid          # --grid = real end-to-end det x pose ranking
+```
+
+`best.json` lands in the output dir with the winning `det_batch / pose_batch / io_workers`
+and a projected full-run time. (The grid measures GPU + decode; with the prefetch overlap
+the real run is a bit faster than the projection.)
+
+**2. Full run over all data → `/home/ubuntu/pose-rtm-x/`** using the wrapper
+[`run_rtmpose_x_l40s.sh`](../scripts/inference/run_rtmpose_x_l40s.sh):
+
+```bash
+DET_BATCH_SIZE=<B> POSE_BATCH_SIZE=<P> IO_WORKERS=<W> \
+  bash scripts/inference/run_rtmpose_x_l40s.sh
+```
+
+or directly:
+
+```bash
+python scripts/inference/run_phase1_l40s.py \
+  --pose-data /home/ubuntu/pose_data --output-dir /home/ubuntu/pose-rtm-x \
+  --model-id rtmpose_x_body8 \
+  --det-batch-size <B> --pose-batch-size <P> \
+  --io-workers <W> --cv2-threads 2 --prefetch-batches 4
+```
+
+Output → `/home/ubuntu/pose-rtm-x/predictions/bt_XX__<delivery>__cam_YY.jsonl`, plus
+`run_manifest.json` + `p1_metrics.json`. Runs are **resumable** — re-run the same command
+to continue after any interruption. Run it under `tmux`/`nohup` so an SSH drop doesn't kill
+it:
+
+```bash
+tmux new -s posex
+DET_BATCH_SIZE=<B> POSE_BATCH_SIZE=<P> IO_WORKERS=<W> \
+  bash scripts/inference/run_rtmpose_x_l40s.sh 2>&1 | tee /home/ubuntu/pose-rtm-x/run.log
+# detach: Ctrl-b d ; reattach: tmux attach -t posex
+```
+
+Verify completeness: every finished camera file has 600 lines; `camera_count` in
+`run_manifest.json` equals the number of cameras discovered by `--list`.
+
 ## Performance notes (how the runner is optimised)
 
 The runner is built to keep the GPU fed while keeping the CPU light:
