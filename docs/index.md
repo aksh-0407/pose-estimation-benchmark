@@ -22,6 +22,7 @@ If you only read one page, read **[getting-started.md](getting-started.md)**.
 | [scripts.md](scripts.md) | …you want to know exactly what a script does, its inputs/outputs, and its key flags. |
 | [configuration.md](configuration.md) | …you need to read or edit a `configs/*.yaml` file. |
 | [models.md](models.md) | …you're choosing a model or hit a model-specific quirk (OpenPose, Sapiens2, ViTPose). |
+| [rtmpose-x-runbook.md](rtmpose-x-runbook.md) | …you're installing, running, or tuning RTMPose-x (the largest RTMPose, 26-kpt) Phase-1 detection on a new/remote machine. |
 | [datasets.md](datasets.md) | …you need to download or understand a dataset. |
 | [metrics.md](metrics.md) | …you want to know what a metric means or which ones are reported. |
 | [results-format.md](results-format.md) | …you're inspecting a run folder or wondering what's safe to commit. |

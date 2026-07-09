@@ -97,6 +97,9 @@ available, and the accuracy-first upgrade candidate for Phase-1 2D pose over
   back to COCO-17, so it drops into the existing pipeline unchanged. The extra foot
   keypoints are available natively if the 3D ground-contact work ever wants them.
 
+**Full install/run/tune guide for a new or remote machine:**
+[rtmpose-x-runbook.md](rtmpose-x-runbook.md).
+
 Runs in the shared `cricket-rtmpose-l` Conda env (same `mmpose_v1` profile as the other
 RTMPose models — no new env). Setup:
 

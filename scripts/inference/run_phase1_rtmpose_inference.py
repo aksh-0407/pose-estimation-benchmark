@@ -116,6 +116,11 @@ def parse_args() -> argparse.Namespace:
                     help="OpenCV internal threads per decode call (default: 2). Kept low "
                          "so N io-workers x cv2 threads does not oversubscribe the CPU and "
                          "starve the GPU; the GPU does the pose/detect compute.")
+    rt.add_argument("--prefetch-batches", type=int, default=3,
+                    help="How many detector batches to read+decode ahead on the io-worker "
+                         "threads while the GPU runs the current batch (default: 3). This "
+                         "overlaps cold-disk frame reads with GPU compute so the GPU stays "
+                         "fed. Set 0/1 to effectively disable look-ahead.")
     rt.add_argument("--benchmark-only", action="store_true",
                     help="Run inference and timing without writing prediction JSONL or overlays")
     rt.add_argument("--sync-cuda-timing", action="store_true",
@@ -299,6 +304,58 @@ def load_frame_batch(items: list[tuple[int, Path]], workers: int) -> tuple[list[
                 failed.append((item[0], item[1], exc))
     loaded.sort(key=lambda entry: entry["idx"])
     return loaded, failed
+
+
+def prefetch_decoded_batches(
+    pending: list[tuple[int, Path]],
+    executor: ThreadPoolExecutor,
+    det_batch_size: int,
+    depth: int,
+    timings: dict[str, float],
+):
+    """Yield ``(loaded, load_failures)`` per detector batch while decoding ahead.
+
+    Disk read + JPEG decode (CPU) for the next ``depth`` batches run on the shared
+    ``executor`` while the caller runs detection/pose on the GPU for the current
+    batch. This overlaps the CPU/IO stage with the GPU stage so the GPU is not left
+    idle waiting on cold-disk frame reads. ``decode_seconds`` only accrues the time
+    actually spent *blocked* waiting for a future, so a well-fed pipeline reports it
+    near zero.
+    """
+    from collections import deque
+
+    batches = list(chunked(pending, det_batch_size))
+    inflight: deque = deque()
+    nxt = 0
+
+    def submit(index: int):
+        return [
+            (idx, path, executor.submit(load_frame_for_batch, (idx, path)))
+            for idx, path in batches[index]
+        ]
+
+    while nxt < len(batches) and len(inflight) < max(1, depth):
+        inflight.append(submit(nxt))
+        nxt += 1
+
+    while inflight:
+        futures = inflight.popleft()
+        # Submit the next batch's decode BEFORE we block, so it overlaps the GPU
+        # work the caller does with the batch we are about to yield.
+        if nxt < len(batches):
+            inflight.append(submit(nxt))
+            nxt += 1
+        start = time.perf_counter()
+        loaded: list[dict[str, Any]] = []
+        failed: list[tuple[int, Path, Exception]] = []
+        for idx, path, future in futures:
+            try:
+                loaded.append(future.result())
+            except Exception as exc:  # noqa: BLE001
+                failed.append((idx, path, exc))
+        loaded.sort(key=lambda entry: entry["idx"])
+        timings["decode_seconds"] += time.perf_counter() - start
+        yield loaded, failed
 
 
 def normalize_camera_filters(values: list[str] | None) -> set[str] | None:
@@ -674,6 +731,8 @@ def main() -> int:
         raise SystemExit("--io-workers must be >= 0")
     if args.cv2_threads < 1:
         raise SystemExit("--cv2-threads must be >= 1")
+    if args.prefetch_batches < 0:
+        raise SystemExit("--prefetch-batches must be >= 0")
     # Cap CPU-side parallelism so decode threads don't oversubscribe all cores and
     # thrash (which starves the GPU). OpenCV otherwise defaults to every core, so
     # io_workers x cores threads fight; keep each decode light and let the GPU carry
@@ -756,7 +815,9 @@ def main() -> int:
         "inference_mode": "topdown_detector_pose",
         "input_mode": "opencv_bgr_mmdet_mmpose_batch",
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,
-        "io_workers": args.io_workers, "benchmark_only": args.benchmark_only,
+        "io_workers": args.io_workers, "cv2_threads": args.cv2_threads,
+        "prefetch_batches": args.prefetch_batches,
+        "benchmark_only": args.benchmark_only,
         "sync_cuda_timing": args.sync_cuda_timing,
         "overlay_enabled": args.overlay, "overlay_limit_per_camera": args.overlay_limit,
         "overlay_frame_ids": sorted(args.overlay_frame_ids) if args.overlay_frame_ids is not None else None,
@@ -779,6 +840,10 @@ def main() -> int:
     overlay_failures: list[dict[str, Any]] = []
     t0 = time.perf_counter()
     progress = build_progress_bar(total_frames, args.show_progress)
+    # One decode thread-pool for the whole run (not one per batch): io-worker threads
+    # read + decode frames ahead of the GPU. cv2 is capped to --cv2-threads so the pool
+    # does not oversubscribe the CPU.
+    decode_pool = ThreadPoolExecutor(max_workers=max(1, args.io_workers))
     for t in targets:
         cam_id, delivery_id = t["camera_id"], t["delivery_id"]
         camera_name = f"{t['group']}/{delivery_id}/{cam_id}"
@@ -800,13 +865,12 @@ def main() -> int:
         cam_people = existing_people
         output_context = nullcontext(None) if args.benchmark_only else out_jsonl.open(mode, encoding="utf-8")
         with output_context as handle:
-            indexed_frames = list(enumerate(t["frames"]))
-            for frame_batch in chunked(indexed_frames, args.det_batch_size):
-                pending: list[tuple[int, Path]] = []
-                for idx, frame_path in frame_batch:
-                    if frame_path.name not in done:
-                        pending.append((idx, frame_path))
-                        continue
+            # Resolve resume-skips up front, then stream the remaining frames through
+            # the prefetch pipeline so cold-disk read + decode (CPU/io-workers) overlaps
+            # detection + pose (GPU) instead of blocking it.
+            pending_all: list[tuple[int, Path]] = []
+            for idx, frame_path in enumerate(t["frames"]):
+                if frame_path.name in done:
                     cam_skipped += 1
                     progress_step(
                         progress,
@@ -817,16 +881,16 @@ def main() -> int:
                         cam_people=cam_people,
                         overlays=overlays,
                     )
+                else:
+                    pending_all.append((idx, frame_path))
 
-                loaded, load_failures = timed_call(
-                    timings,
-                    "decode_seconds",
-                    device,
-                    False,
-                    load_frame_batch,
-                    pending,
-                    args.io_workers,
-                )
+            for loaded, load_failures in prefetch_decoded_batches(
+                pending_all,
+                decode_pool,
+                args.det_batch_size,
+                args.prefetch_batches,
+                timings,
+            ):
                 for _, frame_path, exc in load_failures:
                     cam_failed += 1
                     append_capped(failures, {
@@ -989,6 +1053,7 @@ def main() -> int:
         summary["total_people"] += cam_people
         summary["failed_frames"] += cam_failed
 
+    decode_pool.shutdown(wait=True)
     if progress is not None:
         progress.close()
 
