@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "roles_json": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_6/p5/roles.json"
+  },
+  "created_at": "2026-07-10T05:55:18.164228+00:00",
+  "delivery_id": "CCPL080626M1_1_14_6",
+  "input_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_6/p4",
+  "match_id": "CCPL080626",
+  "output_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_6/p5",
+  "schema_version": "roles_run/v1",
+  "task": "role_assignment"
+}
