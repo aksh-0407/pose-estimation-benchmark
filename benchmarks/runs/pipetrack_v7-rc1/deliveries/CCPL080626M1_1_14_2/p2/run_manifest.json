@@ -1,0 +1,79 @@
+{
+  "calibration_dir": "drive/dataset/calibration-data/CCPL080626/calibration_data",
+  "config": {
+    "ankle_confidence_min": 0.6,
+    "chi2_gate": 9.21,
+    "cost_accept_threshold": 0.7,
+    "dormant_max_frames": 60,
+    "frame_rate_fps": 50.0,
+    "gallery_repr": "medoid",
+    "gate_bbox_factor": 1.5,
+    "gate_max_distance_px": 600.0,
+    "ground_cost_weight": 0.15,
+    "ground_gate_base_m": 4.0,
+    "ground_vmax_mps": 9.0,
+    "iou_alpha": 0.6,
+    "kalman_cov_trace_max": 1000000.0,
+    "lowconf_can_spawn": true,
+    "max_ankle_above_bbox_fraction": 0.25,
+    "min_shared_keypoints": 6,
+    "pose_beta": 0.4,
+    "pose_cosine_reid_threshold": 0.25,
+    "pose_gallery_size": 30,
+    "pose_keypoint_confidence_min": 0.3,
+    "reid_ambiguity_margin": 0.05,
+    "scale_min_frac_bbox_h": 0.05,
+    "stage1_confidence_threshold": 0.5,
+    "stage2_confidence_min": 0.1,
+    "tentative_confirm_hits": 3,
+    "tentative_confirm_window": 5,
+    "v_max_px_per_frame": 120.0
+  },
+  "created_at": "2026-07-10T10:05:00.557893+00:00",
+  "delivery_id": "CCPL080626M1_1_14_2",
+  "drive_root": "drive",
+  "expected_frames": 600,
+  "input_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b",
+  "inputs": [
+    {
+      "camera_id": "cam_01",
+      "capture_group": "bt_01",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_01__CCPL080626M1_1_14_2__cam_01.jsonl"
+    },
+    {
+      "camera_id": "cam_04",
+      "capture_group": "bt_01",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_01__CCPL080626M1_1_14_2__cam_04.jsonl"
+    },
+    {
+      "camera_id": "cam_02",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_02__CCPL080626M1_1_14_2__cam_02.jsonl"
+    },
+    {
+      "camera_id": "cam_05",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_02__CCPL080626M1_1_14_2__cam_05.jsonl"
+    },
+    {
+      "camera_id": "cam_07",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_02__CCPL080626M1_1_14_2__cam_07.jsonl"
+    },
+    {
+      "camera_id": "cam_03",
+      "capture_group": "bt_03",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_03__CCPL080626M1_1_14_2__cam_03.jsonl"
+    },
+    {
+      "camera_id": "cam_06",
+      "capture_group": "bt_03",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p1b/predictions/bt_03__CCPL080626M1_1_14_2__cam_06.jsonl"
+    }
+  ],
+  "match_id": "CCPL080626",
+  "max_workers": 2,
+  "output_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_2/p2",
+  "schema_version": "tracking_run/v1",
+  "task": "per_camera_tracking"
+}

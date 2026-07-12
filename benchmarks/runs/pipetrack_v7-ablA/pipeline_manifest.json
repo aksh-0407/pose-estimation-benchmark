@@ -1,0 +1,51 @@
+{
+  "base_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.0",
+  "configs": {
+    "p1b": {
+      "path": "configs/v6/p1b_stabilization.yaml",
+      "sha256": "a3f4512b30dcbbf107a84f31295e644c5357b21fa1329b9bbb0b82e8652f91e1"
+    },
+    "p2": {
+      "path": "configs/v6/p2_tracking.yaml",
+      "sha256": "5f46b1a2b464603ee5825518c1a5645f1917f9926984155d61bf058e94af5cab"
+    },
+    "p3": {
+      "path": "configs/experiments/v7rc__p3.yaml",
+      "sha256": "dd959c21ae0641c7ca0a8df3a002c446e48e69672c1cf7984967d6e2ffaa1baa"
+    },
+    "p4": {
+      "path": "configs/experiments/v7rc__p4.yaml",
+      "sha256": "c1f539ee0214cb4a1854e40e5a8bc5ef19ccbb6d8ebc225ad1564ebbba5dba3f"
+    }
+  },
+  "created_at": "2026-07-10T10:46:27.418282+00:00",
+  "deliveries": [
+    "CCPL080626M1_1_14_1",
+    "CCPL080626M1_1_14_2",
+    "CCPL080626M1_1_14_3",
+    "CCPL080626M1_1_14_4",
+    "CCPL080626M1_1_14_5",
+    "CCPL080626M1_1_14_6",
+    "CCPL080626M1_1_14_7",
+    "CCPL080626M2_1_12_1"
+  ],
+  "enable_lift": true,
+  "enable_stabilization": false,
+  "input_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-x",
+  "schema_version": "pipeline_manifest/v1",
+  "stages_run": [
+    "p3",
+    "p3_5",
+    "p4"
+  ],
+  "triangulation": {
+    "butter_cutoff_hz": 6.0,
+    "cheirality": false,
+    "dense_fill": false,
+    "ema_alpha": 0.65,
+    "min_views": 2,
+    "native_skeleton": false,
+    "reprojection_threshold_px": 10.0,
+    "smoother": "ema"
+  }
+}

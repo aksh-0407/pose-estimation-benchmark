@@ -1,0 +1,186 @@
+{
+  "artifacts": {
+    "correspondences_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p4/diagnostics/correspondences.jsonl",
+    "ground_tracks_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p4/diagnostics/ground_tracks.jsonl",
+    "id_switch_report_json": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p4/id_switch_report.json"
+  },
+  "config": {
+    "frame_rate_fps": 50.0,
+    "kinematic_v_max_mps": 9.0,
+    "p4a": {
+      "adaptive_lost_window": true,
+      "bowler_lost_window_frames": 60,
+      "cap_max_pos_var": 25.0,
+      "chi2_gate_2dof": 5.991,
+      "confidence_discard": 0.15,
+      "confidence_high": 0.7,
+      "confirm_hits": 3,
+      "emit_kalman_posterior": true,
+      "expected_roster_max": 15,
+      "local_identity_mahalanobis_gate": 25.0,
+      "lost_window_frames": 30,
+      "lost_window_max_frames": 90,
+      "min_emit_frames": 30,
+      "online_role_proxy": true,
+      "ownership_ttl_frames": 50,
+      "pose_descriptor_ema": 0.15,
+      "pose_gate_veto_distance": 0.3,
+      "pose_match_weight": 2.0,
+      "pose_min_shared_segments": 4,
+      "pose_min_updates": 5,
+      "posture_gate_veto_z": 3.0,
+      "proxy_bowler_min_speed_mps": 3.5,
+      "proxy_min_track_frames": 50,
+      "proxy_static_speed_max_mps": 0.6,
+      "r_ceiling_m": 2.0,
+      "r_floor_m": 0.15,
+      "r_scale": 1.0,
+      "reentry_gap_scale_frames": 60.0,
+      "reentry_kinematic_slack": 1.5,
+      "reentry_mahalanobis_gate": 5.991,
+      "reentry_pose_max_distance": 0.3,
+      "reentry_posture_max_z": 3.0,
+      "reentry_temporal_gate_frames": 120,
+      "role_latch_frames": 5,
+      "role_params": {
+        "bowler": {
+          "alpha": 2.0,
+          "measurement_noise": 0.3,
+          "sigma_a": 3.0
+        },
+        "fielder": {
+          "alpha": 1.0,
+          "measurement_noise": 0.4,
+          "sigma_a": 2.0
+        },
+        "non_striker": {
+          "alpha": 0.5,
+          "measurement_noise": 0.3,
+          "sigma_a": 1.0
+        },
+        "striker": {
+          "alpha": 1.5,
+          "measurement_noise": 0.3,
+          "sigma_a": 2.5
+        },
+        "umpire": {
+          "alpha": 0.2,
+          "measurement_noise": 0.2,
+          "sigma_a": 0.3
+        },
+        "unknown": {
+          "alpha": 1.0,
+          "measurement_noise": 0.4,
+          "sigma_a": 2.0
+        },
+        "wicketkeeper": {
+          "alpha": 0.3,
+          "measurement_noise": 0.2,
+          "sigma_a": 0.5
+        }
+      },
+      "roster_cap_min_separation_m": 3.0,
+      "shadow_confirm_gate_m": 1.2,
+      "shadow_confirm_override_hits": 30,
+      "use_measurement_covariance": true,
+      "use_measurement_covariance_for_gating": false
+    },
+    "p4b": {
+      "cross_camera_min_frames": 30,
+      "cross_camera_min_track_ratio": 0.5,
+      "enabled": true,
+      "incompatible_role_pairs": [
+        [
+          "bowler",
+          "wicketkeeper"
+        ],
+        [
+          "striker",
+          "wicketkeeper"
+        ],
+        [
+          "bowler",
+          "striker"
+        ],
+        [
+          "bowler",
+          "non_striker"
+        ],
+        [
+          "umpire",
+          "bowler"
+        ],
+        [
+          "umpire",
+          "striker"
+        ],
+        [
+          "umpire",
+          "wicketkeeper"
+        ]
+      ],
+      "kinematic_slack": 1.5,
+      "new_traj_cost_factor": 3.0,
+      "occupancy_bridge": true,
+      "occupancy_bridge_require_pose": true,
+      "pose_min_shared_segments": 4,
+      "pose_stitch_max_distance": 0.3,
+      "posture_stitch_max_z": 3.0,
+      "temporal_gate_frames": 120,
+      "temporal_gate_frames_occupancy": 300,
+      "velocity_continuity_weight": 0.5,
+      "w_pose": 2.0,
+      "w_posture": 0.5,
+      "w_role": 100.0,
+      "w_spatial": 1.0,
+      "w_temporal": 0.1
+    }
+  },
+  "created_at": "2026-07-10T09:52:45.077963+00:00",
+  "delivery_id": "CCPL080626M2_1_12_1",
+  "drive_root": "drive",
+  "expected_frames": 600,
+  "ground_truth": null,
+  "input_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3",
+  "inputs": [
+    {
+      "camera_id": "cam_01",
+      "capture_group": "bt_01",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_01__CCPL080626M2_1_12_1__cam_01.jsonl"
+    },
+    {
+      "camera_id": "cam_04",
+      "capture_group": "bt_01",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_01__CCPL080626M2_1_12_1__cam_04.jsonl"
+    },
+    {
+      "camera_id": "cam_02",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_02__CCPL080626M2_1_12_1__cam_02.jsonl"
+    },
+    {
+      "camera_id": "cam_05",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_02__CCPL080626M2_1_12_1__cam_05.jsonl"
+    },
+    {
+      "camera_id": "cam_07",
+      "capture_group": "bt_02",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_02__CCPL080626M2_1_12_1__cam_07.jsonl"
+    },
+    {
+      "camera_id": "cam_03",
+      "capture_group": "bt_03",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_03__CCPL080626M2_1_12_1__cam_03.jsonl"
+    },
+    {
+      "camera_id": "cam_06",
+      "capture_group": "bt_03",
+      "prediction_jsonl": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p3/predictions/bt_03__CCPL080626M2_1_12_1__cam_06.jsonl"
+    }
+  ],
+  "match_id": "CCPL080626",
+  "output_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M2_1_12_1/p4",
+  "schema_version": "global_id_run/v1",
+  "task": "global_id_tracking"
+}

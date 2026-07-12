@@ -1,0 +1,247 @@
+{
+  "bindings": {
+    "B002": {
+      "chimera_frame_fraction": 0.44333333333333336,
+      "chimera_suspect": true,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3200277763107094,
+        "vector": [
+          0.9623086430701251,
+          0.5729896592753143,
+          1.4744448405918202,
+          0.8674930456984502,
+          0.9485510814583311,
+          0.7768390559897278,
+          0.7926162816883222,
+          1.2932893346466996,
+          1.3986608162096583,
+          1.5688408272368621,
+          1.345222450421652
+        ]
+      },
+      "frames_lifted": 600,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 150,
+          "mean_px": 30.209291317516932
+        },
+        "cam_02": {
+          "frames": 600,
+          "mean_px": 7.470918043870471
+        },
+        "cam_04": {
+          "frames": 432,
+          "mean_px": 17.998181509965406
+        },
+        "cam_06": {
+          "frames": 600,
+          "mean_px": 6.6016870864021895
+        }
+      },
+      "stature_m": 1.0548092615394264,
+      "torso_residual_p50": 15.636747378813034,
+      "torso_residual_p95": 54.01916920686891,
+      "worst_camera": "cam_01"
+    },
+    "B003": {
+      "chimera_frame_fraction": 0.095,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.335172497589055,
+        "vector": [
+          1.0016447276792857,
+          0.6343659401745112,
+          1.4561462141064336,
+          0.812829872505683,
+          0.7700340980674978,
+          0.6228768936613973,
+          0.7298860296532047,
+          1.1597614807402286,
+          1.0625200437449478,
+          1.2987742920916998,
+          1.241263576981877
+        ]
+      },
+      "frames_lifted": 600,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 600,
+          "mean_px": 6.907321801628569
+        },
+        "cam_03": {
+          "frames": 600,
+          "mean_px": 9.69403865289112
+        },
+        "cam_04": {
+          "frames": 600,
+          "mean_px": 5.541214866348111
+        },
+        "cam_05": {
+          "frames": 578,
+          "mean_px": 12.179414870220253
+        },
+        "cam_07": {
+          "frames": 600,
+          "mean_px": 7.366949508969384
+        }
+      },
+      "stature_m": 1.5703228850513946,
+      "torso_residual_p50": 13.412144186064896,
+      "torso_residual_p95": 22.978183178170625,
+      "worst_camera": "cam_05"
+    },
+    "B005": {
+      "chimera_frame_fraction": 0.49666666666666665,
+      "chimera_suspect": true,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3437327599030973,
+        "vector": [
+          0.997161726308457,
+          0.533135439149816,
+          1.3941354206020489,
+          0.8389800960877472,
+          0.8107443170358472,
+          0.6553631757460814,
+          0.6738703863896791,
+          1.2821872516023427,
+          1.3263745786842032,
+          1.2806865789800137,
+          1.331674275726647
+        ]
+      },
+      "frames_lifted": 600,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 370,
+          "mean_px": 41.250015714744876
+        },
+        "cam_02": {
+          "frames": 600,
+          "mean_px": 7.325710198528171
+        },
+        "cam_04": {
+          "frames": 600,
+          "mean_px": 26.61605010194048
+        },
+        "cam_06": {
+          "frames": 600,
+          "mean_px": 11.525122394656801
+        },
+        "cam_07": {
+          "frames": 114,
+          "mean_px": 7.210668882980987
+        }
+      },
+      "stature_m": 1.4104926173409205,
+      "torso_residual_p50": 19.849521924342884,
+      "torso_residual_p95": 97.81952971602252,
+      "worst_camera": "cam_01"
+    },
+    "B006": {
+      "chimera_frame_fraction": 0.21833333333333332,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3330309448316449,
+        "vector": [
+          0.9935897550297079,
+          0.6204793238472759,
+          1.4419989499449424,
+          0.8228486684523071,
+          0.8318092763006739,
+          0.708735680608935,
+          0.7236046741827438,
+          1.3224525192694965,
+          1.1528307585067867,
+          1.159989621802498,
+          1.2462718004320106
+        ]
+      },
+      "frames_lifted": 600,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 600,
+          "mean_px": 10.013790631440255
+        },
+        "cam_03": {
+          "frames": 600,
+          "mean_px": 8.264045875484104
+        },
+        "cam_04": {
+          "frames": 392,
+          "mean_px": 6.551018837801274
+        },
+        "cam_05": {
+          "frames": 600,
+          "mean_px": 10.411712742368694
+        }
+      },
+      "stature_m": 1.4958722382862213,
+      "torso_residual_p50": 13.816178862492329,
+      "torso_residual_p95": 37.83173694581503,
+      "worst_camera": "cam_05"
+    }
+  },
+  "delivery_id": "CCPL080626M1_1_14_2",
+  "schema_version": "lift_purity/v1",
+  "thresholds": {
+    "airborne_ankle_z_m": 0.25,
+    "chimera_frame_fraction": 0.3,
+    "chimera_torso_residual_px": 20.0
+  }
+}

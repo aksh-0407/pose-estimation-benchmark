@@ -8,18 +8,25 @@ follows the conventions of `wip/methods_log.md`.
 
 ## Executive Summary
 
-(Updated as fixes land.)
+(Meeting-ready snapshot: see also [status-report.md](status-report.md).)
 
-- `pipetrack_v6.0` ground baseline is established: the first full-chain run (fresh P2 → P3 →
-  P4 → P5 → 3D lift → 8 mosaics) built from the complete 8-delivery RTMPose-X P1 data.
-  All stages passed on all deliveries; same-camera collisions are 0 everywhere.
-- Against the v5 stack on the older RTMPose-L-based P2 tree, the X-based baseline moves the
-  panel structurally: distinct IDs sit at 10–18 (roster ~13–15), single-camera rate improves
-  markedly on delivery 1 (0.271), and the 3D lift reprojects at 3.2–3.6 px mean. Agreement
-  redistributes (better on `_5`/`M2`, worse on `_1`/`_6`) — the X detections change which
-  clips are hard, which is exactly why the campaign re-baselines before any fix lands.
-- Waves 0–2 of the fix campaign are implemented flag-gated (F1–F9) with 180+ unit tests;
-  A/B results pending.
+- **Baseline established and frozen** (`pipetrack_v6.0`): full chain from the 8-delivery
+  RTMPose-X data; IDs 10–18 vs ~13–15 roster, agreement 0.60–0.92, 3D reprojection
+  3.2–3.6 px, collisions 0 everywhere. Doubles as the RTMPose-X-vs-L model data point.
+- **Fifteen fixes implemented and A/B'd** (F1–F15 + FR review batch), each flag-gated and
+  measured on all 8 deliveries; 192 unit tests. Every negative result is root-caused, not
+  just recorded (asymmetric R, origin-referenced cheirality, abstaining shape cue, chimera
+  split thresholds, posture-veto blind spot).
+- **Best composed candidate `v7-rc1`**: the hardest clip is transformed (`_7` agreement
+  0.603→0.713, IDs 18→13 at roster, teleports −10, persistence +0.051); persistence up on
+  6/8 clips, 3D reprojection improved everywhere (native-26 lift + cheirality + frame-aware
+  fills). NOT yet accepted: multi-view binding regressed on easy clips (`_1` single-cam
+  0.27→0.67, agreement down on `_3`/`_5`/`_6`) — attribution ablations running; prime
+  suspect is an unflagged review fix (H3 posture-sample policy) shifting calibrated cue
+  distributions. v7-rc2 will gate it and re-compose.
+- New measured capabilities: per-clip **chimera counts** with intruding-camera attribution,
+  **ID-persistence** and **fragment** panel columns, per-cluster **ground covariance**, and
+  the P3.5 binding-keyed 3D lift feeding identity instead of trailing it.
 
 ## Evaluation Standard
 

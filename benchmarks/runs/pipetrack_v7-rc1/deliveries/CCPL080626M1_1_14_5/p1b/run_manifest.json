@@ -1,0 +1,37 @@
+{
+  "cameras": [
+    "cam_01",
+    "cam_02",
+    "cam_03",
+    "cam_04",
+    "cam_05",
+    "cam_06",
+    "cam_07"
+  ],
+  "config": {
+    "enabled": true,
+    "frame_rate_fps": 50.0,
+    "gating": {
+      "confidence_min": 0.3,
+      "max_jump_bbox_frac": 0.5,
+      "max_jump_px": 120.0
+    },
+    "link": {
+      "iou_min": 0.3,
+      "max_gap_frames": 2
+    },
+    "smooth_native": true,
+    "smoothing": {
+      "beta": 0.3,
+      "d_cutoff": 1.0,
+      "method": "one_euro",
+      "min_cutoff": 1.7
+    }
+  },
+  "created_at": "2026-07-10T09:59:32.914649+00:00",
+  "delivery_id": "CCPL080626M1_1_14_5",
+  "input_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-x",
+  "output_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v7-rc1/deliveries/CCPL080626M1_1_14_5/p1b",
+  "schema_version": "stabilization_run/v1",
+  "task": "2d_stabilization"
+}

@@ -1,0 +1,20 @@
+{
+  "config": {
+    "butter_cutoff_hz": 6.0,
+    "capture_fps": 50.0,
+    "cheirality": false,
+    "ema_alpha": 0.65,
+    "id_source": "binding",
+    "min_views": 2,
+    "reprojection_threshold_px": 10.0,
+    "smoother": "ema"
+  },
+  "created_at": "2026-07-10T09:47:32.511228+00:00",
+  "delivery_id": "CCPL080626M1_1_14_7",
+  "drive_root": "drive",
+  "input_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M1_1_14_7/p3",
+  "match_id": "CCPL080626",
+  "output_run_dir": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v6.3-wave4/deliveries/CCPL080626M1_1_14_7/p3_5",
+  "schema_version": "triangulation_run/v1",
+  "task": "multi_view_3d_lift"
+}

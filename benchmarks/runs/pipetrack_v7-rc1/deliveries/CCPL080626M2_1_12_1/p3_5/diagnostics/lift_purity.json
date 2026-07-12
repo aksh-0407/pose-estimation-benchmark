@@ -1,0 +1,247 @@
+{
+  "bindings": {
+    "B001": {
+      "chimera_frame_fraction": 0.41594454072790293,
+      "chimera_suspect": true,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.29902742054064263,
+        "vector": [
+          1.076530758107283,
+          0.7055814416898165,
+          1.5671339028429045,
+          0.810654695674174,
+          0.9031211026632483,
+          0.6567880913405251,
+          0.7614104122583696,
+          1.3856981081867539,
+          1.2803115221302888,
+          0.9055143271009556,
+          1.2415301260397635
+        ]
+      },
+      "frames_lifted": 577,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 257,
+          "mean_px": 19.388809379045206
+        },
+        "cam_02": {
+          "frames": 330,
+          "mean_px": 25.173805500967216
+        },
+        "cam_04": {
+          "frames": 577,
+          "mean_px": 11.651097400829
+        },
+        "cam_06": {
+          "frames": 271,
+          "mean_px": 16.092574875140436
+        },
+        "cam_07": {
+          "frames": 259,
+          "mean_px": 21.192311387822095
+        }
+      },
+      "stature_m": 1.6232043688042654,
+      "torso_residual_p50": 17.43017956147806,
+      "torso_residual_p95": 177.01137026382403,
+      "worst_camera": "cam_02"
+    },
+    "B002": {
+      "chimera_frame_fraction": 0.30333333333333334,
+      "chimera_suspect": true,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.34411121344851864,
+        "vector": [
+          1.0175403148603146,
+          0.6507880220069295,
+          1.4122301488730955,
+          0.9318276022076998,
+          0.849948060093433,
+          0.6780803514998495,
+          0.6874112822359763,
+          1.2898988493176424,
+          1.3267852237224629,
+          1.3080368796787756,
+          1.2146523185333729
+        ]
+      },
+      "frames_lifted": 600,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 600,
+          "mean_px": 9.3055632050382
+        },
+        "cam_03": {
+          "frames": 541,
+          "mean_px": 16.503561965543216
+        },
+        "cam_04": {
+          "frames": 600,
+          "mean_px": 8.041409044476568
+        },
+        "cam_05": {
+          "frames": 495,
+          "mean_px": 15.180488448639275
+        },
+        "cam_07": {
+          "frames": 246,
+          "mean_px": 9.149712464414794
+        }
+      },
+      "stature_m": 1.5456346386349633,
+      "torso_residual_p50": 15.798453906380193,
+      "torso_residual_p95": 61.30711469438747,
+      "worst_camera": "cam_03"
+    },
+    "B005": {
+      "chimera_frame_fraction": 0.26018099547511314,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3459931355108423,
+        "vector": [
+          0.9999894284074152,
+          0.665204228685323,
+          1.6367139663267454,
+          0.7224530197655594,
+          0.810269258916983,
+          0.6989751573450643,
+          0.7009738306696374,
+          1.282691161852387,
+          1.2285610666414881,
+          1.179646988335649,
+          1.2390245802818989
+        ]
+      },
+      "frames_lifted": 442,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 278,
+          "mean_px": 7.490323127913107
+        },
+        "cam_02": {
+          "frames": 80,
+          "mean_px": 13.115134148537544
+        },
+        "cam_04": {
+          "frames": 442,
+          "mean_px": 11.39234902209258
+        },
+        "cam_06": {
+          "frames": 270,
+          "mean_px": 14.220539942940913
+        },
+        "cam_07": {
+          "frames": 311,
+          "mean_px": 16.94302242440748
+        }
+      },
+      "stature_m": 1.7222406838834587,
+      "torso_residual_p50": 15.830267387228286,
+      "torso_residual_p95": 83.70081192334189,
+      "worst_camera": "cam_07"
+    },
+    "B012": {
+      "chimera_frame_fraction": 0.5619834710743802,
+      "chimera_suspect": true,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.2632988192021027,
+        "vector": [
+          1.126620149870171,
+          0.8344128661941254,
+          1.509689638223664,
+          0.9447938523166721,
+          1.0878140398432266,
+          0.8281993513069327,
+          0.9429646671100614,
+          1.3442157794625638,
+          1.3707405116536056,
+          1.4069131922916693,
+          1.2781691712269891
+        ]
+      },
+      "frames_lifted": 121,
+      "per_camera_residual": {
+        "cam_02": {
+          "frames": 68,
+          "mean_px": 186.07292723654768
+        },
+        "cam_06": {
+          "frames": 113,
+          "mean_px": 18.187683991940542
+        },
+        "cam_07": {
+          "frames": 121,
+          "mean_px": 4.257860739915022
+        }
+      },
+      "stature_m": 1.5982391093007577,
+      "torso_residual_p50": 24.36420141523181,
+      "torso_residual_p95": 272.581481905731,
+      "worst_camera": "cam_02"
+    }
+  },
+  "delivery_id": "CCPL080626M2_1_12_1",
+  "schema_version": "lift_purity/v1",
+  "thresholds": {
+    "airborne_ankle_z_m": 0.25,
+    "chimera_frame_fraction": 0.3,
+    "chimera_torso_residual_px": 20.0
+  }
+}

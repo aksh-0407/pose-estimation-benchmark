@@ -41,15 +41,21 @@ flowchart TD
 Note: today the full **3D triangulation is the last compute stage (P6)** — it does not feed
 identity or tracking; P4 tracks purely on the 2D ground plane.
 
-## Proposed re-order (each phase feeds the next)
+## Re-ordered pipeline (IMPLEMENTED 2026-07-10; default-on pending v7 acceptance)
 
 Two structural changes, both justified below:
 
-1. **Add P1.5 — 2D temporal stabilization** immediately after P1, so denoised keypoints feed
-   every downstream stage (implemented; see [phase-1b-2d-stabilization.md](phase-1b-2d-stabilization.md)).
-2. **Move triangulation from terminal P6 to P3.5**, right after association and before global
-   ID, so P4 can track in 3D/world space and the triangulation reprojection becomes a
-   chimera-split signal ([phase-triangulation-3d.md](phase-triangulation-3d.md)).
+1. **P1.5 — 2D temporal stabilization** after P1 (implemented, `--enable-stabilization`;
+   composition verdict pending — see fixes-log F1/v7-rc1).
+2. **Triangulation at P3.5** (implemented, `--enable-lift`): binding-keyed lift right after
+   association emits per-joint 3D + covariance and the **chimera purity report** that the
+   splittable-clustering pass (F13) consumes; the terminal P6 lift remains for the final
+   global-ID-keyed 3D (now with native-26 keypoints, cheirality, frame-aware fills and an
+   optional zero-phase Butterworth).
+
+Both are driven by `scripts/pipetrack/run_full_pipeline.py` (the full-chain batch driver
+with per-stage reuse and the joint metric panel); they become hard defaults with the
+`configs/v7` cut once the composed stack passes acceptance (fixes-log: v7-rc series).
 
 ```mermaid
 flowchart TD
