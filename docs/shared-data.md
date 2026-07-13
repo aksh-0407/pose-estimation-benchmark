@@ -196,9 +196,10 @@ Re-print the metric panel (with deltas vs the frozen snapshot):
 ## Caveats & campaign status
 
 - This baseline intentionally reproduces the **pre-campaign** behaviour (the validated v5
-  identity flag stack on RTMPose-X data). The fix campaign is producing improved candidate
-  runs (`pipetrack_v6.x-*`, `pipetrack_v7-rc*`) — consult
-  `docs/critical-analysis/fixes-log.md` for what changed and why before switching.
+  identity flag stack on RTMPose-X data). The fix campaign has since concluded: the
+  accepted default is **`configs/v7/`** (run tree `pipetrack_v7-rc2`;
+  `run_full_pipeline.py` now defaults to it) — consult `docs/critical-analysis/fixes-log.md`
+  (GRAND ANALYSIS CONCLUSION) for what changed and why before switching.
 - Do not write into `pipetrack_v6.0` — experiments reference its stage outputs in place.
 - The mosaic videos show `global_player_id` colours from P4; a colour flicker = an ID
   switch, which is exactly what the campaign is reducing. Known render quirk: `cam_07`'s

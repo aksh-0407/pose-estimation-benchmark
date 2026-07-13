@@ -58,12 +58,14 @@ def test_plan_errors_without_base_tree(tmp_path):
 def test_p2_input_switches_on_stabilization_flag(tmp_path):
     input_tree = tmp_path / "p1run"
     input_tree.mkdir()
+    # v7 default: stabilization ON -> P2 reads the p1b stage dir
     args = _args(tmp_path, ["--input-tree", str(input_tree)])
     plan = DeliveryPlan("D1", args, _stage_window("p1b", "p4"))
-    assert plan.p2_input() == input_tree.resolve()          # F1 off: raw P1 feed
-    args = _args(tmp_path, ["--input-tree", str(input_tree), "--enable-stabilization"])
+    assert plan.p2_input() == plan.output_root / "p1b"
+    # v6-style opt-out: raw P1 feed
+    args = _args(tmp_path, ["--input-tree", str(input_tree), "--no-enable-stabilization"])
     plan = DeliveryPlan("D1", args, _stage_window("p1b", "p4"))
-    assert plan.p2_input() == plan.output_root / "p1b"      # F1 on: stabilized feed
+    assert plan.p2_input() == input_tree.resolve()
 
 
 def test_read_panel_row_includes_computed_p2_tracks(tmp_path):

@@ -447,17 +447,34 @@ class PostureAccumulator:
 
     samples: dict[str, list[float]] = field(default_factory=dict)
 
-    def add(self, sample: PostureSample | None) -> None:
+    def add(
+        self,
+        sample: PostureSample | None,
+        *,
+        keep_upright_unknown: bool = False,
+    ) -> None:
+        """Accumulate one posture sample.
+
+        ``keep_upright_unknown`` is the H3 policy switch: when True, upright-only
+        quantities (stature etc.) are kept for samples whose posture could not be
+        DETERMINED (feet cut off) and dropped only when measured as not standing.
+        Default False = legacy behaviour (drop unless measured upright) — the
+        composed-stack A/B showed the permissive policy shifts the calibrated
+        posture distributions enough to suppress facing-pair corroboration merges,
+        so it must be an explicit, measured opt-in (`posture_keep_upright_unknown`).
+        """
+
         if sample is None:
             return
         for name, value in sample.values.items():
             if not np.isfinite(value):
                 continue
-            # H3: drop upright-only quantities only when the sample was MEASURED
-            # as not standing. "Could not determine" (feet cut off — exactly the
-            # height-plane population) must still accumulate stature evidence.
-            if name in _UPRIGHT_ONLY and sample.upright_known and not sample.upright:
-                continue
+            if name in _UPRIGHT_ONLY:
+                if keep_upright_unknown:
+                    if sample.upright_known and not sample.upright:
+                        continue
+                elif not sample.upright:
+                    continue
             self.samples.setdefault(name, []).append(float(value))
 
     def aggregate(

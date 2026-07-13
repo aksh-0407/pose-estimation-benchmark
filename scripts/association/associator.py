@@ -112,9 +112,16 @@ class Correspondence:
 
 @dataclass
 class TemporalLinkMemory:
-    """Short-term evidence that two P2 tracklets represent the same player."""
+    """Short-term evidence that two P2 tracklets represent the same player.
+
+    H4: with ``decay`` < 1, pair counts are multiplied by it every frame so the
+    support reflects RECENT agreement — without decay one early wrong
+    co-clustering self-reinforces forever (per-frame mode only; the default
+    tracklet-graph mode does not use this memory). 1.0 = legacy, no decay.
+    """
 
     confirm_frames: int = 3
+    decay: float = 1.0
     counts: dict[tuple[str, str, str, str], int] = field(default_factory=lambda: defaultdict(int))
 
     @staticmethod
@@ -131,6 +138,15 @@ class TemporalLinkMemory:
         return min(1.0, self.counts.get(key, 0) / max(self.confirm_frames, 1))
 
     def update(self, correspondences: list[Correspondence], config: P3AssociationConfig) -> None:
+        if self.decay < 1.0:
+            # H4: age all pair evidence so support reflects recent agreement and an
+            # early wrong co-clustering cannot self-reinforce indefinitely.
+            for key in list(self.counts):
+                aged = self.counts[key] * self.decay
+                if aged < 0.05:
+                    del self.counts[key]
+                else:
+                    self.counts[key] = aged
         for correspondence in correspondences:
             if correspondence.single_camera:
                 continue

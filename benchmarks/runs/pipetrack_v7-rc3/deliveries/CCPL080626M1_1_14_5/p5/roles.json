@@ -1,0 +1,72 @@
+{
+  "bowling_direction_xy": [
+    -7.468632283412962e-19,
+    -1.0
+  ],
+  "created_at": "2026-07-13T08:53:46.977339+00:00",
+  "delivery_id": "CCPL080626M1_1_14_5",
+  "match_id": "CCPL080626",
+  "roles": {
+    "P001": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P002": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P003": {
+      "confidence": 0.6,
+      "role": "striker",
+      "source": "heuristic_v0"
+    },
+    "P004": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P005": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P006": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P007": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P008": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P009": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v0"
+    },
+    "P010": {
+      "confidence": 0.718,
+      "role": "bowler",
+      "source": "heuristic_v0"
+    },
+    "P011": {
+      "confidence": 0.6,
+      "role": "non_striker",
+      "source": "heuristic_v0"
+    },
+    "P019": {
+      "confidence": 0.7,
+      "role": "wicketkeeper",
+      "source": "heuristic_v0"
+    }
+  },
+  "schema_version": "roles/v1"
+}

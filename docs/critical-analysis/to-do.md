@@ -235,6 +235,11 @@ role-switch), C5 (single-cam emit), C6 (frame-aware fills), H2/H3/H5/H6/H7 + min
 H2/H3/H5/H6 are unflagged BUG FIXES — flags-off byte-identity vs v6.0 is intentionally
 retired from the FR batch onward; the grand-analysis best stack re-baselines.
 
+### DONE (2026-07-11): grand analysis concluded, v7 cut
+rc2 accepted as default (see fixes-log GRAND ANALYSIS CONCLUSION); `configs/v7/` +
+driver defaults ship the new logical order. Remaining: Wave 5 probe, Wave 6, open list
+in `wip/changes_tbd.md`.
+
 ### Final deliverable ordering (user directive)
 
 After Waves 0-4 + FR: the grand cross-wave analysis composes the best stack, A/Bs it as one

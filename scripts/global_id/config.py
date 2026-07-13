@@ -118,6 +118,12 @@ class P4AConfig:
     # rather than deleted and re-born as a fresh id. False keeps the flat window.
     adaptive_lost_window: bool = False
     lost_window_max_frames: int = 90
+    # changes_tbd (density half of the adaptive window): a CONFIRMED track lost
+    # inside a pack earns density_bonus_frames extra window per confirmed
+    # neighbour within density_radius_m at the loss moment (same cap). Off = legacy.
+    density_lost_window: bool = False
+    density_radius_m: float = 2.0
+    density_bonus_frames: int = 15
     # ID-2 cardinality prior. In a ~12 s cricket delivery every one of the ~13-15
     # people is present the whole clip, so a global id that survives only a handful
     # of frames is a fragment/shadow, not a late-entering player. When > 0, any id
@@ -156,6 +162,11 @@ class P4AConfig:
         _nonnegative("reentry_posture_max_z", self.reentry_posture_max_z)
         if type(self.online_role_proxy) is not bool:
             raise ValueError("online_role_proxy must be a boolean")
+        if type(self.density_lost_window) is not bool:
+            raise ValueError("density_lost_window must be a boolean")
+        _positive("density_radius_m", self.density_radius_m)
+        if type(self.density_bonus_frames) is not int or self.density_bonus_frames < 0:
+            raise ValueError("density_bonus_frames must be a non-negative integer")
         if type(self.proxy_min_track_frames) is not int or self.proxy_min_track_frames <= 0:
             raise ValueError("proxy_min_track_frames must be a positive integer")
         _positive("proxy_bowler_min_speed_mps", self.proxy_bowler_min_speed_mps)
@@ -221,6 +232,14 @@ class P4BConfig:
     occupancy_bridge: bool = False
     temporal_gate_frames_occupancy: int = 300
     occupancy_bridge_require_pose: bool = True
+    # G7/FR: the legacy cost mixes frames and metres on one axis — w_temporal*gap
+    # alone exceeds the dummy (new_traj_cost_factor*w_spatial = 3.0) for any gap
+    # > 30 frames, making stitches beyond 0.6 s MATHEMATICALLY unselectable (the
+    # measured 'M2: 1068 feasible edges, 0 links'). Normalized mode divides each
+    # term by its own gate (gap/temporal_gate, distance/kinematic max) so costs
+    # are commensurate and the dummy threshold is meaningful across the whole
+    # gate. Off = legacy byte-identical behaviour.
+    normalized_costs: bool = False
     # F12: billboard-posture stitch key. When > 0 a stitch whose two fragments'
     # posture aggregates differ by more than this RMS z-score is forbidden;
     # w_posture adds the z to the link cost. Abstains when either is missing.
@@ -238,6 +257,8 @@ class P4BConfig:
             raise ValueError("temporal_gate_frames must be a positive integer")
         if type(self.occupancy_bridge) is not bool:
             raise ValueError("occupancy_bridge must be a boolean")
+        if type(self.normalized_costs) is not bool:
+            raise ValueError("normalized_costs must be a boolean")
         if type(self.occupancy_bridge_require_pose) is not bool:
             raise ValueError("occupancy_bridge_require_pose must be a boolean")
         if (type(self.temporal_gate_frames_occupancy) is not int

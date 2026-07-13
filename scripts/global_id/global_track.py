@@ -37,6 +37,10 @@ class GlobalTrack:
     # P3, so the latest observation's aggregate simply replaces the stored one.
     posture: PostureAggregate | None = None
     single_camera: bool = False
+    # Confirmed neighbours within the density radius when this track was last
+    # marked missed while CONFIRMED — a crowded loss reads as occlusion and earns
+    # a longer lost window (changes_tbd: density-scaled adaptive window).
+    density_at_loss: int = 0
     local_track_ids_by_cam: dict[str, str] = field(default_factory=dict)
     local_track_id_history: set[tuple[str, str]] = field(default_factory=set, repr=False)
 
@@ -135,6 +139,7 @@ class GlobalTrack:
         bowler_lost_window_frames: int,
         adaptive_lost_window: bool = False,
         lost_window_max_frames: int = 90,
+        density_bonus_frames: int = 0,
     ) -> bool:
         if self.state == TENTATIVE:
             return self.frames_since_update >= confirm_hits
@@ -146,6 +151,13 @@ class GlobalTrack:
             # capped, so a briefly-hidden regular is re-acquired instead of re-born.
             window = min(int(lost_window_max_frames), base + max(0, self.hits - confirm_hits))
             window = max(window, base)
+            if density_bonus_frames > 0 and self.density_at_loss > 0:
+                # Lost inside a scrum/pack: almost certainly occlusion, not exit —
+                # lengthen the window per crowding neighbour (same cap).
+                window = min(
+                    int(lost_window_max_frames),
+                    window + density_bonus_frames * self.density_at_loss,
+                )
         return self.state == LOST and self.frames_since_update > window
 
     def velocity_toward_crease(self, crease_y: float = 0.0) -> bool:

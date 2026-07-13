@@ -370,7 +370,10 @@ class TrackletGraphBuilder:
                         ground_xy=ground if det.ground_approx else None,
                     )
                     sample = posture_from_skeleton(points3d, valid)
-                    chunk.posture.add(sample)
+                    chunk.posture.add(
+                        sample,
+                        keep_upright_unknown=self.config.posture_keep_upright_unknown,
+                    )
                     if sample is not None and sample.upright_known:
                         chunk.posture_samples += 1
                         chunk.upright_samples += int(sample.upright)
@@ -681,18 +684,24 @@ class TrackletGraphBuilder:
             speed_a, speed_b = float(np.linalg.norm(va)), float(np.linalg.norm(vb))
             comparable += 1
             low, high = min(speed_a, speed_b), max(speed_a, speed_b)
-            if high > 2.0 and low < 0.7:
+            if (high > self.config.graph_motion_speed_full_mps
+                    and low < self.config.graph_motion_speed_still_mps):
                 asymmetric += 1
-            elif speed_a > 1.2 and speed_b > 1.2:
+            elif (speed_a > 0.6 * self.config.graph_motion_speed_full_mps
+                    and speed_b > 0.6 * self.config.graph_motion_speed_full_mps):
                 cosines.append(float(va @ vb) / (speed_a * speed_b))
         if comparable < 10:
             return 0.0
         llr = 0.0
         if len(cosines) >= 10:
-            llr += 1.5 * (float(np.mean(cosines)) - 0.35)
+            llr += self.config.graph_motion_gain * (
+                float(np.mean(cosines)) - self.config.graph_motion_cos_offset
+            )
         if asymmetric >= 10 and asymmetric / comparable >= 0.2:
-            llr -= 1.5
-        return float(np.clip(llr, -2.5, 0.75))
+            llr += self.config.graph_motion_still_llr
+        return float(np.clip(
+            llr, self.config.graph_motion_llr_min, self.config.graph_motion_llr_max
+        ))
 
     def _smoothed_velocities(self, key: ChunkKey) -> dict[int, np.ndarray | None]:
         """Per-frame ground velocity from median-smoothed positions (cached)."""

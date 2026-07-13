@@ -373,3 +373,32 @@ def test_measurement_R_clamps_and_gates(tmp_path):
     assert manager._measurement_R(_correspondence(0)) is None
     off = TrackManager(_config(confirm_hits=2))
     assert off._measurement_R(huge) is None
+
+
+def test_density_scaled_lost_window():
+    import numpy as np
+
+    # Two confirmed tracks near each other; one goes missing INSIDE the pack ->
+    # its recorded density earns a longer lost window than a lonely loss would.
+    manager = TrackManager(_config(
+        confirm_hits=2, lost_window_frames=3, adaptive_lost_window=True,
+        lost_window_max_frames=60, density_lost_window=True,
+        density_radius_m=2.0, density_bonus_frames=20,
+    ))
+    def obs(frame, cid, x, tid):
+        det = Detection3("cam_01", cid, [100.0*(cid+1), 100.0, 40.0, 100.0],
+                         np.zeros((17, 2)), np.ones(17), 0.9, tid)
+        # cluster_id must be unique within one update (as P3 guarantees)
+        return Correspondence(cid, {"cam_01": det}, np.asarray([x, 0.0]), 0.9, False)
+    # 1.5 m apart: outside the shadow-confirm gate (1.2 m), inside the
+    # density radius (2.0 m).
+    for f in range(3):
+        manager.update([obs(f, 0, 0.0, "cam_01_trk_A"), obs(f, 1, 1.5, "cam_01_trk_B")], f)
+    assert sum(1 for t in manager.tracks if t.global_player_id) == 2
+    # A disappears inside B's radius
+    for f in range(3, 10):
+        manager.update([obs(f, 1, 1.5, "cam_01_trk_B")], f)
+    lost = [t for t in manager.tracks if t.global_player_id == "P001"]
+    assert lost and lost[0].density_at_loss == 1
+    # With the flat window (3) it would be deleted by now; density bonus keeps it.
+    assert lost[0].state != "deleted"

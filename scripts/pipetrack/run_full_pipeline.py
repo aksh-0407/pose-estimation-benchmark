@@ -347,25 +347,27 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--until-stage", default="render", choices=STAGE_ORDER)
     parser.add_argument("--skip-render", action="store_true",
                         help="Shorthand for --until-stage p6_3d.")
-    parser.add_argument("--enable-stabilization", action="store_true",
-                        help="Run P1.5 before P2 (fix F1; baseline keeps it off).")
-    parser.add_argument("--enable-lift", action="store_true",
-                        help="Run the P3.5 binding-keyed 3D lift after P3 (fix F9b; default off).")
-    parser.add_argument("--p1b-config", default="configs/v6/p1b_stabilization.yaml")
-    parser.add_argument("--p2-config", default="configs/v6/p2_tracking.yaml")
-    parser.add_argument("--p3-config", default="configs/v6/p3_association.yaml")
-    parser.add_argument("--p4-config", default="configs/v6/p4_global_id.yaml")
+    parser.add_argument("--enable-stabilization", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="Run P1.5 before P2 (v7 default ON; --no-enable-stabilization for v6-style runs).")
+    parser.add_argument("--enable-lift", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="Run the P3.5 binding-keyed 3D lift after P3 (v7 default ON).")
+    parser.add_argument("--p1b-config", default="configs/v7/p1b_stabilization.yaml")
+    parser.add_argument("--p2-config", default="configs/v7/p2_tracking.yaml")
+    parser.add_argument("--p3-config", default="configs/v7/p3_association.yaml")
+    parser.add_argument("--p4-config", default="configs/v7/p4_global_id.yaml")
     parser.add_argument("--tri-reproj-px", type=float, default=10.0)
     parser.add_argument("--tri-min-views", type=int, default=2)
     parser.add_argument("--tri-ema-alpha", type=float, default=0.65)
-    parser.add_argument("--tri-cheirality", action="store_true",
+    parser.add_argument("--tri-cheirality", action=argparse.BooleanOptionalAction, default=True,
                         help="Fix F3: cheirality gate in the 3D lift (default off = baseline).")
-    parser.add_argument("--tri-smoother", choices=["ema", "butterworth"], default="ema",
+    parser.add_argument("--tri-smoother", choices=["ema", "butterworth"], default="butterworth",
                         help="Fix F7: zero-phase Butterworth instead of causal EMA (default ema).")
     parser.add_argument("--tri-butter-cutoff-hz", type=float, default=6.0)
-    parser.add_argument("--tri-native-skeleton", action="store_true",
+    parser.add_argument("--tri-native-skeleton", action=argparse.BooleanOptionalAction, default=True,
                         help="Fix F15: triangulate all 26 Halpe keypoints (default off = COCO-17).")
-    parser.add_argument("--tri-dense-fill", action="store_true",
+    parser.add_argument("--tri-dense-fill", action=argparse.BooleanOptionalAction, default=True,
                         help="Fix C6: gap-gate temporal fills on real frame numbers (default off).")
     parser.add_argument("--artifacts-root", default=None,
                         help="Mosaics land in <artifacts-root>/mosaics/<D>/ (required to render).")

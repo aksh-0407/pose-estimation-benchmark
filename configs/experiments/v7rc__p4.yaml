@@ -67,6 +67,7 @@ p4b:
   occupancy_bridge: true          # F6: disjoint-occupancy long-gap bridging
   temporal_gate_frames_occupancy: 300
   occupancy_bridge_require_pose: true
+  normalized_costs: true      # G7: commensurate stitch costs (legacy mode is dead beyond 0.6 s gaps)
   posture_stitch_max_z: 3.0       # F12: billboard-posture stitch gate
   w_posture: 0.5
   # Min-cost-flow path cover that bridges fragmented confirmed tracklets across

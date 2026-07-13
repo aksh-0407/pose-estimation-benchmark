@@ -178,3 +178,23 @@ def test_bowler_detection_is_direction_signed():
     kw = dict(window_frames=50, frame_rate_fps=50.0, early_cutoff=100)
     assert _windowed_axis_speed(toward, axis, **kw) > 3.5
     assert _windowed_axis_speed(against, axis, **kw) <= 0.0
+
+
+def test_normalized_costs_make_long_gap_stitches_selectable():
+    # G7: legacy units let w_temporal*gap alone dwarf the dummy for gaps > 30
+    # frames — a real 120-frame occlusion could NEVER stitch. Normalized mode
+    # keeps in-gate costs commensurate with the dummy.
+    segments = [
+        _segment(0, "P001", 0, 100, (0, 0), (0, 0)),
+        _segment(1, "P002", 220, 300, (0.5, 0), (1, 0)),   # gap 120 = the full gate
+    ]
+    legacy = P4Config(p4b=replace(P4BConfig(), new_traj_cost_factor=3.0))
+    edges = build_link_costs(segments, legacy)
+    assert len(edges) == 1
+    assert solve_flow(segments, edges, legacy) == {}        # documents the dead zone
+
+    normalized = P4Config(p4b=replace(
+        P4BConfig(), new_traj_cost_factor=3.0, normalized_costs=True,
+    ))
+    edges = build_link_costs(segments, normalized)
+    assert solve_flow(segments, edges, normalized) == {0: 1}  # now selectable

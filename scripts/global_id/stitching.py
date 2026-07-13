@@ -203,9 +203,20 @@ def build_link_costs(
                 # positive body-shape evidence (abstaining descriptors don't count).
                 if pose_distance is None or pose_gate <= 0.0 or pose_distance > pose_gate:
                     continue
+            if config.p4b.normalized_costs:
+                # G7: commensurate unit-free terms — each divided by its own gate,
+                # so a plausible stitch anywhere inside the gates can actually win
+                # against the new-trajectory dummy (see P4BConfig.normalized_costs).
+                temporal_term = config.p4b.w_temporal * (
+                    gap / max(config.p4b.temporal_gate_frames, 1)
+                )
+                spatial_term = config.p4b.w_spatial * (distance / max(maximum, 1e-6))
+            else:
+                temporal_term = config.p4b.w_temporal * gap
+                spatial_term = config.p4b.w_spatial * distance
             cost = (
-                config.p4b.w_temporal * gap
-                + config.p4b.w_spatial * distance
+                temporal_term
+                + spatial_term
                 + _role_penalty(source.dominant_role, target.dominant_role, config)
                 + config.p4b.velocity_continuity_weight * velocity_continuity_cost(source, target)
                 + pose_term

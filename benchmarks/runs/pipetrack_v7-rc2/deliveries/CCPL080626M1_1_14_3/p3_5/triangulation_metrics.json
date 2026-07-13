@@ -1,0 +1,22 @@
+{
+  "bindings_lifted": 5,
+  "candidate_identity_frames": 6179,
+  "chimera_suspect_count": 2,
+  "chimera_suspects": [
+    "B002",
+    "B003"
+  ],
+  "created_at": "2026-07-13T08:05:12.394432+00:00",
+  "delivery_id": "CCPL080626M1_1_14_3",
+  "eligible_multiview_identity_frames": 2969,
+  "frames_with_extrapolated_joints": 761,
+  "fully_valid_identity_frames": 2969,
+  "id_source": "binding",
+  "match_id": "CCPL080626",
+  "mean_reprojection_error_px": 3.208074708813657,
+  "p95_reprojection_error_px": 6.494469335327084,
+  "schema_version": "triangulation_metrics/v2",
+  "triangulated_identity_frames": 2969,
+  "triangulation_coverage": 0.48049846253439066,
+  "triangulation_success_rate": 1.0
+}

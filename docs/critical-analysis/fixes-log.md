@@ -301,12 +301,82 @@ unflagged FR P3-side changes H3/H6), B = same over the F1 tree (P1.5 with the OL
 isolates the C1/C2 tracklet changes). The suspects are exactly the two new ingredients this
 stack introduced beyond measured waves.
 
+### Attribution Closed: v7-rc1 Binding Collapse = H3; P4b Stitcher Was Mathematically Dead (G7)
+
+- **H3 confirmed by controlled experiment**: re-running the identical v7rc P3 on the identical
+  composed P2 with the posture-sample policy reverted to legacy restored multi-camera bindings
+  4→7, single-camera rate 0.670→0.367, corroboration merges 0→2 on delivery 1. The permissive
+  policy (keep stature for upright-unknown samples) shifts the self-calibrated posture
+  distributions enough that the posture cue weakly DISAGREES on facing pairs, silently vetoing
+  the corroboration merges. Resolution: `posture_keep_upright_unknown` config flag, default
+  legacy; the residual 0.367-vs-0.271 gap is the (small) P1.5 + C1/C2 P2-data effect.
+- **G7 unit-mixing confirmed as dead code**: with the tuned weights, `w_temporal x gap` alone
+  exceeds the new-trajectory dummy (3.0) for any gap > 30 frames — every stitch beyond 0.6 s,
+  including all F6 occupancy bridges, was mathematically unselectable (the measured
+  "M2: 1068 feasible edges, 0 links" and the historic `stitched_id_switch_proxy = 0`).
+  Fixed with `p4b.normalized_costs` (each term divided by its own gate; legacy off by
+  default); unit test pins both the dead zone and the fix.
+- Next composed candidate **v7-rc2** = v7-rc1 flags with H3 legacy + normalized stitch costs.
+
+### v7-rc2 - Composed Stack on Fixed Code (post bug-pass validation)
+
+Same flags as rc1; code now carries the H3 gate (legacy default) and G7 normalized stitch
+costs. Run tree `benchmarks/runs/pipetrack_v7-rc2`.
+
+Result (vs v6.0; primary axes first):
+
+- **The P4b stitcher selected links for the first time in project history** (3-6 per clip;
+  0-1 always before G7): `M2` IDs 16→11, fragments 12→7, **id-persistence 0.699→0.956**;
+  `_7` holds its transformation (agreement +0.099, IDs 18→13, fragments −6, teleports −7);
+  `_3/_4/_5` each −1 ID with persistence up; 3D reprojection better on all 8; collisions 0.
+- `M2` teleports +69: the anticipated proxy artifact of stitching itself — a re-joined
+  identity "jumps" across its occlusion gap, which the project objective explicitly accepts
+  (ID restored after occlusion). Read jointly with its +0.257 persistence.
+- H3 gating recovered the rc1 binding collapse (`_1` single-cam 0.670→0.367, `_5` agreement
+  0.671→0.778). Residual `_5` agreement −0.120 matches F1's solo P1.5 cost (−0.121) almost
+  exactly — motivating the final composition experiment **v7-rc3 = rc2 without P1.5**.
+
+Conclusion: strongest portfolio of the campaign on the reweighted objective; final
+default chosen between rc2/rc3 after the P1.5 isolation run.
+
+### GRAND ANALYSIS CONCLUSION - v7 Default Accepted (2026-07-11)
+
+The P1.5 isolation run (`v7-rc3`, identical stack without stabilization) closed the last
+composition question: **P1.5 is a pure `_5` <-> `_7` trade** (`_5` agreement 0.899-vs-0.778,
+`_7` 0.591-vs-0.703 with IDs 15-vs-13 and fragments 9-vs-6); everything else — including the
+M2 stitcher transformation (IDs 16→11, persistence 0.699→0.956) — is P1.5-independent.
+Portfolio mean agreement is equal (0.785 vs 0.783); the decision falls to the worst-clip
+floor, which is the project objective: **rc2 (P1.5 ON) is the accepted default** (floor
+0.655 vs 0.591; and rc2's `_5` still beats baseline on IDs and fragments).
+
+Shipped as **`configs/v7/`** with the driver defaulting to the re-ordered pipeline
+(P1 → P1.5 → P2 → P3 → P3.5 → P4 → P5 → 3D[native-26, cheirality, Butterworth, dense-fill]);
+v6-style runs remain available via `--no-enable-stabilization/--no-enable-lift` + the frozen
+`configs/v6/`. Final panel highlights vs the v6.0 ground baseline:
+
+| Axis | v6.0 | v7 (rc2) |
+|---|---|---|
+| `_7` agreement / IDs / fragments | 0.603 / 18 / 12 | **0.703 / 13 / 6** |
+| `M2` IDs / id-persistence | 16 / 0.699 | **11 / 0.956** |
+| Distinct IDs, all clips | 10-18 | **11-16** |
+| Stitcher links selected | 0-1 (dead) | **3-6 per clip** |
+| 3D reprojection (mean px) | 3.2-3.6 | **3.0-3.5** |
+| Same-camera collisions | 0 | 0 |
+
+Documented costs: `_5` agreement −0.120 (IDs/persistence there still better than baseline);
+teleport proxy up on stitched clips (the accepted occlusion-restoration artifact — id
+restored = a counted "jump" across the gap). Remaining program: Wave 5 probe (tiled
+detection) and Wave 6 (role-focused peripheral suppression), plus the open list in
+`wip/changes_tbd.md`.
+
 ## Current Default / Recommended State
 
-- Baseline: `configs/v6/` as frozen; no fixes accepted yet (all implemented flags default
-  off — proven byte-identical through P3+P4 on `M2` against the frozen baseline).
-- Experiment stacks: `configs/experiments/v6_f01_stabilization__p1b.yaml`,
-  `v6_wave1__{p3,p4}.yaml`, `v6_wave3__{p3,p4}.yaml`, `v6_wave4__p3.yaml`.
+- **Default: `configs/v7/`** (the accepted rc2 stack) with the re-ordered pipeline as the
+  driver default. `configs/v6/` stays frozen as the ground-baseline reference;
+  `configs/experiments/` holds every intermediate stack for reproduction.
+- Opt-in (measured, not default): `posture_keep_upright_unknown` (H3), F11 shape round
+  (self-abstaining), `temporal_link_decay`, `density_lost_window` (fresh, awaiting its
+  first composed A/B).
 
 ## Next Work
 

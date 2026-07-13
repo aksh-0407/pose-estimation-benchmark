@@ -1,0 +1,32 @@
+[
+  {
+    "at_frame": 470721,
+    "into_id": "P010",
+    "merged_id": "P012"
+  },
+  {
+    "at_frame": 470821,
+    "into_id": "P010",
+    "merged_id": "P013"
+  },
+  {
+    "at_frame": 470848,
+    "into_id": "P010",
+    "merged_id": "P014"
+  },
+  {
+    "at_frame": 470903,
+    "into_id": "P010",
+    "merged_id": "P015"
+  },
+  {
+    "at_frame": 470930,
+    "into_id": "P010",
+    "merged_id": "P016"
+  },
+  {
+    "at_frame": 471054,
+    "into_id": "P010",
+    "merged_id": "P017"
+  }
+]

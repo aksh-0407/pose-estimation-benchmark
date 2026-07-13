@@ -175,7 +175,10 @@ def run_association(
     # Pass C: per-frame correspondences — from stable bindings in graph mode,
     # from the historical per-frame clustering otherwise.
     anchor: AnchorState | None = None
-    temporal_memory = TemporalLinkMemory(confirm_frames=config.temporal_confirm_frames)
+    temporal_memory = TemporalLinkMemory(
+        confirm_frames=config.temporal_confirm_frames,
+        decay=config.temporal_link_decay,
+    )
     anchor_switch_frames: list[int] = []
     rows: list[dict] = []
     # F9c: multi-view member keypoints per binding, sampled every graph_lift_stride

@@ -65,7 +65,9 @@ def _windowed_axis_speed(
                 break
             if gap < window_frames // 2:
                 continue
-            along = abs(float((point_b - point_a) @ axis))
+            # H2: the bowler runs WITH the bowling direction; abs() let any
+            # fast axis-aligned sprint (a fielder, a runner) win the crown.
+            along = float((point_b - point_a) @ axis)
             best = max(best, along * frame_rate_fps / gap)
     return best
 

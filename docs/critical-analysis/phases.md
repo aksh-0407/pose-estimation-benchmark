@@ -17,7 +17,7 @@ Every stage reads and writes a **canonical run directory**: `predictions/<captur
 + `diagnostics/` + `run_manifest.json` + a `*_metrics.json`. This is what lets any stage be
 inspected or re-run independently.
 
-## Current pipeline (as-is)
+## Legacy pipeline (v6 order — superseded by the v7 default below)
 
 ```mermaid
 flowchart TD
@@ -38,24 +38,26 @@ flowchart TD
   RAW -. frames + ball .-> R
 ```
 
-Note: today the full **3D triangulation is the last compute stage (P6)** — it does not feed
-identity or tracking; P4 tracks purely on the 2D ground plane.
+Note: in this legacy order the full **3D triangulation is the last compute stage (P6)** —
+it does not feed identity or tracking; P4 tracks purely on the 2D ground plane. This is
+exactly what the re-ordering below fixes.
 
-## Re-ordered pipeline (IMPLEMENTED 2026-07-10; default-on pending v7 acceptance)
+## Re-ordered pipeline (ACCEPTED 2026-07-11 — this is now the default)
 
 Two structural changes, both justified below:
 
-1. **P1.5 — 2D temporal stabilization** after P1 (implemented, `--enable-stabilization`;
-   composition verdict pending — see fixes-log F1/v7-rc1).
-2. **Triangulation at P3.5** (implemented, `--enable-lift`): binding-keyed lift right after
-   association emits per-joint 3D + covariance and the **chimera purity report** that the
+1. **P1.5 — 2D temporal stabilization** after P1 (default ON; the v7-rc3 isolation showed
+   it is a pure `_5`↔`_7` trade and rc2 with P1.5 has the better worst-clip floor — see
+   fixes-log GRAND ANALYSIS CONCLUSION).
+2. **Triangulation at P3.5** (default ON): binding-keyed lift right after association
+   emits per-joint 3D + covariance and the **chimera purity report** that the
    splittable-clustering pass (F13) consumes; the terminal P6 lift remains for the final
-   global-ID-keyed 3D (now with native-26 keypoints, cheirality, frame-aware fills and an
-   optional zero-phase Butterworth).
+   global-ID-keyed 3D (now with native-26 keypoints, cheirality, frame-aware fills and a
+   zero-phase Butterworth by default).
 
-Both are driven by `scripts/pipetrack/run_full_pipeline.py` (the full-chain batch driver
-with per-stage reuse and the joint metric panel); they become hard defaults with the
-`configs/v7` cut once the composed stack passes acceptance (fixes-log: v7-rc series).
+`scripts/pipetrack/run_full_pipeline.py` now defaults to this order with `configs/v7/`
+(the accepted rc2 stack). The legacy order remains reproducible via
+`--no-enable-stabilization --no-enable-lift` + `configs/v6/`.
 
 ```mermaid
 flowchart TD

@@ -66,6 +66,9 @@ class P3AssociationConfig:
     pair_unmatched_cost: float = 0.75
     temporal_link_bonus: float = 0.25
     temporal_confirm_frames: int = 3
+    # H4 (per-frame mode only): exponential decay of temporal-link evidence per
+    # frame; 1.0 = legacy no-decay.
+    temporal_link_decay: float = 1.0
     opposite_camera_pairs: list = field(default_factory=lambda: [list(pair) for pair in _DEFAULT_OPPOSITE_PAIRS])
     # Multi-way cycle-consistency reconciliation
     cycle_xy_tol_m: float = 0.5
@@ -126,6 +129,15 @@ class P3AssociationConfig:
     binding_min_single_frames: int = 150
     graph_hard_dist_gate_m: float = 2.75      # median ground residual ceiling for edges
     graph_motion_enabled: bool = True
+    # G6: the motion-cue shape parameters were hard-coded magic numbers while every
+    # other cue is calibrated/configurable; promoted here (values unchanged).
+    graph_motion_speed_full_mps: float = 2.0     # both clearly moving above this
+    graph_motion_speed_still_mps: float = 0.7    # clearly standing below this
+    graph_motion_gain: float = 1.5               # llr = gain * (cos - offset)
+    graph_motion_cos_offset: float = 0.35
+    graph_motion_llr_min: float = -2.5
+    graph_motion_llr_max: float = 0.75
+    graph_motion_still_llr: float = -1.5         # one sprints, one stands => "different"
     graph_min_app_samples: int = 5
     # Per-detection ground covariance (pixel noise through the ray-plane Jacobian).
     # The floor absorbs cross-camera calibration bias: measured same-player ground
@@ -200,6 +212,9 @@ class P3AssociationConfig:
     # P4a can veto teleports / gate re-entries on the facing-pair-capable body-shape
     # cue. Off = rows are byte-identical to the baseline.
     emit_posture: bool = False
+    # H3 policy (see PostureAccumulator.add): keep stature samples for players whose
+    # posture could not be determined (feet cut off). Off = legacy strict policy.
+    posture_keep_upright_unknown: bool = False
     # F9a: emit the 2x2 ground covariance per cluster (GN posterior for multi-view
     # z0_reproj, inflated per-view Jacobian model for single-camera). Feeds the P4
     # uncertainty-aware Kalman R (F10). Off = rows byte-identical to the baseline.

@@ -45,7 +45,7 @@ flowchart LR
   F["frame"] --> D["RTMDet-m<br/>person boxes"] --> C["crop per person"] --> P["RTMPose-X<br/>26 keypoints + confidence"]
 ```
 
-## P1.5 — Calm the jitter (opt-in)
+## P1.5 — Calm the jitter (default ON since v7)
 
 **Intuition.** Even for a player standing still, raw keypoints tremble a few pixels per
 frame. Rather than let every later stage fight that noise separately, a speed-aware filter
@@ -54,8 +54,9 @@ It links detections across frames only enough to know "same person for smoothing
 (strict IoU micro-tracks that never span an occlusion) so a mistake costs a frame or two of
 shared smoothing, never an identity error.
 
-Status: measured −20–34% jitter; whether it stays on by default is being decided as part of
-the composed-stack acceptance (it reshapes tracklets in ways later stages feel).
+Status: measured −20–34% jitter; accepted into the v7 default. The isolation A/B showed it
+trades quality between two clips (`_5` down, `_7` up) — it stays on because it gives the
+better worst-clip floor, which is the project objective.
 
 ## P2 — Per-camera tracklets
 

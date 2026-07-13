@@ -556,8 +556,24 @@ class TrackManager:
             self.diagnostics["local_identity_bridges"] += 1
 
         # --- Coast unmatched tracks; confirm / delete -------------------------
+        confirmed_positions = [
+            (id(t), t.kalman.pos_world_xy) for t in self.tracks if t.state == CONFIRMED
+        ]
         for track in self.tracks:
             if id(track) not in hit and track.state in {CONFIRMED, TENTATIVE, LOST}:
+                if (
+                    track.state == CONFIRMED
+                    and self.config.p4a.density_lost_window
+                ):
+                    # Density at the moment of loss: confirmed neighbours within
+                    # the radius (self excluded) — occlusion evidence for the
+                    # adaptive lost window.
+                    me = track.kalman.pos_world_xy
+                    track.density_at_loss = sum(
+                        1 for other_id, pos in confirmed_positions
+                        if other_id != id(track)
+                        and float(np.linalg.norm(pos - me)) <= self.config.p4a.density_radius_m
+                    )
                 track.mark_missed()
         self._promote_and_prune()
         return assignments
@@ -618,6 +634,10 @@ class TrackManager:
                 bowler_lost_window_frames=self.config.p4a.bowler_lost_window_frames,
                 adaptive_lost_window=self.config.p4a.adaptive_lost_window,
                 lost_window_max_frames=self.config.p4a.lost_window_max_frames,
+                density_bonus_frames=(
+                    self.config.p4a.density_bonus_frames
+                    if self.config.p4a.density_lost_window else 0
+                ),
             ):
                 track.state = DELETED
                 if track.global_player_id is not None:

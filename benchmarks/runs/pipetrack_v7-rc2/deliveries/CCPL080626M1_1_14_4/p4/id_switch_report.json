@@ -1,0 +1,22 @@
+[
+  {
+    "at_frame": 225979,
+    "into_id": "P011",
+    "merged_id": "P013"
+  },
+  {
+    "at_frame": 226004,
+    "into_id": "P009",
+    "merged_id": "P014"
+  },
+  {
+    "at_frame": 226274,
+    "into_id": "P011",
+    "merged_id": "P015"
+  },
+  {
+    "at_frame": 226312,
+    "into_id": "P011",
+    "merged_id": "P016"
+  }
+]
