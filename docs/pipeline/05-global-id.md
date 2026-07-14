@@ -1,20 +1,20 @@
-# P4 — global identity + tracklet stitching
+# 05 — global identity + tracklet stitching
 
 > **Stage 05** (was P4) — code `src/identity/p5_global_id/`, config `configs/05_global_id.yaml`.
 
 ## Role & intuition
 
-P4 turns per-frame cross-camera correspondences into **persistent global identities** (`P001…`)
+05 turns per-frame cross-camera correspondences into **persistent global identities** (`P001…`)
 that survive occlusion, camera hand-offs, and gaps for the whole delivery — the IDs the mosaic
 colours by. It is an **online single-hypothesis multi-object tracker on the ground plane**
-(P4a) followed by an **offline stitching** pass (P4b) that bridges fragments the online tracker
+(05a) followed by an **offline stitching** pass (05b) that bridges fragments the online tracker
 left behind. Its hard invariant: two detections in the same camera-frame can never share an ID.
 
 ## I/O & config
 
 | | |
 |---|---|
-| **Input** | P3 run (correspondences + ground points); calibration; `configs/05_global_id.yaml` (+ `_v5`); optional `--ground-truth` |
+| **Input** | 03 run (correspondences + ground points); calibration; `configs/05_global_id.yaml` (+ `_v5`); optional `--ground-truth` |
 | **Output** | `predictions/*` with `global_player_id`; `diagnostics/ground_tracks.jsonl`; `id_switch_report.json`; `global_id_metrics.json` |
 | **Core** | `src/identity/p5_global_id/{track_manager,stitching}.py`; `src/identity/p5_global_id/ground_kalman.py` |
 
@@ -22,14 +22,14 @@ left behind. Its hard invariant: two detections in the same camera-frame can nev
 
 ```mermaid
 flowchart TD
-  COR["P3 correspondence (frame)"] --> S0["Stage 0: binding_id continuity (1:1 for delivery)"]
-  S0 --> S1["Stage 1: exact P2 tracklet ownership (TTL 50)"]
+  COR["03 correspondence (frame)"] --> S0["Stage 0: binding_id continuity (1:1 for delivery)"]
+  S0 --> S1["Stage 1: exact 02 tracklet ownership (TTL 50)"]
   S1 --> S2["Stage 2: chi2-gated Mahalanobis Hungarian<br/>+ pose penalty and veto (0.30)"]
   S2 --> S25["Stage 2.5: shadow absorb (identity-only)"]
   S25 --> S3["Stage 3: re-entry (gap-scaled gate + kinematic + pose veto)"]
   S3 --> NEW["else spawn TENTATIVE (roster cap, shadow confirm)"]
   S2 --> KF["Singer-accel Kalman update<br/>emit posterior"]
-  KF --> P4B["P4b stitching: min-cost-flow path cover<br/>bridges fragments; same-cell forbidden"]
+  KF --> P4B["05b stitching: min-cost-flow path cover<br/>bridges fragments; same-cell forbidden"]
 ```
 
 ## Methods walkthrough
@@ -81,25 +81,26 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
   distance/grazing from the cameras, so a far, ill-localised foot is trusted as much as a near one
   — the underlying enabler of teleports (the emitted-posterior fix hides the symptom, not the
   mis-assignment).
-- **Stitching under-merges** — `stitched_id_switch_proxy = 0` everywhere means P4b is *not*
+- **Stitching under-merges** — `stitched_id_switch_proxy = 0` everywhere means 05b is *not*
   bridging the fragments it should; its feasibility gates are too conservative for real gaps.
 - **Re-entry leans on weak cues** — with colour dead and pose-shape slow, a re-entering player is
   matched mostly on kinematics, which fails after long occlusions → a fresh ID.
-- **2D-only tracking** — P4 tracks on the ground plane; it does not use the 3D pose (which is
-  computed later), so it lacks the richest disambiguating signal.
+- **2D-only tracking** — 05 tracks on the ground plane; although the 04 lift now produces 3D
+  *before* it, 05 does not yet consume that 3D pose, so it lacks the richest disambiguating signal
+  ([changes_tbd](../changes_tbd.md)).
 - **Many hand-tuned constants** on a single 12-second tuning delivery — real risk of overfitting.
 
 ## Issues
 
 - **ID-2 (★★★) Fragmentation / over-segmentation.** 18–25 distinct IDs vs a ~13 roster;
-  `stitched_id_switch_proxy=0` ⇒ P4b under-merges (`../diagnosis/09-per-phase-issue-register.md` ID-2).
+  `stitched_id_switch_proxy=0` ⇒ 05b under-merges (`../diagnosis/09-per-phase-issue-register.md` ID-2).
 - **ID-3 (★★) Teleports.** 7–155/clip (M2 155): the χ²-gated assignment admits a wrong nearby
   cluster when the true one is missing a frame (`../diagnosis/09-per-phase-issue-register.md` ID-3).
 - **ISSUE-4 (★★) Fixed distance-blind Kalman R** (`ground_kalman.py`, ~0.3–0.4 m): the biggest
   un-pulled anti-teleport lever (`../diagnosis/README.md` ISSUE-4).
-- **ID-2b (★) Conservative P4b gates** — temporal 120 / kinematic / occupancy too tight to bridge
+- **ID-2b (★) Conservative 05b gates** — temporal 120 / kinematic / occupancy too tight to bridge
   real occlusion gaps.
-- **P4-1 (★) Overfitting risk** — constants tuned on one short delivery.
+- **05-1 (★) Overfitting risk** — constants tuned on one short delivery.
 
 ## Fixes (all, priority-ordered)
 
@@ -108,10 +109,10 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
 | 1 | **Feed a distance/uncertainty-dependent R** into the Singer Kalman (from the 04 (binding lift) triangulation covariance or a homography-Jacobian model) instead of a fixed R. | ★★★ | Distance-blind R is the root enabler of teleports; distance-dependent R is standard in multi-camera sports tracking. | Fewer teleports; correct trust of far/grazing feet. | Medium | ground-plane sports fusion; Lee & Civera [2008.01258] |
 | 2 | **Adaptive lost-window + stronger re-ID at re-entry** (mature pose-shape / learned ReID + kinematic prediction), scaled by track maturity and local density. | ★★★ | Fragmentation (ID-2) is re-entry failing; a longer window for established players + a real re-ID key fixes it. | ID count collapses toward the ~13 roster. | Medium | Deep OC-SORT [2302.11813]; GTA sports tracklet association [2411.08216] |
 | 3 | **Track in 3D** — once triangulation is 04 (binding lift), run the global tracker on the 3D pose/position (3D Singer KF + 3D pose-shape re-ID) rather than the 2D ground only. | ★★ | The 3D skeleton is the richest disambiguator; using it removes many crowd mis-assignments. | Fewer teleports + chimeras; better re-ID. | Medium-High (depends on triangulation fix 1) | VoxelPose "operate in 3D" [2207.10955] |
-| 4 | **Loosen P4b bridging where occupancy proves two segments cannot be simultaneous**, and add a descriptor (pose-shape/ReID) to the stitch cost. | ★★ | P4b under-merges; occupancy + a real descriptor safely bridges more gaps. | More fragments stitched → fewer IDs. | Medium | min-cost-flow assoc [Zhang 2008] |
+| 4 | **Loosen 05b bridging where occupancy proves two segments cannot be simultaneous**, and add a descriptor (pose-shape/ReID) to the stitch cost. | ★★ | 05b under-merges; occupancy + a real descriptor safely bridges more gaps. | More fragments stitched → fewer IDs. | Medium | min-cost-flow assoc [Zhang 2008] |
 | 5 | **Cricket roster prior as a hard-ish cap** — penalise minting a new ID when the roster is full and an existing track just went missing nearby; seed from the team sheet. | ★ | Encodes the true ~15-person structure to resist over-segmentation. | Fewer spurious IDs. | Low-Medium | roster/game-state priors [SoccerNet GSR 2404.11335] |
 | 6 | **Pose-shape veto *inside* the assignment gate + hysteresis** — don't hand a track to a new tracklet on a single frame; require a body-shape match. | ★ | Tightens exactly the χ²-gate admission that causes teleports. | Fewer single-frame teleports. | Low | — |
 | 7 | **Get identity ground truth** (hand-label a few hundred frames on 2–3 deliveries incl. _7/M2) to report real **MOTA/IDF1/HOTA** instead of proxies. | ★★ | Every identity number today is a proxy; without labels, tuning is guesswork. | Measurable identity work; catches overfitting. | Medium (labelling) | CLEAR-MOT / IDF1 / HOTA [Luiten 2009.07736] |
 
-Cross-phase: ID-2/ID-3 sit just under P3's ID-1/ID-5 in the roadmap; several fixes here depend on
+Cross-phase: ID-2/ID-3 sit just under 03's ID-1/ID-5 in the roadmap; several fixes here depend on
 the triangulation re-placement — see [fixes-roadmap.md](../changes_tbd.md).

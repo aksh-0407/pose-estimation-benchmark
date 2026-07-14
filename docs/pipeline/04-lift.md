@@ -1,23 +1,25 @@
-# Triangulation / 3D lift — and its optimal placement
+# 04 — 3D lift (triangulation)
 
 > **Stage 04** — the 3D lift, now run **before** global-id (Associate→Triangulate→Track). Code: `src/identity/p4_lift/run_triangulation.py`.
 
 ## Role & intuition
 
 This stage turns the multi-view 2D keypoints of one identified player into a single **3D world
-skeleton**. Today it runs **last (P6)**, purely to emit poses for Unreal Engine; it does not feed
-identity or tracking. This doc analyses the method and argues — professionally — that its optimal
-home is **04 (binding lift): immediately after association, before global ID**, so it can (a) let P4 track in 3D
-and (b) supply the chimera-split signal P3's clustering lacks.
+skeleton**. It runs at **stage 04, binding-keyed (`--id-source binding`), immediately after
+association and *before* global identity** — so its per-cluster reprojection / cycle-consistency is
+available as a chimera-purity signal and its 3D is available to identity. The **same module** also
+runs a **terminal pass** keyed by `global_player_id` (run-dir `07_lift3d`) after roles, producing
+the final Unreal-Engine-facing 3D. The sequencing win is realised, but global identity does **not
+yet consume** the 3D (it still tracks on the ground plane) — see [changes_tbd](../changes_tbd.md).
 
 ## I/O & config
 
 | | |
 |---|---|
-| **Input (today)** | P4 run; calibration. **Input (proposed)** | P3 run (correspondences) |
-| **Output** | `pose_3d.keypoints_world_m` written back into each camera stream |
+| **Input** | binding pass: 03 association run (correspondences + `binding_id`); terminal pass: 05 global-id run; + calibration |
+| **Output** | `pose_3d.keypoints_world_m` (+ `pose_3d_native`, Halpe-26) written back into each camera stream; `diagnostics/lift_purity.json` (binding mode); `triangulation_metrics.json` |
 | **Core** | `src/identity/p4_lift/run_triangulation.py`; `src/identity/common/triangulation.py` |
-| **Knobs** | `--reprojection-threshold-px 10`, `--min-views 2`, `--ema-alpha 0.65` |
+| **Knobs** | `--id-source binding\|global`, `--reprojection-threshold-px 10`, `--min-views 2`, `--cheirality`, `--smoother butterworth`, `--native-skeleton`, `--dense-fill` |
 
 ## Flowchart
 
@@ -29,7 +31,7 @@ flowchart TD
   F --> S["skeletal-prior fill<br/>fill_from_skeletal_prior:259"]
   S --> E["confidence-aware EMA<br/>confidence_ema_smooth:296 (alpha 0.65)"]
   E --> OUT["pose_3d.keypoints_world_m"]
-  R -. per-cluster reprojection / cycle-consistency .-> SPLIT["chimera split signal (proposed -> P3/P4)"]
+  R -. per-cluster reprojection / cycle-consistency .-> SPLIT["chimera split signal (-> 03/05)"]
 ```
 
 ## Methods walkthrough
@@ -72,9 +74,10 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
   z≫0 is mislocated when forced to the plane (V2-L3; ankle z p95 = 0.56 m).
 - **Skeletal-prior fill can fabricate plausible-but-wrong joints** — a never-seen limb placed from
   a prior is a guess, low-confidence but still emitted.
-- **Runs last (terminal P6)** — the full 3D skeleton, the single richest geometric signal, is
-  computed *after* identity is already decided, so it cannot help tracking or split chimeras. This
-  is a **sequencing** weakness, not a method weakness.
+- **Global identity doesn't yet consume the 3D** — the binding-keyed lift now runs *before* 05, but
+  05 still tracks on the ground plane and ignores the 3D pose/covariance, so the richest geometric
+  signal isn't yet used for identity or chimera-splitting. The sequencing is fixed; the wiring is
+  the remaining work (deferred — [changes_tbd](../changes_tbd.md)).
 
 ## Issues
 
@@ -82,20 +85,21 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
   V2-L1). No triangulation possible with one ray.
 - **V2-L3 (★) Flat z=0 airborne error.** Triangulated ankle z p95 0.56 m; the ground point forced
   to z=0 lands beyond the true position at grazing angle.
-- **T-1 (★★) Triangulation runs terminal, so its reprojection/cycle-consistency never feeds
-  identity.** The exact signal that would split ID-5 chimeras and enable 3D tracking is discarded.
+- **T-1 (★★) The 3D signal is produced before 05 but not consumed by it.** The binding-lift's
+  reprojection / cycle-consistency (which would split ID-5 chimeras and enable 3D tracking) is
+  emitted, but 05 doesn't yet read it — remaining wiring, no longer a sequencing problem.
 - **T-2 (★) Skeletal-prior fabrication risk** for never-seen joints on long single-view stretches.
 
 ## Fixes (all, priority-ordered)
 
 | # | Fix | Priority | Reasoning | Expected effect | Effort | Source |
 |---|---|---|---|---|---|---|
-| 1 | **Move triangulation to 04 (binding lift)** (after association, before P4) and feed its per-cluster reprojection / cycle-consistency back as a **chimera-split signal** and as P4's 3D observation. | ★★★ | Correspondences exist by P3; running the lift here makes the richest geometric signal available *before* identity is finalised and *before* tracking — the single change that unlocks both 3D-aware tracking and splittable clustering (ID-5). | Fewer chimeras; 3D-aware P4; no extra model. | Medium (re-sequencing + wiring) | VoxelPose "decide in 3D" [Faster VoxelPose 2207.10955]; Iskakov [1905.05754] |
+| 1 | **Feed the binding-lift 3D into 05.** The re-sequencing (04 before 05) is **done**; the remaining step is wiring the per-cluster reprojection / cycle-consistency as a chimera-split signal and the 3D as 05's observation. | ★★★ | The richest geometric signal is now produced before identity is finalised; consuming it unlocks 3D-aware tracking and splittable clustering (ID-5). Needs the standard 8-delivery A/B. | Fewer chimeras; 3D-aware 05; no extra model. | Medium (wiring) | VoxelPose "decide in 3D" [Faster VoxelPose 2207.10955]; Iskakov [1905.05754] |
 | 2 | **Single-view → canonical-skeleton lift (PnP)** for the ~39% single-camera frames: fit the identity's canonical 3D skeleton (learned from its multi-view frames) to the lone 2D view at its z0 ground position. | ★★ | Half of coverage is single-camera; a PnP/optimisation lift gives a plausible full 3D pose where triangulation can't. | 3D pose on single-camera frames → far higher completeness. | Medium-High | monocular lift / SMPLify-style fitting; UPose3D [2404.14634] |
-| 3 | **Uncertainty-aware triangulation** — propagate 2D keypoint covariance into the DLT weights and emit a per-joint 3D covariance to carry downstream (into P4's Kalman R). | ★★ | Weighting by real uncertainty (not just √conf) is the modern robust-triangulation recipe and gives P4 a principled measurement noise. | Better fusion + anti-teleport R. | Medium | LOSTU [2311.11171]; UPose3D [2404.14634]; Lee & Civera [2008.01258] |
+| 3 | **Uncertainty-aware triangulation** — propagate 2D keypoint covariance into the DLT weights and emit a per-joint 3D covariance to carry downstream (into 05's Kalman R). | ★★ | Weighting by real uncertainty (not just √conf) is the modern robust-triangulation recipe and gives 05 a principled measurement noise. | Better fusion + anti-teleport R. | Medium | LOSTU [2311.11171]; UPose3D [2404.14634]; Lee & Civera [2008.01258] |
 | 4 | **Airborne handling** — take the ground position from the triangulated **pelvis vertical projection** (robust to a raised foot), flag airborne frames (ankle z≫0) and inflate their covariance. | ★ | Removes the z=0 grazing-angle error on jumps/strides. | Correct location for airborne feet. | Low-Medium | Pose2Sim [PMC9002957] |
 | 5 | **Offline zero-phase temporal filter (4th-order Butterworth / RTS)** on the whole-delivery 3D trajectory for the non-real-time render path. | ★ | The delivery is offline; a zero-phase low-pass is the sports-capture standard for the smoothest final trajectory. | Smoother final 3D with no lag. | Low | Pose2Sim [PMC8512754] |
 | 6 | **Gate skeletal-prior fill** — cap how long a joint may be prior-filled and down-weight/flag it, or prefer the single-view PnP lift (fix 2) over pure priors. | ★ | Avoids emitting fabricated limbs on long single-view stretches. | Fewer wrong emitted joints. | Low | — |
 
-Cross-phase: fix 1 here is the enabler for P3 fix 2 (splittable clustering) and P4 3D tracking —
-see [fixes-roadmap.md](../changes_tbd.md).
+Cross-phase: fix 1 here is the enabler for 03's splittable clustering and 05's 3D tracking —
+see [changes_tbd.md](../changes_tbd.md).

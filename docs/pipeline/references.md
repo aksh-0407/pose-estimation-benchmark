@@ -17,10 +17,10 @@ logs.
 **Key code locations:**
 - P1: `src/core/inference/run_phase1_rtmpose_inference.py` (`boxes_from_det_result:485`, `inference_topdown_batch:528`, `player_records:619`).
 - 01 (stabilization): `src/identity/p1_stabilization/{smoothing,linker,runner}.py`.
-- P2: `src/identity/p2_tracking/{tracker.py:180, kalman.py:16}`.
-- P3: `src/identity/p3_association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `src/identity/common/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
+- 02: `src/identity/p2_tracking/{tracker.py:180, kalman.py:16}`.
+- 03: `src/identity/p3_association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `src/identity/common/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
 - 3D lift: `src/identity/common/triangulation.py` (`triangulate_point_dlt:31`, `triangulate_skeleton_ransac:162`); `src/identity/p4_lift/run_triangulation.py`.
-- P4: `src/identity/p5_global_id/{track_manager.py:322, stitching.py}`; `src/identity/p5_global_id/ground_kalman.py:39` (Singer/Van Loan).
+- 05: `src/identity/p5_global_id/{track_manager.py:322, stitching.py}`; `src/identity/p5_global_id/ground_kalman.py:39` (Singer/Van Loan).
 - Render: `src/identity/visualization/{render_videos.py, mosaic_layout.py, identity_colors.py}`.
 
 ## External sources

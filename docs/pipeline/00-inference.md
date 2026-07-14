@@ -85,7 +85,7 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 - **Runtime scales with people** (top-down) — ~35 crops/frame × 7 cameras is the throughput
   bottleneck; the render, not pose, is usually the wall-clock limiter here.
 - **Single global image size assumption in places** — camera 07 is ~3775×960, not 2560×1440;
-  any path that reads a global size mishandles it (surfaces in P3, see that doc).
+  any path that reads a global size mishandles it (surfaces in 03, see that doc).
 - **COCO-17 is body-only** — no hands/face; fine for tracking, a limit for fine pose.
 
 ## Issues

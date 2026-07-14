@@ -1,13 +1,13 @@
-# P2 — per-camera tracking
+# 02 — per-camera tracking
 
 > **Stage 02** (was P2) — code `src/identity/p2_tracking/`, config `configs/02_tracking.yaml`.
 
 ## Role & intuition
 
-P2 links per-frame detections into **per-camera tracklets** (`local_track_id`) — the temporally
+02 links per-frame detections into **per-camera tracklets** (`local_track_id`) — the temporally
 coherent "this box in frame t is the same person as that box in t+1, *within one camera*". These
-tracklets are the strongest identity primitive the rest of the pipeline has: P3 decides identity
-per *tracklet-pair* (not per detection), which denoises the association by roughly √n. So P2's
+tracklets are the strongest identity primitive the rest of the pipeline has: 03 decides identity
+per *tracklet-pair* (not per detection), which denoises the association by roughly √n. So 02's
 job is to produce clean, un-fragmented, un-swapped per-camera tracks.
 
 ## I/O & config
@@ -73,25 +73,25 @@ medoid representative) supplies the cosine cue and the dormant re-ID key. This i
   those moments (the DanceTrack/SportsMOT lesson).
 - **No camera-motion compensation** — if any camera is not perfectly static, IoU/Kalman gating
   degrades (BoT-SORT's CMC exists for this).
-- **This is where the appearance cue's death originates** — P2's colour-independent design is
+- **This is where the appearance cue's death originates** — 02's colour-independent design is
   correct, but it also means the only re-acquisition signal is pose-cosine, which matures slowly.
 - **Gate constants are global** — one `chi2_gate`, one `gate_max_distance_px`, one dormant window
   for all cameras, lighting, and player densities.
-- **Per-camera only** — P2 cannot use the other cameras' views to resolve an ambiguous in-camera
-  occlusion (that is deferred to P3, later).
+- **Per-camera only** — 02 cannot use the other cameras' views to resolve an ambiguous in-camera
+  occlusion (that is deferred to 03, later).
 
 ## Issues
 
-- **P2-1 (★★★) CV motion model under manoeuvre.** Non-linear player motion breaks CV gating,
-  causing fragmentation that P4 must later stitch. Evidence: fragmentation proxy 5–19 and
+- **02-1 (★★★) CV motion model under manoeuvre.** Non-linear player motion breaks CV gating,
+  causing fragmentation that 05 must later stitch. Evidence: fragmentation proxy 5–19 and
   distinct-ID inflation in `../diagnosis/09-per-phase-issue-register.md` ID-2, which begins as per-camera track breaks.
-- **P2-2 (★★) Pose-cosine re-ID matures slowly.** With colour dead (`../diagnosis/09-per-phase-issue-register.md` ID-4), the
+- **02-2 (★★) Pose-cosine re-ID matures slowly.** With colour dead (`../diagnosis/09-per-phase-issue-register.md` ID-4), the
   only re-acquisition cue is the pose gallery, which needs many frames to become discriminative;
   short-gap re-entries fail and mint fragments.
-- **P2-3 (★★) No camera-motion compensation.** Any non-static camera degrades IoU/Kalman gating.
-- **P2-4 (★) Global gate constants.** No per-camera / density adaptation of the χ² gate, distance
+- **02-3 (★★) No camera-motion compensation.** Any non-static camera degrades IoU/Kalman gating.
+- **02-4 (★) Global gate constants.** No per-camera / density adaptation of the χ² gate, distance
   cap, or dormant window.
-- **P2-5 (★) Fixed dormant window** (60 frames) is not scaled by track maturity or local
+- **02-5 (★) Fixed dormant window** (60 frames) is not scaled by track maturity or local
   occupancy, so a well-established player lost briefly can still be deleted and re-born.
 
 ## Fixes (all, priority-ordered)
@@ -104,5 +104,5 @@ medoid representative) supplies the cosine cue and the dormant re-ID key. This i
 | 4 | **Sports-tuned association (Deep-EIoU / SportsMOT)** — expansion-IoU + deep features tuned for fast, similar-looking athletes. | ★★ | Purpose-built for the cricket-like sports MOT setting. | Better matching in fast, crowded play. | Medium | Deep-EIoU [2306.13074]; GTA [2411.08216] |
 | 5 | **Adaptive gates + adaptive dormant window** scaled by track maturity and local detection density. | ★ | One global constant can't fit all cameras/densities; keep established players alive longer. | Fewer needless deletions/re-births. | Low-Medium | UCMCTrack [2312.08952] |
 
-Cross-phase context: P2 fragmentation is the upstream half of the fragmentation problem P4 tries
+Cross-phase context: 02 fragmentation is the upstream half of the fragmentation problem 05 tries
 to stitch — see [05-global-id.md](05-global-id.md) and [fixes-roadmap.md](../changes_tbd.md).

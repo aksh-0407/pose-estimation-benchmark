@@ -7,7 +7,7 @@
 
 Assign each persistent `global_player_id` a cricket **role** (bowler / striker / non_striker /
 wicketkeeper / umpire / fielder / unknown) from its ground trajectory and the pitch geometry,
-then apply role-aware **peripheral suppression** (P5b, Wave-6) to drop clearly low-quality
+then apply role-aware **peripheral suppression** (06b, Wave-6) to drop clearly low-quality
 peripheral detections before the terminal 3D lift and render. Roles are consumed only by the
 roster panel in the mosaic and by downstream groups — they never change identity or geometry.
 
@@ -31,7 +31,7 @@ roster panel in the mosaic and by downstream groups — they never change identi
   sign whose roster fits best on the pre-shot window; run detection breaks ties
   (`bowling_direction_source` is recorded per delivery). Overs do not share a bowling end, so
   each delivery decides independently.
-- **P5b peripheral suppression** (`suppress_peripherals.decide`): core roles are **never**
+- **06b peripheral suppression** (`suppress_peripherals.decide`): core roles are **never**
   suppressed; only peripherals (umpire/fielder/unknown) are dropped, and only when clearly
   low-quality (low keypoint confidence / completeness / single-camera detection confidence).
 

@@ -21,13 +21,13 @@ p4,p5,p6_3d}`. 40 deliveries (M1 overs 14/16/17; M2 overs 11/12 + innings-2 over
 |---|---|---|---|
 | **P1** 2D pose | Find every person in every frame of every camera and estimate their skeleton | RTMDet-m person detector on a **4×2 overlapping tile grid + full frame** (small players survive), cross-tile **NMS 0.55** (both crossing players kept), fp16; then **RTMPose-X** top-down, **Halpe-26** skeleton (COCO-17 + head/neck/hip + 6 foot keypoints) | `pose_2d` (17) + `pose_2d_native` (26 incl. feet) |
 | **P1b** 2D stabilize | Remove per-frame keypoint jitter before it propagates | **One-Euro filter** + confidence-gated spike clamp over IoU micro-tracks | smoother 2D (−20–34% jitter) |
-| **P2** per-camera track | Link detections over time **within one camera** into tracklets (one person = one tracklet) | ByteTrack-style two-stage Hungarian (IoU + pose-cosine) + constant-velocity Kalman; low-confidence detections associate-only (no new births); zero-IoU fast movers matched by motion | `local_track_id` |
-| **P3** cross-camera ID | Decide which tracklet in camera A is the **same person** as which in camera B/C/… | Whole-delivery **tracklet graph**: per-pair calibrated log-likelihood-ratio cues (ground distance on the z=0 plane, appearance, billboard posture, motion) fused → union-find merge + facing-pair corroboration; ground position by **z=0-constrained robust reprojection** (Gauss–Newton + Huber); **W9 union-lift merge** (two clusters merge if ONE triangulated skeleton explains all views) | `correspondences.jsonl`, per-cluster world `ground_xy`, binding ids |
+| **02** per-camera track | Link detections over time **within one camera** into tracklets (one person = one tracklet) | ByteTrack-style two-stage Hungarian (IoU + pose-cosine) + constant-velocity Kalman; low-confidence detections associate-only (no new births); zero-IoU fast movers matched by motion | `local_track_id` |
+| **03** cross-camera ID | Decide which tracklet in camera A is the **same person** as which in camera B/C/… | Whole-delivery **tracklet graph**: per-pair calibrated log-likelihood-ratio cues (ground distance on the z=0 plane, appearance, billboard posture, motion) fused → union-find merge + facing-pair corroboration; ground position by **z=0-constrained robust reprojection** (Gauss–Newton + Huber); **W9 union-lift merge** (two clusters merge if ONE triangulated skeleton explains all views) | `correspondences.jsonl`, per-cluster world `ground_xy`, binding ids |
 | **04 (binding lift)** binding 3D lift | Triangulate a full skeleton per binding + check for "chimeras" (two people fused) | per-binding RANSAC-DLT triangulation, per-joint 3D covariance, one-sided reprojection bias names an intruding camera | `lift3d.jsonl`, `lift_purity.json` |
-| **P4a** global ID (online) | Turn per-frame clusters into **persistent IDs** that live the whole clip | **Singer-acceleration ground Kalman** per player + staged assignment (binding → exact tracklet → χ²-gated Hungarian → re-entry); emits the **Kalman posterior** ground position | `global_player_id`, `ground_tracks.jsonl` |
-| **P4b** stitch + merge | Join fragments of the same person; merge a player who got two IDs | **min-cost-flow** fragment stitching (temporal + spatial + role + velocity cost; never merges two IDs that share a camera-frame) + **W9 colocated-id merge** (two IDs within 0.75 m in disjoint cameras for ≥25 frames = one person) | `id_switch_report.json` |
-| **P5** roles | Label each ID: bowler / striker / non-striker / keeper / 2 umpires / fielder | Role solver v1.2 — 6 Hungarian slots with distinct geometry, latch + uniqueness, **per-delivery bowling-end auto-flip**; peripheral suppression (never suppresses the 4 core roles) | `roles.json`, `suppression.json` |
-| **P6** terminal 3D | Final 3D skeleton per identified player in world metres | RANSAC-DLT triangulation of all 26 joints, **cheirality-gated**, occlusion fill, **zero-phase Butterworth** smoothing | `pose_3d.keypoints_world_m` |
+| **05a** global ID (online) | Turn per-frame clusters into **persistent IDs** that live the whole clip | **Singer-acceleration ground Kalman** per player + staged assignment (binding → exact tracklet → χ²-gated Hungarian → re-entry); emits the **Kalman posterior** ground position | `global_player_id`, `ground_tracks.jsonl` |
+| **05b** stitch + merge | Join fragments of the same person; merge a player who got two IDs | **min-cost-flow** fragment stitching (temporal + spatial + role + velocity cost; never merges two IDs that share a camera-frame) + **W9 colocated-id merge** (two IDs within 0.75 m in disjoint cameras for ≥25 frames = one person) | `id_switch_report.json` |
+| **06** roles | Label each ID: bowler / striker / non-striker / keeper / 2 umpires / fielder | Role solver v1.2 — 6 Hungarian slots with distinct geometry, latch + uniqueness, **per-delivery bowling-end auto-flip**; peripheral suppression (never suppresses the 4 core roles) | `roles.json`, `suppression.json` |
+| **07** terminal 3D | Final 3D skeleton per identified player in world metres | RANSAC-DLT triangulation of all 26 joints, **cheirality-gated**, occlusion fill, **zero-phase Butterworth** smoothing | `pose_3d.keypoints_world_m` |
 | **R** render | Diagnostic mosaic: 7 cameras + bird's-eye view + roster, coloured by global ID | calibration-derived compositing; colour = global ID (colour flicker = an ID switch) | the mp4 |
 
 **Rig geometry** (for questions): world origin = pitch centre, +Y toward the far end, z=0 =
@@ -63,9 +63,9 @@ The delivered `ground_tracks.jsonl` has **1528 non-physical single-frame jumps (
 across the 40, peaks of 140–1500 m/s. Cause: after we stitch/merge IDs we emit the **mean of
 all fragment positions** for that ID in a frame (`runner.py:348`); when one ID briefly holds
 two observations (concurrent disjoint cameras, or a cross-field stitch), the emitted point
-oscillates between them. **This is a P4 emission bug, fixable.** (`docs/diagnosis/04-...`)
+oscillates between them. **This is a 05 emission bug, fixable.** (`docs/diagnosis/04-...`)
 
-### 2.3 The 3D skeletons (P6) are smooth but sparse
+### 2.3 The 3D skeletons (04/07 lift) are smooth but sparse
 The triangulated 3D output — our actual 3D deliverable — is clean (pelvis p95 1.6–3.8 m/s,
 ~0 big jumps) because it only triangulates where ≥2 cameras agree. The price is **coverage
 0.48–0.92 (median 0.80)**: single-camera players get no 3D. So today the **3D skeleton is the
@@ -82,11 +82,11 @@ the cue that's noisy on a grazing camera. The hard cameras have no strong bindin
 
 ### 2.5 Visible ID-switch flicker exists but is modest
 A stable per-camera tracklet flips its global ID **517 times total across 40** (~13/delivery);
-~5.5 tracklets/delivery flicker. It's the same root as split identity — P3/P4 re-decides
+~5.5 tracklets/delivery flicker. It's the same root as split identity — 03/05 re-decides
 membership per frame instead of locking it per tracklet. (`docs/diagnosis/07-...`)
 
 ### 2.6 "Many IDs" is mostly a metric non-issue, but leaves scars
-Final IDs are 9–16 vs roster 15 — in range. But internally P4a **over-mints** (e.g. P001–P024
+Final IDs are 9–16 vs roster 15 — in range. But internally 05a **over-mints** (e.g. P001–P024
 for ~15 people) and stitches down, and **each stitch seam is a teleport risk**.
 (`docs/diagnosis/06-...`)
 
@@ -116,7 +116,7 @@ the metric to measure the emitted track on multi-camera segments only. (2.1)
 
 **Q: But you admit it teleports — is the delivered data usable?**
 A: The **3D skeletons are smooth and usable now**; the flat ground dot has ~1500 real jumps
-we've root-caused to a mean-over-fragments emission step — a targeted P4 fix, not a redesign.
+we've root-caused to a mean-over-fragments emission step — a targeted 05 fix, not a redesign.
 (2.2, 2.3)
 
 **Q: Same player has different IDs in different cameras — why?**
@@ -140,7 +140,7 @@ A: Same-camera collisions are **0 everywhere** (hard invariant held). Final ID c
 roster range. The internal over-mint is cleaned by stitching. (2.6)
 
 **Q: What are the immediate fixes?**
-A: (1) Fix P4 emission (drop mean-over-fragments, velocity-gate, damp single-cam) → kills the
+A: (1) Fix 05 emission (drop mean-over-fragments, velocity-gate, damp single-cam) → kills the
 visible teleports. (2) Fix the verdict/teleport metric → stop mislabeling 27 deliveries.
 (3) Attack split ID at cam_04/cam_07 (depth-aware association + F16 lift). Prioritized list
 with code pointers: `docs/changes_tbd.md`.

@@ -1,10 +1,10 @@
-# P3 — cross-camera association (the identity core)
+# 03 — cross-camera association (the identity core)
 
 > **Stage 03** (was P3) — code `src/identity/p3_association/`, config `configs/03_association.yaml`.
 
 ## Role & intuition
 
-P3 answers **"which detection in camera A is the same physical player as which in camera B?"**
+03 answers **"which detection in camera A is the same physical player as which in camera B?"**
 — the correspondence problem. It is the heart of identity and, per the repo's own analysis, the
 **dominant quality ceiling**. Get it right and the same player carries one identity across all
 seven views; get it wrong and you either **under-merge** (one player becomes several IDs) or
@@ -13,14 +13,14 @@ seven views; get it wrong and you either **under-merge** (one player becomes sev
 The structural difficulty is fixed by the camera rig: the co-observing pairs are **facing pairs**
 (C1↔C4, C2↔C6, C3↔C5) that look at the same ground strip from opposite sides. These are
 **low-parallax / near-collinear**, so epipolar geometry is ill-conditioned and free-space
-triangulation is unstable — exactly where association is hardest. P3 therefore works on the
+triangulation is unstable — exactly where association is hardest. 03 therefore works on the
 **calibrated z=0 ground plane** and fuses multiple weak cues rather than trusting any one.
 
 ## I/O & config
 
 | | |
 |---|---|
-| **Input** | P2 run; calibration; `configs/03_association.yaml` (+ `_v5`) |
+| **Input** | 02 run; calibration; `configs/03_association.yaml` (+ `_v5`) |
 | **Output** | `predictions/*` + `diagnostics/correspondences.jsonl` (per-frame cross-camera cluster membership) + `association_metrics.json` |
 | **Core modules** | `src/identity/p3_association/{tracklet_graph,associator,geometry_cache,cue_calibration,appearance}.py`; `src/identity/common/{geometry,pose_shape}.py` |
 | **Facing pairs** | `opposite_camera_pairs: [cam_01,cam_04],[cam_02,cam_06],[cam_03,cam_05]` |
@@ -29,7 +29,7 @@ triangulation is unstable — exactly where association is hardest. P3 therefore
 
 ```mermaid
 flowchart TD
-  P2["P2 tracklets (per camera)"] --> A["Pass A observe_frame<br/>ground pt + covariance + posture per detection<br/>purity-split, synthetic tracklets, feet-approx"]
+  02["02 tracklets (per camera)"] --> A["Pass A observe_frame<br/>ground pt + covariance + posture per detection<br/>purity-split, synthetic tracklets, feet-approx"]
   A --> B["Pass B harvest_calibration<br/>bootstrap same/diff anchors by isolation<br/>fit per-cue LLR distributions"]
   B --> C["Pass C solve<br/>edges = support*(llr_ground+llr_app+llr_posture+llr_motion)<br/>hard dist gate; veto vote"]
   C --> M["constrained agglomerative merge<br/>union-find, cannot-link same-camera<br/>corroboration merge (v5), refine, attach"]
@@ -41,7 +41,7 @@ flowchart TD
 ## Methods walkthrough
 
 **Geometry cache & degeneracy — `geometry_cache.py` (`build_geometry_cache:74`).**
-Per camera pair it precomputes the fundamental matrix `F = [e2]_× · P2 · pinv(P1)` (so
+Per camera pair it precomputes the fundamental matrix `F = [e2]_× · 02 · pinv(P1)` (so
 `x2ᵀ F x1 = 0`), the Sampson distance for epipolar scoring, and a **degeneracy flag**. A pair is
 degenerate if the right epipole lies **inside** image b (`_epipole_in_image`, using the *per-camera*
 native size — the camera-07 correction) or the baseline is near-collinear around the pitch origin
@@ -62,9 +62,9 @@ inverse-covariance fusion in an A/B on real data (0.176 / 0.248 / **0.145** m �
 who-is-who once per tracklet-pair over the whole delivery (offline, deterministic), reducing
 per-frame noise by √n:
 - **Pass A `observe_frame:324`** records, per detection, the ground point, its `ground_covariance`,
-  and a **billboard posture** sample; splits a P2 tracklet at kinematically impossible ground
-  jumps (`_chunk_for`, so a P2 ID-switch cannot weld two people); and chains persistent *untracked*
-  detections into **synthetic tracklets** (the dark umpires P2 never tracked).
+  and a **billboard posture** sample; splits a 02 tracklet at kinematically impossible ground
+  jumps (`_chunk_for`, so a 02 ID-switch cannot weld two people); and chains persistent *untracked*
+  detections into **synthetic tracklets** (the dark umpires 02 never tracked).
 - **Pass B `harvest_calibration:447`** bootstraps **same-player** anchors (median ground dist ≤ 1.5 m
   and isolation ≥ 3.0 m) and **different-player** pairs (≥ 3.0 m apart), then fits a per-cue
   log-likelihood-ratio (LLR) distribution.
@@ -76,7 +76,7 @@ per-frame noise by √n:
   v5 adds a **corroboration merge** that admits strong single-cue facing-pair edges when mutually
   unambiguous — the direct fix for facing-pair under-merge.
 - **Pass D `emit_frame:1112`** rebuilds per-frame correspondences grouped by persistent
-  `binding_id`, so the stream P4 consumes is temporally stable by construction.
+  `binding_id`, so the stream 05 consumes is temporally stable by construction.
 
 **Cue calibration — `cue_calibration.py`.** Each cue's LLR is `log N(v|same) − log N(v|diff)` with
 an asymmetric clip; `d_prime` measures separability so a cue that can't separate on *this* footage
@@ -131,9 +131,9 @@ plane through the ground point — works on facing pairs without triangulation).
 - **V2-L1 (★★) ~50% single-camera frames.** Single-cam rate 0.39–0.61 (`../diagnosis/README.md`
   V2-L1): only ~61% of player-frames have ≥2 views, so half get no cross-camera correction. Largely
   an association-binding-rate problem.
-- **P3-1 (★) C07 global-image-size mismatch in config.** `configs/03_association.yaml` hard-codes
+- **03-1 (★) C07 global-image-size mismatch in config.** `configs/03_association.yaml` hard-codes
   `image_w/h`; only code that uses the per-camera intrinsic size is correct for C07.
-- **P3-2 (★) Cue-calibration cold-start.** `<3` isolated anchors ⇒ default Gaussians, silently
+- **03-2 (★) Cue-calibration cold-start.** `<3` isolated anchors ⇒ default Gaussians, silently
   weakening cues on crowded deliveries.
 
 ## Fixes (all, priority-ordered)

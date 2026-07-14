@@ -29,7 +29,7 @@ run, colouring skeletons by stable global ID.
   ground monitor and a roster panel. Nothing is hardcoded; the bowling end flips between overs.
 - **Render** (W7 upgrades): collision-aware player chips with leader lines, a skeleton
   body-paint identity overlay, a 20-colour max-separation palette, roles shown **only** in the
-  roster panel, and P5b-suppressed players dropped. The bird's-eye dots expose stage-05 emitted
+  roster panel, and 06b-suppressed players dropped. The bird's-eye dots expose stage-05 emitted
   teleports; colour flicker exposes stage-03/05 ID switches (517 across the 40 —
   `../diagnosis/07-issue-2d-id-switch-flicker.md`).
 
