@@ -60,6 +60,7 @@ from identity.p3_association.cluster_lift import cluster_purity, lift_frame  # n
 from identity.p3_association.jsonl_io import load_synchronized_records  # noqa: E402
 from identity.p5_global_id.jsonl_io import read_correspondence_rows  # noqa: E402
 from core.calibration import load_projection_matrices_from_drive  # noqa: E402
+from core.keypoints import HALPE26_KEYPOINTS, named_root_relative  # noqa: E402
 from identity.p2_tracking.runner import discover_prediction_files, infer_match_id  # noqa: E402
 
 
@@ -104,9 +105,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                              "2-row gap spanning 300 real frames is no longer interpolated as "
                              "adjacent. Default off = legacy row-index behaviour.")
     parser.add_argument("--native-skeleton", action="store_true",
-                        help="Triangulate all 26 Halpe keypoints from pose_2d_native when every "
-                             "member view carries them (fix F15); pose_3d stays the COCO-17 "
-                             "slice, the full skeleton is emitted as pose_3d_native.")
+                        help="(Deprecated no-op) pose_2d is now the canonical Halpe-26 skeleton, "
+                             "so all 26 joints are always triangulated into pose_3d.")
     return parser.parse_args(argv)
 
 
@@ -212,30 +212,19 @@ def triangulate_canonical_run(
                         observations[(frame_index, player_id)].append((camera_id, player))
 
     def _member_keypoints(views: list[tuple[str, dict]]) -> dict[str, np.ndarray]:
-        """(J, 3) [x, y, conf] per camera; Halpe-26 when requested and available.
+        """(J, 3) [x, y, conf] per camera over the canonical Halpe-26 pose_2d.
 
-        F15: a frame is lifted at 26 joints only when EVERY member view carries a
-        valid native block, so the per-frame view stack stays rectangular; other
-        frames fall back to COCO-17 and are NaN-padded to 26 at sequence time.
+        pose_2d carries all 26 joints (COCO-17 in [0:17] + head/neck/hip + feet),
+        so every view stacks to the same 26 rows.
         """
 
         blocks = {}
-        if native_skeleton and all(
-            (view[1].get("pose_2d_native") or {}).get("keypoints_px") is not None
-            and len(view[1]["pose_2d_native"]["keypoints_px"]) >= 26
-            for view in views
-        ):
-            for camera, player in views:
-                native = player["pose_2d_native"]
-                blocks[camera] = np.column_stack(
-                    (np.asarray(native["keypoints_px"], dtype=float)[:26],
-                     np.asarray(native["confidence"], dtype=float)[:26])
-                )
-        else:
-            for camera, player in views:
-                blocks[camera] = np.column_stack(
-                    (player["pose_2d"]["keypoints_px"], player["pose_2d"]["confidence"])
-                )
+        for camera, player in views:
+            pose = player["pose_2d"]
+            blocks[camera] = np.column_stack(
+                (np.asarray(pose["keypoints_px"], dtype=float),
+                 np.asarray(pose["confidence"], dtype=float))
+            )
         return blocks
 
     raw: dict[tuple[int, str], tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
@@ -355,24 +344,17 @@ def triangulate_canonical_run(
         if not was_measured.all():
             extrapolated_joint_frames += 1
         confidences = np.nan_to_num(confidences, nan=0.0)
+        # Canonical Halpe-26 world skeleton (feet included) plus the self-describing
+        # named + root-relative view (root = mid-hip) for downstream consumers.
         pose_3d = {
-            "keypoints_world_m": points[:17].tolist(),
-            "confidence": np.clip(confidences[:17], 0.0, 1.0).tolist(),
-            "mean_reprojection_error_px": errors[:17].tolist(),
+            "keypoints_world_m": points.tolist(),
+            "confidence": np.clip(confidences, 0.0, 1.0).tolist(),
+            "mean_reprojection_error_px": errors.tolist(),
         }
-        pose_3d_native = None
-        if points.shape[0] > 17:
-            # F15: the full Halpe-26 skeleton (feet included) rides alongside the
-            # contract-pinned COCO-17 block; consumers opt in explicitly.
-            pose_3d_native = {
-                "keypoints_world_m": points.tolist(),
-                "confidence": np.clip(confidences, 0.0, 1.0).tolist(),
-                "mean_reprojection_error_px": errors.tolist(),
-            }
+        pose_3d_named = named_root_relative(points, HALPE26_KEYPOINTS)
         for _, player in views:
             player["pose_3d"] = dict(pose_3d)  # per-view copy: no cross-record aliasing
-            if pose_3d_native is not None:
-                player["pose_3d_native"] = dict(pose_3d_native)
+            player["pose_3d_named"] = dict(pose_3d_named)
         successful += 1
 
     output_prediction_dir = output_run_dir / "predictions"

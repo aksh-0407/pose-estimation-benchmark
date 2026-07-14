@@ -55,7 +55,7 @@ def _image_size(records: list[dict]) -> tuple[float, float]:
 
 def _smooth_block(members, records, block_key, config: StabilizationConfig,
                   fps: float, jitter_acc: dict) -> None:
-    """Smooth one keypoint block (``pose_2d`` or ``pose_2d_native``) for one micro-track."""
+    """Smooth one keypoint block (``pose_2d``, the Halpe-26 skeleton) for one micro-track."""
     frames = [(fp, pi) for (fp, pi) in members]
     series_kpts: list[list[list[float]]] = []
     series_conf: list[list[float]] = []
@@ -125,9 +125,8 @@ def stabilize_camera_file(input_path: Path, output_path: Path, camera_id: str,
             frame_boxes.append(dets)
         micro_tracks = link_micro_tracks(frame_boxes, config.link)
         for members in micro_tracks:
+            # pose_2d is the canonical Halpe-26 block (feet included) — one smoothing pass.
             _smooth_block(members, records, "pose_2d", config, config.frame_rate_fps, jitter_acc)
-            if config.smooth_native:
-                _smooth_block(members, records, "pose_2d_native", config, config.frame_rate_fps, jitter_acc)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as out:

@@ -9,7 +9,7 @@ import numpy as np
 from identity.p2_tracking.config import TrackingConfig
 
 L_SHOULDER, R_SHOULDER, L_HIP, R_HIP = 5, 6, 11, 12
-KEYPOINT_COUNT = 17
+KEYPOINT_COUNT = 26  # Halpe-26 canonical (COCO-17 in [0:17] + head/neck/hip + feet)
 
 # Scale cascade: (endpoint_a, endpoint_b) pairs tried in order; bbox diagonal is last resort.
 _SCALE_ANCHORS = [(L_SHOULDER, L_HIP), (R_SHOULDER, R_HIP), (L_SHOULDER, R_SHOULDER), (L_HIP, R_HIP)]
@@ -17,9 +17,9 @@ _SCALE_ANCHORS = [(L_SHOULDER, L_HIP), (R_SHOULDER, R_HIP), (L_SHOULDER, R_SHOUL
 
 @dataclass(frozen=True)
 class PoseVector:
-    vector: np.ndarray      # (34,) float — [x0, y0, ..., x16, y16], root-relative & scaled
-    mask: np.ndarray        # (17,) bool — per-keypoint validity
-    confidence: np.ndarray  # (17,) float
+    vector: np.ndarray      # (2*K,) float — [x0, y0, ..., x_{K-1}, y_{K-1}], root-relative & scaled
+    mask: np.ndarray        # (K,) bool — per-keypoint validity
+    confidence: np.ndarray  # (K,) float
     defined: bool           # False when no valid root anchor exists
 
 

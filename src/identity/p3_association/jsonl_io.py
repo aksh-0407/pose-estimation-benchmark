@@ -106,7 +106,7 @@ def record_to_detections(
             if image_bgr is not None else None
         )
         native_kpts = native_conf = None
-        native = player.get("pose_2d_native")
+        native = player.get("pose_2d")
         if native is not None:
             candidate_kpts = np.asarray(native.get("keypoints_px"), dtype=float)
             candidate_conf = np.asarray(native.get("confidence"), dtype=float)

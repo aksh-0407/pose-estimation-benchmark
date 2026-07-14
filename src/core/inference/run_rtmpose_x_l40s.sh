@@ -5,8 +5,8 @@ set -euo pipefail
 #
 # Wraps src/core/inference/run_phase1_l40s.py: native bt1/bt2/bt3 layout under
 # /home/ubuntu/pose_data, output to /home/ubuntu/pose-rtm-x/. RTMPose-x emits 26
-# Halpe keypoints; each player record carries the full `pose_2d_native` (26, incl.
-# feet) plus COCO-17 `pose_2d`. Resumable: re-run to continue from the last frame.
+# Halpe keypoints; each player record's `pose_2d` carries all 26 joints (COCO-17 in
+# [0:17] + head/neck/hip + feet). Resumable: re-run to continue from the last frame.
 #
 # Tune batch sizes for the L40S first (in-process, writes only best.json):
 #   python src/core/inference/run_phase1_l40s.py --model-id rtmpose_x_body8 \

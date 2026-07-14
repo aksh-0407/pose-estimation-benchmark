@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Full RTMPose-x (Body8/Halpe-26) Phase-1 2D-pose inference over every delivery.
 #
-# RTMPose-x is the largest RTMPose body model. It emits Halpe-26 keypoints; each
-# player record carries the full 26-keypoint `pose_2d_native` (incl. feet) PLUS the
-# COCO-17 `pose_2d` (native[0:17]) that the rest of the pipeline consumes.
+# RTMPose-x is the largest RTMPose body model. It emits Halpe-26 keypoints, which
+# the pipeline consumes directly: each player record's `pose_2d` carries all 26
+# joints (COCO-17 in [0:17] + head/neck/hip + feet).
 #
 # Defaults below are a good starting point on a laptop-class GPU. On a new machine,
 # first find the fastest det/pose/io/prefetch with:

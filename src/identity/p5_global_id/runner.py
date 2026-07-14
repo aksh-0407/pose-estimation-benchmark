@@ -235,10 +235,10 @@ def run_global_id(
                 pose = player.get("pose_2d") or {}
                 keypoints = np.asarray(pose.get("keypoints_px", []), dtype=float)
                 conf = np.asarray(pose.get("confidence", []), dtype=float)
-                if keypoints.shape != (17, 2):
-                    keypoints = np.zeros((17, 2))
-                if conf.shape != (17,):
-                    conf = np.zeros(17)
+                if keypoints.shape != (26, 2):
+                    keypoints = np.zeros((26, 2))
+                if conf.shape != (26,):
+                    conf = np.zeros(26)
                 estimate = upper_body_ground_estimate(keypoints, conf, bbox, projection)
                 if estimate is not None:
                     xy = estimate[0]

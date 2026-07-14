@@ -94,9 +94,8 @@ def parse_args() -> argparse.Namespace:
     mdl = parser.add_argument_group("model")
     mdl.add_argument("--model-id", default="rtmpose_x_body8",
                      help="Key in configs/model_envs.yaml supplying pose config+checkpoint. "
-                          "Default rtmpose_x_body8 (Halpe-26, accuracy-first); its first 17 "
-                          "keypoints are COCO-17 and the full 26 (incl. feet) are kept in "
-                          "pose_2d_native.")
+                          "Default rtmpose_x_body8 (Halpe-26, accuracy-first); all 26 keypoints "
+                          "(COCO-17 in [0:17] + head/neck/hip + feet) are emitted as pose_2d.")
     mdl.add_argument("--model-config", default=str(DEFAULT_MODEL_CONFIG))
     mdl.add_argument("--pose-config", default=None, help="Override pose config path")
     mdl.add_argument("--pose-checkpoint", default=None, help="Override pose checkpoint path")
@@ -655,13 +654,9 @@ def player_records(results, source_skeleton: str, width: int, height: int,
 
         source_keypoints_px = [[finite_float(x), finite_float(y)] for x, y in kpts]
         source_confidence = [finite_float(s) for s in scores]
-        keypoints_px, confidence = select_coco17_pose(source_keypoints_px, source_confidence, coco17_indices)
-        keypoints_norm = [[x / width, y / height] for x, y in keypoints_px]
-
-        # Preserve every native keypoint the model emits (e.g. all 26 Halpe joints for
-        # RTMPose-x, incl. head/neck/hip + feet) alongside the COCO-17 contract pose.
-        # Downstream/future phases can consume the richer skeleton; `pose_2d` stays
-        # COCO-17 so existing consumers and validate_group1_frame are unaffected.
+        # Halpe-26 is the canonical pipeline skeleton: pose_2d carries every native
+        # joint the model emits (for RTMPose-x that is all 26 — COCO-17 in indices
+        # [0:17] plus head/neck/hip and the 6 foot joints).
         source_keypoints_norm = [[x / width, y / height] for x, y in source_keypoints_px]
 
         players.append({
@@ -673,12 +668,6 @@ def player_records(results, source_skeleton: str, width: int, height: int,
             "track_confidence": None,
             "role": "unknown",
             "pose_2d": {
-                "skeleton": P1_SKELETON,
-                "keypoints_px": keypoints_px,
-                "keypoints_norm": keypoints_norm,
-                "confidence": confidence,
-            },
-            "pose_2d_native": {
                 "skeleton": source_skeleton,
                 "keypoints_px": source_keypoints_px,
                 "keypoints_norm": source_keypoints_norm,
@@ -1017,7 +1006,7 @@ def main() -> int:
                             "model_specific": {
                                 "rtmpose": {
                                     "source_skeleton": source_skeleton,
-                                    "output_skeleton": P1_SKELETON,
+                                    "output_skeleton": source_skeleton,
                                     "pose_config": rel(pose_config),
                                     "pose_checkpoint": rel(pose_checkpoint),
                                     "det_config": rel(abspath(args.det_config)),

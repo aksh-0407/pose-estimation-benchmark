@@ -182,7 +182,7 @@ class P3AssociationConfig:
     # + new horizontal plausibility (F3), and the ankle height reported so the z0_reproj
     # solver back-projects onto z=ankle_height instead of z=0 (removes the ~10 cm bias, F2).
     # "v3" (campaign fix F4) = prefer the Halpe-26 heel/toe keypoints from
-    # pose_2d_native — true ground-contact landmarks (~2 cm above ground vs the
+    # pose_2d feet — true ground-contact landmarks (~2 cm above ground vs the
     # ankle's ~10 cm) — falling back to the v2 ankle stack when unavailable.
     foot_contact_mode: str = "legacy"         # or "v2" / "v3"
     ankle_height_m: float = 0.10

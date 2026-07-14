@@ -53,11 +53,11 @@ def _record(camera: str, capture_group: str, frame: int, foot: np.ndarray) -> di
         "bbox_xywh_px": [float(foot[0] - 10), float(foot[1] - 40), 20.0, 40.0],
         "bbox_xywh_norm": [float((foot[0] - 10) / 1280), float((foot[1] - 40) / 720), 20 / 1280, 40 / 720],
     })
-    player["pose_2d"]["keypoints_px"] = np.tile(foot, (17, 1)).tolist()
+    player["pose_2d"]["keypoints_px"] = np.tile(foot, (26, 1)).tolist()
     player["pose_2d"]["keypoints_norm"] = (
-        np.tile(foot, (17, 1)) / np.array([1280.0, 720.0])
+        np.tile(foot, (26, 1)) / np.array([1280.0, 720.0])
     ).tolist()
-    player["pose_2d"]["confidence"] = [0.95] * 17
+    player["pose_2d"]["confidence"] = [0.95] * 26
     validate_group1_frame(record)
     return record
 
@@ -129,5 +129,11 @@ def test_p3_p4_p6_canonical_run_smoke(tmp_path: Path):
     )
     assert p6_metrics["fully_valid_identity_frames"] == 3
     lifted = json.loads(next((p6_run / "predictions").glob("*.jsonl")).read_text().splitlines()[-1])
-    assert len(lifted["players"][0]["pose_3d"]["keypoints_world_m"]) == 17
+    lifted_player = lifted["players"][0]
+    assert len(lifted_player["pose_3d"]["keypoints_world_m"]) == 26
+    named = lifted_player["pose_3d_named"]
+    assert named["root_joint"] == "hip"
+    assert len(named["root_world_m"]) == 3
+    assert len(named["joints_root_relative_m"]) == 26
+    assert named["joints_root_relative_m"]["hip"] == [0.0, 0.0, 0.0]  # root is the origin
     validate_group1_frame(lifted)

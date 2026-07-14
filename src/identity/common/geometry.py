@@ -140,7 +140,7 @@ def bbox_bottom_center_px(bbox_xywh_px: list[float]) -> np.ndarray:
     return np.array([x + w / 2.0, y + h], dtype=float)
 
 
-# Halpe-26 foot keypoint indices (pose_2d_native): heels sit on the ground and are
+# Halpe-26 foot keypoint indices (pose_2d): heels sit on the ground and are
 # the best ground-contact landmarks the pose model provides.
 _HALPE_LEFT_FOOT = (24, 20)    # (heel, big toe)
 _HALPE_RIGHT_FOOT = (25, 21)

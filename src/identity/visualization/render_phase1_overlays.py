@@ -15,7 +15,7 @@ import cv2
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
-from core.inference.phase1_outputs import COCO_17_EDGES
+from core.keypoints import HALPE26_EDGES
 from identity.visualization.identity_colors import color_for_player
 
 
@@ -228,7 +228,7 @@ def draw_record(
         pose = player["pose_2d"]
         keypoints = pose["keypoints_px"]
         confidence = pose["confidence"]
-        for left, right in COCO_17_EDGES:
+        for left, right in HALPE26_EDGES:
             if confidence[left] < keypoint_threshold or confidence[right] < keypoint_threshold:
                 continue
             p1 = tuple(int(round(value)) for value in keypoints[left])

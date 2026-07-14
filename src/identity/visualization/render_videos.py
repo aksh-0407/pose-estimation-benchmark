@@ -33,7 +33,7 @@ from identity.common.geometry import (
     ground_point_visible_in,
     project_ground_to_pixel,
 )
-from core.inference.phase1_outputs import COCO_17_EDGES
+from core.keypoints import HALPE26_EDGES
 from identity.visualization.identity_colors import (
     IDENTITY_PALETTE,
     color_for_global_id,
@@ -572,7 +572,7 @@ def draw_body_paint(
         torso = [pt(i) for i in COCO_TORSO if float(confidence[i]) >= keypoint_threshold]
         if len(torso) == 4:
             cv2.fillConvexPoly(overlay, np.asarray(torso, dtype=np.int32), color, cv2.LINE_AA)
-        for left, right in COCO_17_EDGES:
+        for left, right in HALPE26_EDGES:
             if left >= len(confidence) or right >= len(confidence):
                 continue
             if min(float(confidence[left]), float(confidence[right])) < keypoint_threshold:
@@ -691,7 +691,7 @@ def draw_players(
 
         keypoints = player["pose_2d"]["keypoints_px"]
         confidence = player["pose_2d"]["confidence"]
-        for edge_index, (left, right) in enumerate(COCO_17_EDGES):
+        for edge_index, (left, right) in enumerate(HALPE26_EDGES):
             if left >= len(confidence) or right >= len(confidence):
                 continue
             edge_conf = min(float(confidence[left]), float(confidence[right]))

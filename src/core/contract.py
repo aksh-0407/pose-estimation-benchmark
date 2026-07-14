@@ -8,9 +8,9 @@ from copy import deepcopy
 from typing import Any
 
 
-SCHEMA_VERSION = "g1_player_frame/v0"
-SKELETON = "coco_17"
-KEYPOINT_COUNT = 17
+SCHEMA_VERSION = "g1_player_frame/v1"
+SKELETON = "halpe26"
+KEYPOINT_COUNT = 26
 ROLE_VALUES = {
     "bowler",
     "striker",
@@ -115,6 +115,32 @@ def validate_pose_3d(value: Any) -> None:
     )
 
 
+def validate_pose_3d_named(value: Any) -> None:
+    """Optional self-describing named + root-relative 3D block (``pose_3d_named``).
+
+    ``{root_joint, root_world_m, joints_root_relative_m:{name:[dx,dy,dz]|null}}`` —
+    the root in world metres, every named joint relative to it. Additive to
+    ``pose_3d``; a joint may be ``null`` when it could not be triangulated.
+    """
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise ValueError("pose_3d_named must be an object or null")
+    if not isinstance(value.get("root_joint"), str) or not value["root_joint"]:
+        raise ValueError("pose_3d_named.root_joint must be a non-empty string")
+    validate_numeric_vector(
+        value.get("root_world_m"), length=3, field_name="pose_3d_named.root_world_m"
+    )
+    joints = value.get("joints_root_relative_m")
+    if not isinstance(joints, dict) or len(joints) != KEYPOINT_COUNT:
+        raise ValueError(
+            f"pose_3d_named.joints_root_relative_m must be an object of {KEYPOINT_COUNT} joints"
+        )
+    for name, vec in joints.items():
+        if vec is not None:
+            validate_numeric_vector(vec, length=3, field_name=f"pose_3d_named[{name}]")
+
+
 def validate_player(player: Any, *, final_handoff: bool) -> None:
     if not isinstance(player, dict):
         raise ValueError("player must be an object")
@@ -169,6 +195,7 @@ def validate_player(player: Any, *, final_handoff: bool) -> None:
     else:
         validate_pose_2d(pose_2d)
     validate_pose_3d(player.get("pose_3d"))
+    validate_pose_3d_named(player.get("pose_3d_named"))
 
 
 def validate_group1_frame(record: dict[str, Any], *, final_handoff: bool = False) -> None:
