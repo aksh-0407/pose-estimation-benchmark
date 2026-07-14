@@ -16,7 +16,10 @@ README inside). Panel: mean agreement 0.862 across 40, reproj 3.07–3.56 px, co
 
 ## 1. Needs a human / external input
 
-### 1.1 Calibration provenance confirmation (flag raised 2026-07-14)
+### 1.1 Calibration provenance — CLOSED 2026-07-14
+Team confirmed: one calibration session for both matches. Combined with the empirical
+verification (frame-md5 identity, flat 3.07–3.56 px reproj across all segments), fully
+resolved. Kept for the record:
 The box's chain uses calibration copied from the laptop
 (`drive/dataset/calibration-data/CCPL080626/` → `~/render_drive/dataset/calibration-data/`).
 Empirically verified correct: frame md5s identical across machines; reprojection flat at
@@ -139,6 +142,16 @@ skeleton RANSAC (P6 10.4 s/delivery; P3 −19%). Remaining (flat profile, no dom
   rejection diagnostics `union_lift_rejects`) but has no synthetic fixture test.
 - **Swap-event frame-crop auto-dump**: `diagnose_colocated_ids.py` reports events; the planned
   `--dump-frames` annotated-crop emission was done manually for the exhibits, never wired in.
+
+## 5a. Reprojection-error investigation (manager question, measured 2026-07-14)
+Measured on v8.1 (`_14_4`+`_14_7`, 331k joint-view residuals): panel metric (RANSAC-inlier,
+pre-smoothing) 3.07–3.56 px; post-smoothing vs ALL confident 2D views: mean 6.8 / median
+3.7 / p95 24.5 px. High errors: hips 11–12 px mean (cross-view keypoint-definition
+inconsistency — worst joint class), fast-limb tails (elbow p95 34 px); camera spread mild
+(6.0–8.3) → calibration healthy. The "1 px" expectation applies to calibration targets, not
+pose-model keypoints whose own 2D noise is 2–3 px. Follow-ups if pressed: report median +
+inlier metric; exclude fills; hip handling; measure the dormant G1/G3 flags. Full context:
+`.claude/context/05-active-threads.md` §2.
 
 ## 5b. Production-tree residuals (found at final reconciliation, 2026-07-14)
 
