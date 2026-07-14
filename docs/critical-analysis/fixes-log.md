@@ -369,11 +369,215 @@ restored = a counted "jump" across the gap). Remaining program: Wave 5 probe (ti
 detection) and Wave 6 (role-focused peripheral suppression), plus the open list in
 `wip/changes_tbd.md`.
 
+### W5 - Detector Recall Bake-off (L40S remote; IN PROGRESS 2026-07-13)
+
+**Purpose.** Attack the upstream recall ceiling: at the production 640-px detector scale a
+distant fielder is ~9 px tall; cam_07 medians ZERO detections/frame on `_7`. Missed players
+become single-cam ghosts and fragment fodder for every identity stage.
+
+**Method.** Detector-only sweep (`scripts/inference/detector_bakeoff.py` +
+`_report.py`), 2 hard deliveries (`_7`, `M2`) x 7 cams x stride 5 = 1,680 frames on the
+remote L40S (`quidich-gpu-intern`; the new standing home for all GPU work). Candidates:
+m640 (baseline), m1280/m2560 (native-resolution RTMDet-m), t640 (SAHI-style 4x2 tiles +
+full-frame merge), l1280 (RTMDet-l COCO). Pose model untouched (RTMPose-X mandate).
+
+**Result (recall audit).**
+
+| Candidate | new boxes/frame vs m640 | lost/frame | verdict |
+|---|---|---|---|
+| m1280 | 0.00-0.07 | 0.0-0.33 | dead — scale-mismatch, loses boxes too |
+| m2560 | 0.00-0.20 | 0.0-0.28 | dead — same cause, 9x cost |
+| l1280 | 0.00-0.32 | 0.0-0.11 | marginal, weaker person prior (80-class) |
+| **t640** | **+0.76 to +6.02** | **0.000 everywhere** | **decisive winner** |
+
+**Finding.** Resolution only helps at the model's TRAINED object scale: native hi-res makes
+people 4x larger than RTMDet-m's training distribution and it misses them; tiles keep people
+at trained scale -> min detected box height drops 33 px -> 12 px, and t640 is a perfect
+superset of the baseline (zero lost boxes). Overlay eyeballing confirmed real recall (e.g.
+the bottom-frame umpire on `_7`/cam_04) but exposed seam duplicates (partial-body fragments
+around the striker) -> fixed with interior-border clipping + IoM containment suppression
+(standard SAHI hygiene); re-sweep running. Next gates: fragment-free overlays -> full
+det+pose P1 on the 2 hard deliveries -> local v7 chain panel -> 8-delivery rebaseline (v8).
+
+### W5B - Contested-Camera Evidence Down-weighting (IMPLEMENTED 2026-07-13; A/B RUNNING)
+
+**Purpose.** Bowler/non-striker crossing: in one facing camera the two boxes merge, while
+other cameras still see them distinct. A merged box poisons the ground solve (wrong foot)
+and every appearance/posture descriptor (two players in one crop) — a direct ID-swap cause.
+Fix: trust the cameras where the players are distinct.
+
+**Implementation** (flag `contested_iou`, default 0.0 = off).
+Same-camera detection pairs with bbox IoU >= `contested_iou` (0.45 in the experiment
+overlay `configs/experiments/v7_w5b__p3.yaml`) are marked contested
+(`Detection3.contested`, `mark_contested_detections` in `scripts/association/associator.py`;
+runner hook pre-gate). Effects: z0_reproj solve weight x`contested_conf_scale` (0.25);
+per-view ground sigma x`contested_sigma_scale` (2.5) in both associator and tracklet-graph
+covariances; emitted `ground_cov` inflated x scale^2 when ALL member views are contested
+(uniform weights cancel in the solve); appearance/posture/kp-sample accumulation muted
+(`contested_mute_appearance`). The merge GATE is untouched. 4 unit tests
+(`tests/test_cricket_association.py`); **flags-off proven byte-identical** against
+`pipetrack_v7-rc2` P3 outputs on `M2` (predictions + correspondences, 7/7 cams).
+
+**Result: NO-CHANGE, root cause identified (2026-07-13).** The composed 8-delivery A/B
+(`pipetrack_v7-w5b`) produced **byte-identical P3 outputs** with the flag ON at 0.45 — the
+contested condition never fires on current data. Measured cause: **P1's detector NMS
+(IoU 0.3) already deletes one of any two overlapping same-camera boxes** — the maximum
+same-camera pairwise IoU across all 4,200 `_7` P2 frames is 0.298. The crossing failure
+mode in today's pipeline is therefore a MISSING detection (one player suppressed or both
+merged into one box), not a corrupted pair; there is nothing for a 0.45 gate to mark.
+
+**Disposition.** Machinery kept (flag-gated, unit-tested, byte-identical off). It becomes
+live only when P1 stops erasing the second box: queued composed experiment = P1 `--nms-thr
+0.55` (tiled path's IoM containment suppression handles true duplicates) + `contested_iou
+~0.30`. Bake-off evidence already shows the tiled detector splits merged crossing-pair
+boxes into two individuals — exactly the input W5B was designed to referee.
+
+### W5-C - Tiled P1 Through the v7 Stack (Phase C verdict, 2026-07-13)
+
+**Run.** Full tiled det+pose P1 on the L40S (`--tiled-det`, 8,400 frames, 0 failures,
+27 min) -> fresh local v7 chain (`pipetrack_v8-probe`) on `_7` + `M2` vs rc2.
+
+| clip | agreement | ids | id_persist | cycle_cons | tri_cov |
+|---|---|---|---|---|---|
+| `_7` | 0.670 (-0.033) | 13 (=) | 0.858 (-0.024) | 0.901 (**+0.034**) | 0.541 (+0.025) |
+| `M2` | 0.784 (+0.003) | 12 (+1) | 0.886 (-0.070) | 0.718 (**+0.052**) | 0.421 (+0.014) |
+
+**Verdict: HOLD for composition (not rejected).** Tiling changes the *population*, not
+just the detections: umpires and distant fielders that the baseline never saw now enter
+the identity problem as genuinely hard tracks (tiny, low-parallax). Geometry improves
+(cycle-consistency and triangulation coverage up on both), but per-track identity
+averages dilute. This is the composition principle in action: the recall belongs with
+Wave 6 (role-focused suppression of low-confidence peripherals) which consumes exactly
+what tiling produces — cleanly-tracked peripherals to *decide about*, instead of
+half-visible ghosts. Final accept/reject happens as the composed W5+W6 stack (v8).
+
+### W5-ROLES - Vedant P5 v1 Solver: Evaluated, Defects Fixed, Merged (2026-07-13)
+
+**Origin.** Colleague drop (`vedant2/`): new P5 config loader + epoch-scored Hungarian
+role solver (v1) + runner wiring. His `global_id/` rewrite is PARKED pending his
+changelog (parallel lineage; would displace the validated v7 stack). His v0 edit
+reverting the H2 signed-speed fix was REJECTED (H2 was experimentally convicted).
+
+**Defects found (evidence on rc2 `_2`) and fixed in the merged v1.1:**
+1. Role uniqueness not enforced across the epoch latch (assigned two umpires through
+   leakage; could equally mint two bowlers) -> final greedy resolution on accumulated
+   latch strength, one track per slot, one slot per track.
+2. Keeper cost hardcoded standing-up (|along-11.06|) — the real keeper standing back to
+   pace (+16.1 m) lost to a slip -> zero-cost band 0.5-8 m behind the stumps.
+3. Striker/non-striker anchored mid-pitch (±5.03 m) -> batting creases (±8.84 m).
+Roster corrected to cricket reality: 6 slots = bowler, striker, non-striker, keeper,
+**umpire_bowler_end + umpire_square_leg** (2 umpires with distinct geometry, mapped to
+role "umpire").
+
+**Renderer.** Roles are now drawn on the player chips in every tile (`P012 BOWLER`),
+not only the roster side-panel — first mosaics with visible roles
+(`artifacts/meeting_2026-07-13/`). Frame-verified: v1.1's keeper pick (P003, crouching
+at the stumps) is visibly correct where v0 picked P002.
+
+**Safety.** v0 path byte-identical (timestamp-only); flag `role_assignment_version`
+(default v0); 198 tests green. Config: `configs/v7/p5_roles.yaml` (v1).
+**Result: ACCEPTED as v7 default (8-delivery roster A/B, 2026-07-13).** Core-role
+coverage (bowler/striker/non-striker/keeper found) **24/32 -> 29/32**; both umpires
+named on 6/8 clips (v0 max was one, usually zero); v1.1 >= v0 on every single delivery.
+The one weak clip (`_6`, bowler-only) is tracking-limited, not solver-limited — and v1.1
+still beats v0 there (v0 named nobody). Driver now passes `configs/v7/p5_roles.yaml` by
+default (`--p5-config ''` for legacy v0); manifest records the P5 config + sha. Unit
+tests: full-roster uniqueness + standing-back keeper + no-duplicate-slots (200 total).
+
+### W6 - Role-Aware Peripheral Suppression (P5b) - IMPLEMENTED (2026-07-13)
+
+**Purpose (user directive, "wave six, at the very end").** Bowler/striker/non-striker/
+keeper are the product; when low-confidence poses/tracking of peripheral players
+(umpires/fielders) hinder the output, DROP them rather than extrapolate.
+
+**Implementation.** New `scripts/roles/suppress_peripherals.py` (P5b, runs inside the
+driver's p5 stage with explicit paths): per-global-id quality aggregates (mean keypoint
+conf, delivery-span completeness, single-cam rate, det conf) -> `suppression.json` next
+to roles.json. Core roles are NEVER suppressed; umpires optionally protectable
+(`suppress_protect_umpires`). Consumers: mosaic tiles drop suppressed players (roster
+panel keeps them greyed for honesty); P6 terminal lift skips them (global-id branch
+only — P3.5 binding lifts stay complete). Flag `suppression_enabled` (default false =
+byte-identical; `configs/experiments/w6__p5.yaml` enables). 4 unit tests (202 total).
+
+**First A/B (rc2 stack + v1.1 roles, all 8 deliveries).** 0-3 ids suppressed per clip
+(11 of 99 total); zero core-role suppression anywhere; on `_2` it removed exactly the
+C1-only fragment (P002) that v0 had miscalled keeper. Verdict so far: conservative and
+sane. **The real test is the composed W5+W6 stack** — suppression consumes the noisy
+peripherals tiled detection adds; that composition (v8 rebaseline) is the next gate.
+
+### W5B-LIVE + NMS-0.55 - Crossing Survival Experiment (2026-07-13, verdict in)
+
+**Setup.** P1 NMS 0.3 -> 0.55 on the tiled detector (both crossing players survive
+detection: `_7` now has 245 camera-frames with same-cam IoU >= 0.30, max 0.515 — vs
+literally zero at NMS 0.3), then A/B the contested-camera weighting (0.30 gate) on top.
+Chains on `_7`+`M2` vs the tiled NMS-0.3 baseline (`pipetrack_v8-probe`).
+
+| stack | `_7` agree/ids/persist/frags | `M2` agree/ids/persist |
+|---|---|---|
+| tiled nms0.3 (baseline) | 0.670 / 13 / 0.858 / 6 | 0.784 / 12 / 0.886 |
+| + nms0.55 + contested0.30 | 0.724 / 15 / 0.816 / 9 | 0.887 / 12 / 0.903 |
+| **+ nms0.55 only** | **0.804 / 12 / 0.882 / 5** | **0.887 / 12 / 0.903** |
+
+**Verdicts.**
+- **NMS 0.55: the discovery of the wave.** Keeping both crossing boxes is worth
+  +0.13 agreement on `_7` and +0.10 on `M2` over tiled-0.3 — and +0.10/+0.11 over the
+  accepted v7 default. Best agreement figures recorded on both clips.
+- **W5B contested weighting: REJECTED.** On the only clip where it fires it costs
+  -0.080 agreement, +3 IDs, +4 fragments vs NMS-only on identical inputs. The surviving
+  crossing boxes are good evidence; down-weighting them starves the solve. Machinery
+  stays flag-gated off (byte-identical) for possible future use.
+- Known costs to carry into Phase D: cycle-consistency / tri-coverage dip (more
+  single-cam peripherals — the W6 target), and the `_7` appearance cue abstains
+  (d' 0 -> calibration anchors shifted under the new detection distribution; present in
+  both arms, NOT caused by contested muting).
+
+**Next:** Phase D — composed v8 candidate (tiled + nms0.55 P1 x 8 deliveries on the
+L40S, v7 identity stack, v1.1 roles, W6 suppression) vs rc2 across the full panel.
+
+### GRAND ANALYSIS v2 - v8.0 Accepted (tiled detection era, 2026-07-13)
+
+**The stack.** P1 = tiled RTMDet-m (4x2 grid + full frame, cross-tile NMS 0.55, IoM-0.7
+containment) + RTMPose-X, produced on the L40S; P2 = v7 + `lowconf_can_spawn: false`;
+P3/P4 = v7 unchanged; P5 = roles v1.1 (epoch Hungarian, 2-umpire roster) + Wave-6
+peripheral suppression ON. Frozen tree `benchmarks/runs/pipetrack_v8.0` (+ metrics
+snapshot); driver defaults now `configs/v8/`.
+
+**Final 8-delivery panel vs v7-rc2 (full table in the run tree):**
+
+| axis | v7 (rc2) | v8.0 |
+|---|---|---|
+| `_4` agreement | 0.770 | **0.972** |
+| `_7` agreement / IDs / frags | 0.703 / 13 / 6 | **0.811 / 12 / 5** |
+| `M2` agreement / teleports | 0.781 / 223 | **0.886 / 184** |
+| `_1` persistence / frags | 0.921 / 6 | **0.969 / 5** |
+| mean agreement (8 clips) | 0.783 | 0.782 |
+| collisions | 0 | 0 |
+
+**The population caveat, resolved at the product level.** Overall agreement dips on
+`_2`/`_5`/`_6` because tiling makes ~20% more real people visible — mostly in-pack close
+catchers — and those enter the metric as genuinely hard tracks. Core-role forensics
+settle it: on `_5` the bowler goes 0.63->0.91 completeness (2->3 cams, rest perfect
+both sides); on `_6` v7 could name ONLY the bowler at 0.59 completeness while v8 names
+ALL FOUR core roles (keeper 0.95/3 cams, bowler 0.99). **Core-role identity — the
+product — is equal or better on every delivery**, and the hard-clip transformations are
+unqualified. Teleport spikes on `_3` remain the known single-cam proxy artifact.
+
+**Chronicle of the wave:** tiled detection (recall superset, +0.8..6 boxes/frame) ->
+NMS 0.55 (crossing survival, the decisive +0.10-0.13 agreement) -> contested weighting
+rejected by ablation -> no-spawn P2 (specks associate, never birth) -> roles v1.1 ->
+W6 suppression (outputs only carry what we trust). Rejected/parked: contested-camera
+weighting (flag-gated off), vedant global_id rewrite (awaiting changelog).
+
+**Next work.** Pack-handling on `_5`/`_6` peripherals (the one open regression, now
+isolated to non-core in-pack tracks); `_3` teleport-proxy replacement; identity GT
+labelling; mosaic sign-off of v8.0 by the user.
+
 ## Current Default / Recommended State
 
-- **Default: `configs/v7/`** (the accepted rc2 stack) with the re-ordered pipeline as the
-  driver default. `configs/v6/` stays frozen as the ground-baseline reference;
-  `configs/experiments/` holds every intermediate stack for reproduction.
+- **Default: `configs/v8/`** (tiled+NMS0.55 detection, no-spawn P2, v7 identity stack,
+  roles v1.1, W6 suppression ON) — frozen reference `pipetrack_v8.0`. `configs/v7/` and
+  `configs/v6/` stay frozen as references; `configs/experiments/` holds every
+  intermediate stack for reproduction.
 - Opt-in (measured, not default): `posture_keep_upright_unknown` (H3), F11 shape round
   (self-abstaining), `temporal_link_decay`, `density_lost_window` (fresh, awaiting its
   first composed A/B).
@@ -405,6 +609,12 @@ Literature check (July 2026, web research; reshapes the Wave-5 detector block):
   torso-residual threshold (20 px at 1440p) sits in the accepted range and stays rig-tunable.
 
 ## Environment Notes
+
+> **2026-07-14 cleanup:** historical run trees (v3-v8-rc, superseded P1 runs, probes) were
+> archived as per-run documents in `docs/runs/` (panels + manifests + verdicts) and their
+> bulk data deleted (43 GB -> 4.5 GB). Kept: `pipetrack_v8.0`, `rtmpose-x-tiled-w5-full`,
+> `yolo26x-pose-full-db8`.
+
 
 - Pipeline stages and render: `/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python`.
 - P1 inference (not re-run in this campaign unless F18 triggers): `cricket-rtmpose-l`.

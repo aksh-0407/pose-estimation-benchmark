@@ -103,6 +103,15 @@ def parse_args() -> argparse.Namespace:
     mdl.add_argument("--bbox-thr", type=float, default=0.3, help="Min detection score")
     mdl.add_argument("--nms-thr", type=float, default=0.3, help="Box NMS IoU threshold")
     mdl.add_argument("--max-people", type=int, default=None, help="Keep top-N boxes per frame")
+    # Wave-5 tiled (SAHI-style) detection: overlapping tiles + a full-frame pass,
+    # merged with NMS + containment suppression. Keeps people at RTMDet's trained
+    # object scale, recovering the small/distant band (bake-off: +0.8..+6 boxes/frame,
+    # zero lost boxes vs the plain 640 pass). Pose stage unchanged.
+    mdl.add_argument("--tiled-det", action="store_true",
+                     help="Tile-based detection for small/distant-player recall")
+    mdl.add_argument("--tile-cols", type=int, default=4)
+    mdl.add_argument("--tile-rows", type=int, default=2)
+    mdl.add_argument("--tile-overlap", type=float, default=0.25)
 
     rt = parser.add_argument_group("runtime")
     rt.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
@@ -310,6 +319,67 @@ def resolve_skeleton(pose_config: str, pose_model) -> tuple[str, list[int] | Non
 # --------------------------------------------------------------------------- #
 # sweep (in-process, single load, writes nothing)
 # --------------------------------------------------------------------------- #
+def detect_person_boxes_tiled_batch(detector, inference_detector, entries, args):
+    """Wave-5 tiled detection: per frame, tile crops + full frame in ONE detector call.
+
+    Returns the same (N, 5) x1y1x2y2score arrays as p1.detect_person_boxes_batch, after
+    the SAHI hygiene passes: interior-border clip drop (partial-person fragments),
+    cross-tile NMS (args.nms_thr) and IoM containment suppression.
+    """
+    import numpy as np
+
+    from detector_bakeoff import (
+        _drop_tile_clipped,
+        nms_xyxy,
+        suppress_contained,
+        tile_layout,
+    )
+
+    if not entries:
+        return []
+    crops: list[Any] = []
+    plan: list[tuple[int, tuple[int, int, int, int] | None]] = []  # (entry idx, tile or None=full)
+    layouts = []
+    for idx, entry in enumerate(entries):
+        img = entry["img"]
+        h, w = img.shape[:2]
+        tiles = tile_layout(w, h, (args.tile_cols, args.tile_rows), args.tile_overlap)
+        layouts.append((w, h))
+        for tile in tiles:
+            x, y, tw, th = tile
+            crops.append(img[y:y + th, x:x + tw])
+            plan.append((idx, tile))
+        crops.append(img)
+        plan.append((idx, None))
+    det_results = inference_detector(detector, crops)
+    if not isinstance(det_results, list):
+        det_results = [det_results]
+    per_entry: list[list[np.ndarray]] = [[] for _ in entries]
+    for result, (idx, tile) in zip(det_results, plan):
+        pred = result.pred_instances.cpu().numpy()
+        keep = np.logical_and(pred.labels == args.det_cat_id, pred.scores > args.bbox_thr)
+        boxes = np.concatenate((pred.bboxes[keep], pred.scores[keep, None]), axis=1)
+        if tile is not None:
+            boxes = _drop_tile_clipped(boxes, tile, layouts[idx])
+            if boxes.shape[0]:
+                boxes = boxes.copy()
+                boxes[:, [0, 2]] += tile[0]
+                boxes[:, [1, 3]] += tile[1]
+        if boxes.shape[0]:
+            per_entry[idx].append(boxes)
+    out = []
+    for idx, chunks in enumerate(per_entry):
+        if not chunks:
+            out.append(np.zeros((0, 5), dtype=np.float32))
+            continue
+        merged = nms_xyxy(np.concatenate(chunks), iou_thr=args.nms_thr)
+        merged = suppress_contained(merged, iom_thr=0.7)
+        if args.max_people is not None and merged.shape[0] > args.max_people:
+            merged = merged[np.argsort(merged[:, 4])[::-1][: args.max_people]]
+        out.append(merged.astype(np.float32))
+    return out
+
+
 def _sync(device: str) -> None:
     if device.startswith("cuda"):
         import torch
@@ -666,7 +736,12 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
 
                 try:
                     start = time.perf_counter()
-                    batch_boxes = p1.detect_person_boxes_batch(detector, inference_detector, loaded, args)
+                    if args.tiled_det:
+                        batch_boxes = detect_person_boxes_tiled_batch(
+                            detector, inference_detector, loaded, args)
+                    else:
+                        batch_boxes = p1.detect_person_boxes_batch(
+                            detector, inference_detector, loaded, args)
                     _sync(device)
                     timings["detect_seconds"] += time.perf_counter() - start
                     for entry, boxes in zip(loaded, batch_boxes):
@@ -708,8 +783,10 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
                             "pose_batch_size_requested": args.pose_batch_size,
                             "pose_batch_size_effective": args.pose_batch_size,
                             "io_workers": args.io_workers,
-                            "detector": "rtmdet_m_person", "bbox_thr": args.bbox_thr,
+                            "detector": "rtmdet_m_person_tiled" if args.tiled_det else "rtmdet_m_person",
+                            "bbox_thr": args.bbox_thr,
                             "nms_thr": args.nms_thr,
+                            "tiled_det": bool(args.tiled_det),
                             "model_specific": {
                                 "rtmpose": {
                                     "source_skeleton": source_skeleton,
@@ -804,7 +881,10 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
         "model_id": args.model_id, "device": device, "skeleton": source_skeleton,
         "pose_data_root": str(Path(args.pose_data).expanduser()),
         "prediction_dir": p1.rel(pred_dir),
-        "detector": "rtmdet_m_person",
+        "detector": "rtmdet_m_person_tiled" if args.tiled_det else "rtmdet_m_person",
+        "tiled_det": bool(args.tiled_det),
+        "tile_grid": [args.tile_cols, args.tile_rows] if args.tiled_det else None,
+        "tile_overlap": args.tile_overlap if args.tiled_det else None,
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,
         "io_workers": args.io_workers, "cv2_threads": args.cv2_threads,
         "prefetch_batches": args.prefetch_batches, "perf": args.perf,

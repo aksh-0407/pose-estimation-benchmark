@@ -1,0 +1,20 @@
+# v7 P5 role assignment - vedant2 v1 epoch solver (merged 2026-07-13).
+# v1: per-epoch Hungarian assignment over {bowler, striker, non_striker,
+# wicketkeeper, umpire} with latch-count debounce; requires P4 online_role_proxy.
+# Omit --config (or set role_assignment_version: v0) for the legacy heuristic.
+role_assignment_version: v1
+frame_rate_fps: 50.0
+min_track_frames: 60
+epoch_frames: 40
+role_epoch_latch_count: 3
+role_assignment_max_cost: 8.0
+
+# --- Wave-6 (P5b): role-aware peripheral suppression -------------------------
+# Core roles are never suppressed. Peripherals (umpires/fielders/unknown) are
+# dropped from render + 3D lift only when clearly low-quality. Disabled here
+# (flags-off = byte-identical); the W6 experiment overlay enables it.
+suppression_enabled: true
+suppress_min_kp_conf: 0.35
+suppress_min_completeness: 0.25
+suppress_single_cam_det_conf: 0.40
+suppress_protect_umpires: false

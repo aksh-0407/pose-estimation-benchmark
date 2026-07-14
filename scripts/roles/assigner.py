@@ -28,6 +28,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 
 STUMPS_FROM_CENTRE_M = 10.06  # stump line distance from the pitch centre
 
@@ -157,4 +158,189 @@ def assign_roles(
     for pid, s in stats.items():
         if pid not in claimed:
             roles[pid] = RoleAssignment("fielder", 0.4, "heuristic_v0")
+    return roles
+
+
+# Epoch-scored v1 role solver (vedant2 merge 2026-07-13, defects fixed same day).
+# Slots reflect the real per-delivery roster: 1 bowler, 1 striker, 1 non-striker,
+# 1 wicketkeeper, 2 umpires (bowler's end + square leg) — everyone else fields.
+EPOCH_SLOTS = (
+    "bowler",
+    "striker",
+    "non_striker",
+    "wicketkeeper",
+    "umpire_bowler_end",
+    "umpire_square_leg",
+)
+SLOT_TO_ROLE = {slot: ("umpire" if slot.startswith("umpire") else slot) for slot in EPOCH_SLOTS}
+BATTING_CREASE_M = 8.84  # popping crease from the pitch centre (stumps 10.06 - 1.22)
+
+
+# ---------------------------------------------------------------------------
+# Section B.1: epoch-scored linear_sum_assignment role solve
+# ---------------------------------------------------------------------------
+
+
+def _epoch_bounds(all_frames: list[int], epoch_frames: int) -> list[tuple[int, int]]:
+    start, end = min(all_frames), max(all_frames)
+    bounds = []
+    frame = start
+    while frame <= end:
+        bounds.append((frame, min(frame + epoch_frames, end)))
+        frame += epoch_frames
+    return bounds
+
+
+def _slot_cost(stat: dict, slot: str) -> float:
+    """Geometric cost of a track holding a roster slot, in metres-ish units.
+
+    Conventions (bowling axis = +along): striker bats at the +end (crease
+    +8.84, stumps +10.06); the bowler delivers from the -end; the keeper stands
+    BEHIND the striker's stumps — anywhere from up-at-the-stumps to ~15 m back
+    for pace, so being further back is only mildly penalised; the bowler's-end
+    umpire stands behind the -end stumps on the line; the square-leg umpire
+    stands level with the striker's crease, 12-25 m lateral.
+    """
+
+    speed = abs(stat["run_speed"])
+    along = stat["median_along"]
+    across = stat["median_across"]
+    off_line = max(0.0, abs(across) - 2.5) * 4.0
+    if slot == "bowler":
+        return off_line + max(0.0, 3.5 - speed)
+    if slot == "striker":
+        return off_line + abs(along - BATTING_CREASE_M)
+    if slot == "non_striker":
+        return off_line + abs(along + BATTING_CREASE_M)
+    if slot == "wicketkeeper":
+        behind = along - (STUMPS_FROM_CENTRE_M + 0.5)
+        # zero cost anywhere 0.5-8 m behind the stumps; standing back is normal
+        return off_line + max(0.0, -behind) + 0.15 * max(0.0, behind - 8.0) + 0.5 * speed
+    if slot == "umpire_bowler_end":
+        return off_line + abs(along + (STUMPS_FROM_CENTRE_M + 1.0)) + 0.5 * speed
+    if slot == "umpire_square_leg":
+        return (
+            0.5 * abs(along - BATTING_CREASE_M)
+            + max(0.0, 12.0 - abs(across))
+            + 0.5 * speed
+        )
+    raise ValueError(f"unscored slot: {slot}")
+
+
+def _no_axis_fallback(
+    per_id_series: dict[str, list[tuple[int, np.ndarray]]],
+    frame_rate_fps: float,
+    min_track_frames: int,
+) -> dict[str, RoleAssignment]:
+    """B.1: degraded-confidence relative ranking instead of collapsing to unknown."""
+
+    roles: dict[str, RoleAssignment] = {}
+    speeds: dict[str, float] = {}
+    for pid, series in per_id_series.items():
+        if len(series) < min_track_frames:
+            roles[pid] = RoleAssignment("unknown", 0.0, "heuristic_v1_no_axis")
+            continue
+        points = np.asarray([p for _, p in series])
+        frames = np.asarray([f for f, _ in series], dtype=float)
+        duration = max(1.0, (frames[-1] - frames[0]) / frame_rate_fps)
+        speeds[pid] = float(np.linalg.norm(points[-1] - points[0])) / duration
+    if not speeds:
+        return roles
+    fastest = max(speeds, key=lambda pid: speeds[pid])
+    roles[fastest] = RoleAssignment("bowler", 0.35, "heuristic_v1_no_axis")
+    for pid in speeds:
+        if pid != fastest:
+            roles[pid] = RoleAssignment("fielder", 0.25, "heuristic_v1_no_axis")
+    return roles
+
+
+def assign_roles_epoched(
+    per_id_series: dict[str, list[tuple[int, np.ndarray]]],
+    bowling_direction: np.ndarray | None,
+    *,
+    frame_rate_fps: float = 50.0,
+    min_track_frames: int = 60,
+    epoch_frames: int = 40,
+    role_epoch_latch_count: int = 3,
+    role_assignment_max_cost: float = 8.0,
+) -> dict[str, RoleAssignment]:
+    """Per-epoch linear_sum_assignment over the roster slots + latch debounce (B.1).
+
+    Uniqueness is enforced in two layers: within an epoch by the Hungarian solve
+    (one track per slot), and across the delivery by a final greedy resolution on
+    accumulated latch strength — a slot is held by at most ONE track and a track
+    holds at most ONE slot, so duplicate bowlers/keepers cannot leak through the
+    per-epoch latch dictionaries (defect fixed vs the original draft; the two
+    umpires are two SLOTS with distinct geometry, not one slot assigned twice).
+    """
+
+    all_frames = sorted({f for s in per_id_series.values() for f, _ in s})
+    if not all_frames:
+        return {}
+    if bowling_direction is None:
+        return _no_axis_fallback(per_id_series, frame_rate_fps, min_track_frames)
+
+    axis = np.asarray(bowling_direction, dtype=float)
+    axis = axis / max(float(np.linalg.norm(axis)), 1e-9)
+    lateral = np.array([-axis[1], axis[0]])
+
+    candidate: dict[str, str] = {}
+    streak: dict[str, int] = {}
+    strength: dict[tuple[str, str], int] = {}  # (pid, slot) -> total latched epochs
+
+    for epoch_start, epoch_end in _epoch_bounds(all_frames, epoch_frames):
+        stats: dict[str, dict] = {}
+        for pid, series in per_id_series.items():
+            windowed = [(f, p) for f, p in series if f <= epoch_end]
+            if len(windowed) < min_track_frames:
+                continue
+            points = np.asarray([p for _, p in windowed])
+            stats[pid] = {
+                "median_along": float(np.median(points @ axis)),
+                "median_across": float(np.median(points @ lateral)),
+                "run_speed": _windowed_axis_speed(
+                    windowed, axis, window_frames=50,
+                    frame_rate_fps=frame_rate_fps, early_cutoff=epoch_end,
+                ),
+            }
+        if not stats:
+            continue
+        track_ids = list(stats.keys())
+        cost = np.array(
+            [[_slot_cost(stats[pid], slot) for pid in track_ids] for slot in EPOCH_SLOTS]
+        )
+        row_ind, col_ind = linear_sum_assignment(cost)
+        this_epoch = {
+            track_ids[c]: EPOCH_SLOTS[r]
+            for r, c in zip(row_ind, col_ind)
+            if cost[r, c] <= role_assignment_max_cost
+        }
+
+        for pid, slot in this_epoch.items():
+            if candidate.get(pid) == slot:
+                streak[pid] = streak.get(pid, 0) + 1
+            else:
+                candidate[pid] = slot
+                streak[pid] = 1
+            if streak[pid] >= role_epoch_latch_count:
+                strength[(pid, slot)] = strength.get((pid, slot), 0) + 1
+
+    # Final uniqueness resolution: strongest (pid, slot) claims win; one slot per
+    # pid, one pid per slot. Deterministic: strength desc, then pid/slot asc.
+    current: dict[str, str] = {}
+    taken_slots: set[str] = set()
+    for (pid, slot), _n in sorted(strength.items(), key=lambda kv: (-kv[1], kv[0])):
+        if pid in current or slot in taken_slots:
+            continue
+        current[pid] = slot
+        taken_slots.add(slot)
+
+    roles: dict[str, RoleAssignment] = {}
+    for pid, series in per_id_series.items():
+        if pid in current:
+            roles[pid] = RoleAssignment(SLOT_TO_ROLE[current[pid]], 0.65, "heuristic_v1")
+        elif len(series) >= min_track_frames:
+            roles[pid] = RoleAssignment("fielder", 0.4, "heuristic_v1")
+        else:
+            roles[pid] = RoleAssignment("unknown", 0.0, "heuristic_v1")
     return roles

@@ -1,0 +1,58 @@
+{
+  "base_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v8-rc1",
+  "configs": {
+    "p1b": {
+      "path": "configs/v7/p1b_stabilization.yaml",
+      "sha256": "d43a68a2c092eec3aeeebd1e4a31ead74fde2563326bc9d181e4e6b5991f8046"
+    },
+    "p2": {
+      "path": "configs/experiments/v8_p2_nospawn.yaml",
+      "sha256": "56b5d3c652d45bb7bea9847c177343a0475c8a24a01ccb6b03f025e0f8bb67c8"
+    },
+    "p3": {
+      "path": "configs/v7/p3_association.yaml",
+      "sha256": "ce303573b7e76d1df78edb987bd316a23865462ffc729c45e5cc3fd3d88d09e3"
+    },
+    "p4": {
+      "path": "configs/v7/p4_global_id.yaml",
+      "sha256": "b20553ad3f385341301c1225c6795c1447bbe35772dfdb8898b33d2f3ce44d77"
+    },
+    "p5": {
+      "path": "configs/experiments/w6__p5.yaml",
+      "sha256": "2e2ff66d58277c1123247e7e2430effeab9de4aba1532c4457c957db03944182"
+    }
+  },
+  "created_at": "2026-07-14T00:33:56.917228+00:00",
+  "deliveries": [
+    "CCPL080626M1_1_14_1",
+    "CCPL080626M1_1_14_2",
+    "CCPL080626M1_1_14_3",
+    "CCPL080626M1_1_14_4",
+    "CCPL080626M1_1_14_5",
+    "CCPL080626M1_1_14_6",
+    "CCPL080626M1_1_14_7",
+    "CCPL080626M2_1_12_1"
+  ],
+  "enable_lift": true,
+  "enable_stabilization": true,
+  "input_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-x-tiled-w5-full",
+  "schema_version": "pipeline_manifest/v1",
+  "stages_run": [
+    "p2",
+    "p3",
+    "p3_5",
+    "p4",
+    "p5",
+    "p6_3d"
+  ],
+  "triangulation": {
+    "butter_cutoff_hz": 6.0,
+    "cheirality": true,
+    "dense_fill": true,
+    "ema_alpha": 0.65,
+    "min_views": 2,
+    "native_skeleton": true,
+    "reprojection_threshold_px": 10.0,
+    "smoother": "butterworth"
+  }
+}

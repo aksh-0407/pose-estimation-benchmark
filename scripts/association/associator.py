@@ -16,7 +16,7 @@ Two modes (config ``matching_mode``):
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import combinations
 
 import numpy as np
@@ -81,6 +81,10 @@ class Detection3:
     # runs. Emit-path only — never feeds the clustering gate.
     native_keypoints_px: np.ndarray | None = None
     native_keypoint_conf: np.ndarray | None = None
+    # Wave-5b: True when another detection in the SAME camera overlaps this one
+    # (bbox IoU >= contested_iou) — the camera cannot separate the two players, so
+    # its ground/appearance/posture evidence for both is down-weighted or muted.
+    contested: bool = False
 
 
 @dataclass(frozen=True)
@@ -600,6 +604,40 @@ def _gather_member_arrays(members, dets_per_cam, proj_matrices, config):
     return np.asarray(feet, float), np.asarray(projections, float), np.asarray(confidences, float)
 
 
+def _bbox_iou_xywh(a, b) -> float:
+    ax1, ay1, aw, ah = float(a[0]), float(a[1]), float(a[2]), float(a[3])
+    bx1, by1, bw, bh = float(b[0]), float(b[1]), float(b[2]), float(b[3])
+    ix = max(0.0, min(ax1 + aw, bx1 + bw) - max(ax1, bx1))
+    iy = max(0.0, min(ay1 + ah, by1 + bh) - max(ay1, by1))
+    inter = ix * iy
+    union = aw * ah + bw * bh - inter
+    return inter / union if union > 0 else 0.0
+
+
+def mark_contested_detections(
+    detections_by_cam: dict[str, list[Detection3]], iou_thr: float
+) -> dict[str, list[Detection3]]:
+    """Flag same-camera detection pairs whose bboxes overlap >= iou_thr (Wave-5b).
+
+    Cross-camera overlap is meaningless (different viewpoints), so the comparison is
+    strictly within each camera's detection list for one frame.
+    """
+
+    if iou_thr <= 0.0:
+        return detections_by_cam
+    out: dict[str, list[Detection3]] = {}
+    for cam_id, dets in detections_by_cam.items():
+        flags = [False] * len(dets)
+        for i, j in combinations(range(len(dets)), 2):
+            if _bbox_iou_xywh(dets[i].bbox_xywh_px, dets[j].bbox_xywh_px) >= iou_thr:
+                flags[i] = flags[j] = True
+        out[cam_id] = [
+            replace(det, contested=True) if flag else det
+            for det, flag in zip(dets, flags)
+        ]
+    return out
+
+
 def _member_ground_sigma_px(detection, config: P3AssociationConfig) -> float:
     """Foot-pixel noise (px) for this detection: base + bbox-scaled + confidence-scaled.
 
@@ -611,6 +649,8 @@ def _member_ground_sigma_px(detection, config: P3AssociationConfig) -> float:
     bbox = np.asarray(getattr(detection, "bbox_xywh_px", None), dtype=float)
     bbox_h = float(bbox[3]) if bbox.shape == (4,) and np.isfinite(bbox[3]) else 0.0
     sigma = float(config.ground_sigma_px_base) + float(config.ground_sigma_px_bbox_frac) * bbox_h
+    if getattr(detection, "contested", False):
+        sigma *= float(config.contested_sigma_scale)
     return max(sigma, 1e-3)
 
 
@@ -651,7 +691,11 @@ def _ground_consensus_members(members, dets_per_cam, proj_matrices, config):
         heights = np.asarray([fh[1] for fh in feet_heights], dtype=float)
         projections = np.asarray([proj_matrices[cam] for cam in members], dtype=float)
         confidences = np.asarray(
-            [max(getattr(dets_per_cam[cam][idx], "confidence", 1.0), 1e-3) for cam, idx in members.items()],
+            [
+                max(getattr(det, "confidence", 1.0), 1e-3)
+                * (float(config.contested_conf_scale) if getattr(det, "contested", False) else 1.0)
+                for det in (dets_per_cam[cam][idx] for cam, idx in members.items())
+            ],
             dtype=float,
         )
         solved, solved_cov = ground_from_reprojection_ex(
@@ -820,6 +864,12 @@ def _finalize_ground_cov(cov, members_detections, config) -> np.ndarray | None:
     airborne = [_airborne_2d_proxy(det, config) for det in members_detections]
     if airborne and sum(airborne) * 2 > len(airborne):  # majority of views airborne
         cov = cov * float(config.airborne_cov_scale)
+    # Wave-5b: when EVERY member view is contested the relative solve weights cancel
+    # out (uniform scaling), so the posterior cov alone does not reflect the merged-box
+    # ambiguity — inflate it explicitly so P4's measurement-R treats it as uncertain.
+    contested = [getattr(det, "contested", False) for det in members_detections]
+    if contested and all(contested):
+        cov = cov * float(config.contested_sigma_scale) ** 2
     return cov
 
 

@@ -1,0 +1,341 @@
+{
+  "bindings": {
+    "B002": {
+      "chimera_frame_fraction": 0.5666666666666667,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.4150868237623349,
+        "vector": [
+          0.6122743316582693,
+          0.3996367865891409,
+          1.1976053886494211,
+          0.651177688304554,
+          0.5329740635710029,
+          1.0529774389945132,
+          1.308489285656879,
+          4.555436284249051,
+          4.458810992064931,
+          1.3115822757747007,
+          1.3134870425170109
+        ]
+      },
+      "frames_lifted": 120,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 120,
+          "mean_px": 4.976132664175447
+        },
+        "cam_04": {
+          "frames": 120,
+          "mean_px": 25.078569065965077
+        }
+      },
+      "stature_m": 1.4931707592275936,
+      "torso_residual_p50": 30.30347082483214,
+      "torso_residual_p95": 31.20510230766777,
+      "worst_camera": "cam_04"
+    },
+    "B003": {
+      "chimera_frame_fraction": 0.058333333333333334,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3360837874644066,
+        "vector": [
+          0.9911726460974475,
+          0.6933754313421399,
+          1.4326369941513826,
+          0.8063200230761745,
+          0.8226188344407119,
+          0.6898851205475057,
+          0.7225156660774696,
+          1.2322416223830421,
+          1.1894770746716494,
+          1.1764926985500765,
+          1.1769078216676367
+        ]
+      },
+      "frames_lifted": 120,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 120,
+          "mean_px": 10.146791604131948
+        },
+        "cam_03": {
+          "frames": 120,
+          "mean_px": 8.256500952605155
+        },
+        "cam_04": {
+          "frames": 78,
+          "mean_px": 6.604005511242081
+        },
+        "cam_05": {
+          "frames": 120,
+          "mean_px": 10.341329913858674
+        }
+      },
+      "stature_m": 1.49638922162144,
+      "torso_residual_p50": 13.600826993046944,
+      "torso_residual_p95": 36.68951899039435,
+      "worst_camera": "cam_05"
+    },
+    "B004": {
+      "chimera_frame_fraction": 0.0,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3329547525934082,
+        "vector": [
+          1.0132347695052186,
+          0.627029000683461,
+          1.4464391677206325,
+          0.8082162419342381,
+          0.7704745408735125,
+          0.6538406575733965,
+          0.706790831584448,
+          1.093224813043421,
+          1.1028473731670254,
+          1.2603549848561688,
+          1.228985618200868
+        ]
+      },
+      "frames_lifted": 120,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 120,
+          "mean_px": 6.9364736384934815
+        },
+        "cam_03": {
+          "frames": 120,
+          "mean_px": 9.649122986894868
+        },
+        "cam_04": {
+          "frames": 120,
+          "mean_px": 5.773591166880013
+        },
+        "cam_05": {
+          "frames": 119,
+          "mean_px": 12.118741400091212
+        },
+        "cam_07": {
+          "frames": 120,
+          "mean_px": 7.163989685726118
+        }
+      },
+      "stature_m": 1.5703829778222675,
+      "torso_residual_p50": 13.66828012657463,
+      "torso_residual_p95": 21.665569959357345,
+      "worst_camera": "cam_05"
+    },
+    "B006": {
+      "chimera_frame_fraction": 0.0,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.4761202682095385,
+        "vector": [
+          0.5466041596511807,
+          0.32437472728285194,
+          1.7206557333455947,
+          0.9167513275361556,
+          1.0672441820238037,
+          1.7389795450318317,
+          1.6221078744657813,
+          2.671281729509791,
+          0.6452024747186692,
+          0.901798809788291,
+          1.6755219702207043
+        ]
+      },
+      "frames_lifted": 9,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 9,
+          "mean_px": 12.748979744772848
+        },
+        "cam_04": {
+          "frames": 9,
+          "mean_px": 1.0401320979499926
+        }
+      },
+      "stature_m": 1.0103541913964476,
+      "torso_residual_p50": 13.576599611024514,
+      "torso_residual_p95": 16.885050415460423,
+      "worst_camera": "cam_01"
+    },
+    "B007": {
+      "chimera_frame_fraction": 0.0,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.32215798563556414,
+        "vector": [
+          0.9264584751177843,
+          0.48040139881067684,
+          1.407862566044405,
+          0.8202494241695626,
+          0.9456992036035061,
+          0.7801685528087654,
+          0.8151928751752856,
+          1.2228962575499254,
+          1.341023888752846,
+          1.2261753328317482,
+          1.2680545750934615
+        ]
+      },
+      "frames_lifted": 120,
+      "per_camera_residual": {
+        "cam_01": {
+          "frames": 7,
+          "mean_px": 22.935018227255565
+        },
+        "cam_02": {
+          "frames": 120,
+          "mean_px": 4.225192025558477
+        },
+        "cam_04": {
+          "frames": 13,
+          "mean_px": 11.283116491755258
+        },
+        "cam_06": {
+          "frames": 120,
+          "mean_px": 4.390153174192268
+        }
+      },
+      "stature_m": 1.0524104553989502,
+      "torso_residual_p50": 4.44058808869984,
+      "torso_residual_p95": 20.60446624176462,
+      "worst_camera": "cam_01"
+    },
+    "B008": {
+      "chimera_frame_fraction": 0.36666666666666664,
+      "chimera_suspect": false,
+      "descriptor": {
+        "mask": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "n_views": 0,
+        "scale": 0.3572362581790893,
+        "vector": [
+          0.9708674281213567,
+          0.5673174419945011,
+          1.3264885489155631,
+          0.7915425981523895,
+          0.7974086217200095,
+          0.6378891840796228,
+          0.6584313916005867,
+          1.246862323912083,
+          1.2233389091013087,
+          1.2525554425278245,
+          1.2552451455994593
+        ]
+      },
+      "frames_lifted": 120,
+      "per_camera_residual": {
+        "cam_02": {
+          "frames": 120,
+          "mean_px": 6.70852346447809
+        },
+        "cam_04": {
+          "frames": 120,
+          "mean_px": 31.391453510141755
+        },
+        "cam_06": {
+          "frames": 120,
+          "mean_px": 9.343765320707819
+        },
+        "cam_07": {
+          "frames": 23,
+          "mean_px": 6.78814935341313
+        }
+      },
+      "stature_m": 1.408449779576859,
+      "torso_residual_p50": 20.624696531563707,
+      "torso_residual_p95": 85.53954980970488,
+      "worst_camera": "cam_04"
+    }
+  },
+  "delivery_id": "CCPL080626M1_1_14_2",
+  "sampled_every_frames": 5,
+  "schema_version": "lift_purity/v1",
+  "thresholds": {
+    "chimera_frame_fraction": 0.6,
+    "chimera_torso_residual_px": 30.0
+  }
+}

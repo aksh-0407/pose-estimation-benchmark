@@ -42,7 +42,11 @@ Note: in this legacy order the full **3D triangulation is the last compute stage
 it does not feed identity or tracking; P4 tracks purely on the 2D ground plane. This is
 exactly what the re-ordering below fixes.
 
-## Re-ordered pipeline (ACCEPTED 2026-07-11 — this is now the default)
+## Re-ordered pipeline (ACCEPTED 2026-07-11; v8.0 detection era since 2026-07-13)
+
+> v8.0 update: P1 detection is now **tiled RTMDet-m + NMS 0.55** (produced on the L40S
+> via `run_phase1_l40s.py --tiled-det --nms-thr 0.55`), P2 adds `lowconf_can_spawn:
+> false`, P5 runs roles v1.1 + Wave-6 suppression. Driver defaults: `configs/v8/`.
 
 Two structural changes, both justified below:
 
@@ -55,9 +59,9 @@ Two structural changes, both justified below:
    global-ID-keyed 3D (now with native-26 keypoints, cheirality, frame-aware fills and a
    zero-phase Butterworth by default).
 
-`scripts/pipetrack/run_full_pipeline.py` now defaults to this order with `configs/v7/`
-(the accepted rc2 stack). The legacy order remains reproducible via
-`--no-enable-stabilization --no-enable-lift` + `configs/v6/`.
+`scripts/pipetrack/run_full_pipeline.py` now defaults to this order with `configs/v8/`
+(tiled-detection stack; `configs/v7/` = the previous identity-stack cut). The legacy
+order remains reproducible via `--no-enable-stabilization --no-enable-lift` + `configs/v6/`.
 
 ```mermaid
 flowchart TD

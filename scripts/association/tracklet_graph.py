@@ -363,7 +363,15 @@ class TrackletGraphBuilder:
                         var_floor_m=self.config.ground_var_floor_m,
                     )
                 chunk.cov_by_frame[frame_index] = cov
-                if self.config.posture_enabled:
+                # Wave-5b: overlapping same-camera boxes produce crops/skeletons that
+                # mix the two players — poison for every identity descriptor. Skip
+                # descriptor sampling for contested detections (the geometry above
+                # keeps its own, separately down-weighted, covariance).
+                mute_descriptors = (
+                    getattr(det, "contested", False)
+                    and self.config.contested_mute_appearance
+                )
+                if self.config.posture_enabled and not mute_descriptors:
                     points3d, valid = ground_anchored_skeleton(
                         det.keypoints_px, det.keypoint_conf, foot, projection,
                         min_conf=self.config.pose_min_conf,
@@ -380,6 +388,7 @@ class TrackletGraphBuilder:
                 if (
                     (self.config.graph_shape_enabled or self.config.graph_split_enabled)
                     and frame_index % self.config.graph_lift_stride == 0
+                    and not mute_descriptors
                 ):
                     chunk.kp_samples[frame_index] = np.column_stack(
                         (det.keypoints_px, det.keypoint_conf)
@@ -398,9 +407,15 @@ class TrackletGraphBuilder:
             samples.dist_m.append(distance)
             m2 = ground_mahalanobis_sq(ground_a, cov_a, ground_b, cov_b)
             samples.maha.append(float(np.sqrt(m2)) if np.isfinite(m2) else float("nan"))
-            app = appearance_distance(det_a.appearance, det_b.appearance)
-            if app is not None:
-                samples.appearance.append(float(app))
+            # Wave-5b: appearance from a merged two-player crop is identity poison on
+            # BOTH sides of the pair sample — skip it (geometry samples stay).
+            if not (
+                self.config.contested_mute_appearance
+                and (getattr(det_a, "contested", False) or getattr(det_b, "contested", False))
+            ):
+                app = appearance_distance(det_a.appearance, det_b.appearance)
+                if app is not None:
+                    samples.appearance.append(float(app))
             # Isolation for anchor bootstrapping: nearest OTHER PERSON. Only the
             # pair's own two cameras can vouch for that — a detection in a third
             # camera may be this very player, but one camera never sees one person
@@ -453,10 +468,15 @@ class TrackletGraphBuilder:
 
     def _sigma_px(self, det: Detection3) -> float:
         bbox_h = float(det.bbox_xywh_px[3]) if len(det.bbox_xywh_px) == 4 else 0.0
-        return (
+        sigma = (
             self.config.ground_sigma_px_base
             + self.config.ground_sigma_px_bbox_frac * max(bbox_h, 0.0)
         )
+        if getattr(det, "contested", False):
+            # Wave-5b: a merged-box foot pixel is unreliable — widen this view's
+            # ground covariance so pair Mahalanobis evidence leans on clean cameras.
+            sigma *= float(self.config.contested_sigma_scale)
+        return sigma
 
     # -------------------------------------------------------- calibration
 

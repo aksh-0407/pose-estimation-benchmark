@@ -1,0 +1,15 @@
+{
+  "candidate_identity_frames": 4891,
+  "created_at": "2026-07-14T00:48:05.925985+00:00",
+  "delivery_id": "CCPL080626M1_1_14_3",
+  "eligible_multiview_identity_frames": 3237,
+  "frames_with_extrapolated_joints": 994,
+  "fully_valid_identity_frames": 3237,
+  "match_id": "CCPL080626",
+  "mean_reprojection_error_px": 3.1609618664514225,
+  "p95_reprojection_error_px": 6.42950181954499,
+  "schema_version": "triangulation_metrics/v2",
+  "triangulated_identity_frames": 3237,
+  "triangulation_coverage": 0.6618278470660397,
+  "triangulation_success_rate": 1.0
+}

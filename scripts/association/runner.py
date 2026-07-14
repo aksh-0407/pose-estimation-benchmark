@@ -20,6 +20,7 @@ from scripts.association.associator import (
     AnchorState,
     TemporalLinkMemory,
     associate_frame,
+    mark_contested_detections,
     select_anchor,
     smooth_emit_feet,
 )
@@ -140,6 +141,11 @@ def run_association(
                 # foot so identity is invariant to foot_contact_mode (v2 affects only the
                 # emitted z0_reproj position, in the associator).
             )
+        if config.contested_iou > 0.0:
+            # Wave-5b: flag same-camera overlapping detections (e.g. bowler crossing
+            # the non-striker in a facing pair) so downstream evidence rides on the
+            # cameras where the players are distinct.
+            detections = mark_contested_detections(detections, config.contested_iou)
         detections_by_frame[frame_index] = detections
     if config.association_mode == "tracklet_graph":
         # Feet cut off at the frame edge project garbage ground points; re-anchor

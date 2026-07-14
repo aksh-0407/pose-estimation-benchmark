@@ -235,6 +235,12 @@ role-switch), C5 (single-cam emit), C6 (frame-aware fills), H2/H3/H5/H6/H7 + min
 H2/H3/H5/H6 are unflagged BUG FIXES — flags-off byte-identity vs v6.0 is intentionally
 retired from the FR batch onward; the grand-analysis best stack re-baselines.
 
+### DONE (2026-07-13): Waves 5+6 complete, v8.0 cut
+Tiled detection bake-off -> NMS-0.55 discovery -> composed v8.0 accepted (core-role
+identity equal-or-better everywhere; fixes-log GRAND ANALYSIS v2). Wave 6 suppression
+live. Roles v1.1 default. Contested weighting rejected. Remaining: pack-handling on
+`_5`/`_6` peripherals, GT labelling, vedant global_id changelog review.
+
 ### DONE (2026-07-11): grand analysis concluded, v7 cut
 rc2 accepted as default (see fixes-log GRAND ANALYSIS CONCLUSION); `configs/v7/` +
 driver defaults ship the new logical order. Remaining: Wave 5 probe, Wave 6, open list

@@ -28,6 +28,11 @@ count is secondary (double-counts acceptable occlusion transients). Collisions m
 
 ## 2. Before → after (measured, all 8 deliveries)
 
+> **2026-07-13 addendum — v8.0 is now the default** (tiled+NMS-0.55 detection on the
+> L40S, no-spawn P2, roles v1.1 with visible role tags, Wave-6 peripheral suppression):
+> `_4` agreement 0.770→0.972, `_7` 0.703→0.811, `M2` 0.781→0.886; core-role identity
+> equal-or-better on all 8 deliveries. Full verdict: fixes-log GRAND ANALYSIS v2.
+
 Baseline `v6.0` → **accepted default `v7` (= rc2)** (full panels in `fixes-log.md`; the
 rc1 regressions below were root-caused — H3 posture-policy + dead G7 stitcher — and fixed):
 

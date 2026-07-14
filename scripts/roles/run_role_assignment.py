@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.roles.assigner import assign_roles  # noqa: E402
+from scripts.roles.assigner import assign_roles, assign_roles_epoched  # noqa: E402
+from scripts.roles.config import load_role_assigner_config  # noqa: E402
 from scripts.tracking.calibration import current_calibration_dir  # noqa: E402
 from scripts.tracking.runner import infer_match_id  # noqa: E402
 from scripts.visualization.mosaic_layout import (  # noqa: E402
@@ -35,6 +36,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-run-dir", required=True, help="P5 run dir to create")
     parser.add_argument("--drive-root", required=True)
     parser.add_argument("--delivery-id", required=True)
+    parser.add_argument("--config", default=None, help="P5 YAML (role_assignment_version, etc.)")
     return parser
 
 
@@ -61,12 +63,45 @@ def main(argv: list[str] | None = None) -> int:
                         (int(row["frame_index"]), np.asarray(xy, dtype=float))
                     )
 
+    p5_config = load_role_assigner_config(args.config)
+
+    if p5_config.role_assignment_version == "v1":
+        manifest_path = input_run_dir / "run_manifest.json"
+        p4_online_role_proxy = False
+        if manifest_path.exists():
+            p4_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            p4_online_role_proxy = bool(
+                p4_manifest.get("config", {}).get("p4a", {}).get("online_role_proxy", False)
+            )
+        if not p4_online_role_proxy:
+            raise ValueError(
+                "role_assignment_version=v1 requires the input P4 run to have been produced "
+                "with online_role_proxy=true (run_manifest.json config.p4a.online_role_proxy)"
+            )
+
     match_id = infer_match_id(args.delivery_id)
     axis = load_pitch_axis(
         current_calibration_dir(drive_root, match_id) / "pitch_calibration_config.json"
     )
     direction = infer_bowling_direction(per_id_series, axis) if axis is not None else None
-    roles = assign_roles(per_id_series, direction)
+
+    if p5_config.role_assignment_version == "v1":
+        roles = assign_roles_epoched(
+            per_id_series, direction,
+            frame_rate_fps=p5_config.frame_rate_fps,
+            min_track_frames=p5_config.min_track_frames,
+            epoch_frames=p5_config.epoch_frames,
+            role_epoch_latch_count=p5_config.role_epoch_latch_count,
+            role_assignment_max_cost=p5_config.role_assignment_max_cost,
+        )
+    else:
+        roles = assign_roles(
+            per_id_series, direction,
+            frame_rate_fps=p5_config.frame_rate_fps,
+            min_track_frames=p5_config.min_track_frames,
+            bowler_min_speed_mps=p5_config.bowler_min_speed_mps,
+            pitch_halfwidth_m=p5_config.pitch_halfwidth_m,
+        )
 
     created_at = datetime.now(timezone.utc).isoformat()
     payload = {
@@ -86,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         "schema_version": "roles_run/v1",
         "created_at": created_at,
         "task": "role_assignment",
+        "role_assignment_version": p5_config.role_assignment_version,
         "input_run_dir": str(input_run_dir),
         "output_run_dir": str(output_run_dir),
         "delivery_id": args.delivery_id,

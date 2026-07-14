@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from pose_estimation.cricket.geometry import compute_fundamental_matrix
 from scripts.association.associator import (
@@ -200,3 +201,63 @@ def test_ground_contact_v3_striding_uses_planted_foot():
     assert source == "foot_planted"
     left = (native[24] + native[20]) / 2
     assert np.allclose(pixel, left)
+
+
+# ----------------------------------------------------------------- Wave-5b
+def _det_at(camera: str, bbox: list[float], index: int = 0) -> Detection3:
+    points = np.full((17, 2), [bbox[0] + bbox[2] / 2, bbox[1] + bbox[3]])
+    return Detection3(camera, index, bbox, points, np.full(17, 0.9), 0.9, f"trk{index}")
+
+
+def test_mark_contested_flags_same_camera_overlap_only():
+    from scripts.association.associator import mark_contested_detections
+
+    overlap_a = _det_at("cam_02", [100.0, 100.0, 80.0, 200.0], 0)
+    overlap_b = _det_at("cam_02", [120.0, 110.0, 80.0, 200.0], 1)   # IoU ~0.6
+    lone = _det_at("cam_02", [900.0, 100.0, 80.0, 200.0], 2)
+    other_cam = _det_at("cam_01", [100.0, 100.0, 80.0, 200.0], 0)   # same bbox, other cam
+    marked = mark_contested_detections(
+        {"cam_02": [overlap_a, overlap_b, lone], "cam_01": [other_cam]}, 0.45
+    )
+    assert [d.contested for d in marked["cam_02"]] == [True, True, False]
+    assert marked["cam_01"][0].contested is False
+    # identity payload untouched
+    assert marked["cam_02"][0].local_track_id == "trk0"
+
+
+def test_mark_contested_zero_threshold_is_noop_identity():
+    from scripts.association.associator import mark_contested_detections
+
+    dets = {"cam_02": [_det_at("cam_02", [100.0, 100.0, 80.0, 200.0], 0)]}
+    assert mark_contested_detections(dets, 0.0) is dets
+
+
+def test_contested_sigma_and_conf_scaling():
+    from dataclasses import replace as dc_replace
+
+    from scripts.association.associator import _member_ground_sigma_px
+
+    config = P3AssociationConfig(contested_iou=0.45, contested_sigma_scale=2.5)
+    det = _det_at("cam_02", [100.0, 100.0, 80.0, 200.0])
+    contested = dc_replace(det, contested=True)
+    clean_sigma = _member_ground_sigma_px(det, config)
+    assert _member_ground_sigma_px(contested, config) == pytest.approx(2.5 * clean_sigma)
+
+
+def test_contested_all_members_inflates_emitted_cov():
+    from dataclasses import replace as dc_replace
+
+    from scripts.association.associator import _finalize_ground_cov
+
+    config = P3AssociationConfig(
+        emit_ground_cov=True, contested_iou=0.45, contested_sigma_scale=2.0
+    )
+    cov = np.eye(2) * 0.04
+    det = _det_at("cam_02", [100.0, 100.0, 80.0, 200.0])
+    contested = dc_replace(det, contested=True)
+    # mixed membership: solve already re-weighted, no extra inflation
+    mixed = _finalize_ground_cov(cov, [det, contested], config)
+    assert np.allclose(mixed, cov)
+    # all-contested: uniform weights cancel in the solve, inflate explicitly
+    all_bad = _finalize_ground_cov(cov, [contested, contested], config)
+    assert np.allclose(all_bad, cov * 4.0)

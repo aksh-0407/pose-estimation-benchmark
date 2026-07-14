@@ -85,6 +85,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--butter-cutoff-hz", type=float, default=6.0)
     parser.add_argument("--capture-fps", type=float, default=50.0,
                         help="Capture frame rate used by the Butterworth smoother.")
+    parser.add_argument("--suppression-path", default=None,
+                        help="P5b suppression.json; suppressed global ids are not lifted "
+                             "(default: probes <input>/../p5/suppression.json; Wave-6)")
     parser.add_argument("--id-source", choices=["global", "binding"], default="global",
                         help="Group observations by P4 global_player_id (terminal lift, legacy) "
                              "or by P3 binding_id (the P3.5 re-sequenced lift, fix F9b).")
@@ -144,8 +147,21 @@ def triangulate_canonical_run(
     airborne_ankle_z_m: float = 0.25,
     native_skeleton: bool = False,
     dense_fill: bool = False,
+    suppression_path: str | Path | None = None,
 ) -> dict[str, Any]:
     input_run_dir, output_run_dir = Path(input_run_dir), Path(output_run_dir)
+    # Wave-6 (P5b): suppressed peripheral ids are excluded from the lift entirely.
+    suppressed_ids: set[str] = set()
+    sup_path = Path(suppression_path) if suppression_path else (
+        input_run_dir.parent / "p5" / "suppression.json"
+    )
+    if sup_path.is_file():
+        try:
+            payload = json.loads(sup_path.read_text())
+            if payload.get("enabled"):
+                suppressed_ids = {str(pid) for pid in (payload.get("suppressed") or {})}
+        except (OSError, json.JSONDecodeError):
+            suppressed_ids = set()
     prediction_files = discover_prediction_files(input_run_dir, delivery_id, cameras)
     records_by_frame = load_synchronized_records(prediction_files, delivery_id)
     match_id = infer_match_id(delivery_id)
@@ -184,6 +200,8 @@ def triangulate_canonical_run(
                     continue
                 for player in record.get("players", []):
                     player_id = player.get("global_player_id")
+                    if player_id and str(player_id) in suppressed_ids:
+                        continue  # Wave-6: drop low-confidence peripherals, never extrapolate
                     if player_id and player.get("pose_2d") is not None:
                         observations[(frame_index, player_id)].append((camera_id, player))
 
@@ -549,6 +567,7 @@ def main(argv: list[str] | None = None) -> int:
             airborne_ankle_z_m=args.airborne_ankle_z_m,
             native_skeleton=args.native_skeleton,
             dense_fill=args.dense_fill,
+            suppression_path=args.suppression_path,
         )
         print(f"P6: triangulated {metrics['fully_valid_identity_frames']} identity-frames")
         return 0

@@ -480,6 +480,15 @@ def confidence_color(score: float) -> tuple[int, int, int]:
     return (78, 118, 255)
 
 
+_ROLE_TAGS = {
+    "bowler": "BOWLER",
+    "striker": "STRIKER",
+    "non_striker": "NON-STRIKER",
+    "wicketkeeper": "KEEPER",
+    "umpire": "UMPIRE",
+}
+
+
 def draw_players(
     image: np.ndarray,
     record: dict[str, Any],
@@ -489,11 +498,14 @@ def draw_players(
     keypoint_threshold: float,
     compact: bool,
     show: str,
+    roles: dict[str, str] | None = None,
+    suppressed: set[str] | None = None,
 ) -> int:
     players = [
         scale_player(player, sx=sx, sy=sy)
         for player in record.get("players", [])
         if player.get("bbox_xywh_px") is not None and player.get("pose_2d") is not None
+        and str(player.get("global_player_id")) not in (suppressed or set())
     ]
     line_thickness = 2 if compact else 3
     point_radius = 3 if compact else 5
@@ -527,7 +539,13 @@ def draw_players(
             identity = f"C{player.get('_cluster_id')}" if player.get("_cluster_id") is not None else "unmatched"
         else:
             identity = player.get("local_track_id") or f"det-{player_index}"
-        label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
+        # Core-role tag on the chip (P5 roles.json); fielders/unknown stay untagged
+        # so the named roles pop visually.
+        role_tag = _ROLE_TAGS.get((roles or {}).get(str(identity), "")) if show == "p4" else None
+        if role_tag:
+            label = f"{identity} {role_tag}  trk {float(player.get('track_confidence') or 0.0):.2f}"
+        else:
+            label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
         # Adaptive placement: above the box when there is room under the header,
         # otherwise below the box, otherwise inside it — and always horizontally
         # clamped so the id is never cut off at a tile edge.
@@ -665,6 +683,8 @@ def render_feed_frame(
     mirror: bool = False,
     ghosts: list[Ghost] | None = None,
     letterbox: bool = False,
+    roles: dict[str, str] | None = None,
+    suppressed: set[str] | None = None,
 ) -> np.ndarray:
     output_width, output_height = output_size
     source_height, source_width = image.shape[:2]
@@ -702,6 +722,8 @@ def render_feed_frame(
         keypoint_threshold=keypoint_threshold,
         compact=compact,
         show=show,
+        roles=roles,
+        suppressed=suppressed,
     )
     if ghosts:
         avoid_rects = [
@@ -833,6 +855,19 @@ def cam_short(camera_id: str) -> str:
         return f"C{int(camera_id.rsplit('_', 1)[1])}"
     except (ValueError, IndexError):
         return camera_id
+
+
+def load_suppression(path: Path) -> set[str]:
+    """Suppressed global ids from a P5b ``suppression.json``; empty set when absent."""
+    if not path.is_file():
+        return set()
+    try:
+        payload = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return set()
+    if not payload.get("enabled"):
+        return set()
+    return {str(pid) for pid in (payload.get("suppressed") or {})}
 
 
 def load_roles(path: Path) -> dict[str, str]:
@@ -1240,6 +1275,7 @@ def render_mosaic_video(
     ghost_window_frames: int = 150,
     ghost_decay_frames: int = 100,
     roles: dict[str, str] | None = None,
+    suppressed: set[str] | None = None,
 ) -> dict[str, Any]:
     width, height = settings.mosaic_size
     cell_width = width // 3
@@ -1394,6 +1430,8 @@ def render_mosaic_video(
                         mirror=camera_id in layout.mirrored,
                         ghosts=ghosts,
                         letterbox=settings.letterbox_tiles,
+                        roles=roles,
+                        suppressed=suppressed,
                     )
                     total_players += len(record.get("players", []))
                     for player in record.get("players", []):
@@ -1757,6 +1795,12 @@ def main() -> int:
             )
         if roles:
             print("roles loaded: " + ", ".join(f"{pid}={role}" for pid, role in sorted(roles.items())))
+        # Wave-6: role-aware peripheral suppression (P5b); absent/disabled => empty set
+        suppressed = load_suppression(run_dir.parent / "p5" / "suppression.json") | load_suppression(
+            run_dir / "p5" / "suppression.json"
+        )
+        if suppressed:
+            print("suppressed ids (P5b): " + ", ".join(sorted(suppressed)))
         outputs["mosaic"] = render_mosaic_video(
             records_by_camera=records_by_camera,
             camera_dirs=camera_dirs,
@@ -1769,6 +1813,7 @@ def main() -> int:
             projections=mosaic_projections,
             ground_positions=ground_positions,
             roles=roles,
+            suppressed=suppressed,
         )
     if args.mode in {"all", "ground"}:
         ground_path = run_dir / "diagnostics" / "ground_tracks.jsonl"

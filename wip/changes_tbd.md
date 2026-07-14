@@ -71,6 +71,6 @@
 2. ID-switch-without-cause proxy metric.
 3. Per-frame-fallback weight sweep + spatial prior (only if the fallback returns).
 4. Perf: P3 appearance decode threading; `observe_frame` vectorization; descriptor caching.
-5. Wave 5 probe: tiled/hi-res detection for small/dark-subject recall (research-backed,
-   highest upstream ROI). Wave 6: role-focused suppression of low-confidence peripheral
-   identities (user directive; last).
+5. DONE 2026-07-13: Wave 5 (tiled+NMS0.55 detection, v8.0 default) and Wave 6
+   (P5b suppression) both shipped — see fixes-log GRAND ANALYSIS v2. Open successor:
+   pack-handling for in-pack peripheral tracks on `_5`/`_6`.

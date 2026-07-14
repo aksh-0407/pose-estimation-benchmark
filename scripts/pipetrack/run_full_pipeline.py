@@ -200,9 +200,21 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
         elif stage == "p5":
             rc = _run_stage(
                 "scripts.roles.run_role_assignment",
-                common(plan.stage_dir("p4"), out_dir),
+                common(plan.stage_dir("p4"), out_dir)
+                + (["--config", args.p5_config] if args.p5_config else []),
                 args.python, log,
             )
+            if rc == 0:
+                # Wave-6 (P5b): role-aware peripheral suppression. Explicit paths so a
+                # reused base-tree p4 never makes the probe read the wrong p5 dir.
+                rc = _run_stage(
+                    "scripts.roles.suppress_peripherals",
+                    ["--input-run-dir", str(plan.stage_dir("p4")),
+                     "--roles-path", str(out_dir / "roles.json"),
+                     "--output-path", str(out_dir / "suppression.json")]
+                    + (["--config", args.p5_config] if args.p5_config else []),
+                    args.python, log,
+                )
         elif stage == "p6_3d":
             rc = _run_stage(
                 "scripts.export.triangulate_predictions",
@@ -249,7 +261,7 @@ def run_render(plan: DeliveryPlan) -> int:
 def write_pipeline_manifest(args: argparse.Namespace, stages: list[str], deliveries: list[str]) -> None:
     configs = {
         "p1b": args.p1b_config, "p2": args.p2_config,
-        "p3": args.p3_config, "p4": args.p4_config,
+        "p3": args.p3_config, "p4": args.p4_config, "p5": args.p5_config or None,
     }
     manifest = {
         "schema_version": "pipeline_manifest/v1",
@@ -261,7 +273,7 @@ def write_pipeline_manifest(args: argparse.Namespace, stages: list[str], deliver
         "enable_stabilization": args.enable_stabilization,
         "enable_lift": args.enable_lift,
         "configs": {
-            stage: {"path": path, "sha256": _sha256(ROOT / path)}
+            stage: ({"path": path, "sha256": _sha256(ROOT / path)} if path else None)
             for stage, path in configs.items()
         },
         "triangulation": {
@@ -337,7 +349,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--deliveries", default=None,
                         help="Comma-separated delivery ids (default: all 8).")
-    parser.add_argument("--input-tree", default="benchmarks/runs/rtmpose-x",
+    parser.add_argument("--input-tree", default="benchmarks/runs/rtmpose-x-tiled-w5-full",
                         help="P1 predictions run dir (flat predictions/*.jsonl).")
     parser.add_argument("--output-tree", required=True,
                         help="Tree to write stage outputs into (deliveries/<D>/...).")
@@ -353,10 +365,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--enable-lift", action=argparse.BooleanOptionalAction,
                         default=True,
                         help="Run the P3.5 binding-keyed 3D lift after P3 (v7 default ON).")
-    parser.add_argument("--p1b-config", default="configs/v7/p1b_stabilization.yaml")
-    parser.add_argument("--p2-config", default="configs/v7/p2_tracking.yaml")
-    parser.add_argument("--p3-config", default="configs/v7/p3_association.yaml")
-    parser.add_argument("--p4-config", default="configs/v7/p4_global_id.yaml")
+    parser.add_argument("--p1b-config", default="configs/v8/p1b_stabilization.yaml")
+    parser.add_argument("--p2-config", default="configs/v8/p2_tracking.yaml")
+    parser.add_argument("--p3-config", default="configs/v8/p3_association.yaml")
+    parser.add_argument("--p4-config", default="configs/v8/p4_global_id.yaml")
+    parser.add_argument("--p5-config", default="configs/v8/p5_roles.yaml",
+                        help="P5 roles YAML (v1.1 epoch solver); pass '' for legacy v0.")
     parser.add_argument("--tri-reproj-px", type=float, default=10.0)
     parser.add_argument("--tri-min-views", type=int, default=2)
     parser.add_argument("--tri-ema-alpha", type=float, default=0.65)

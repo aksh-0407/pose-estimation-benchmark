@@ -145,6 +145,18 @@ class P3AssociationConfig:
     ground_sigma_px_base: float = 2.0
     ground_sigma_px_bbox_frac: float = 0.01   # + frac * bbox_height_px
     ground_var_floor_m: float = 0.4
+    # Wave-5b: contested-camera evidence down-weighting. When two detections in the
+    # SAME camera overlap heavily (bowler/non-striker crossing in a facing pair),
+    # that camera cannot separate the two players: its ground evidence is unreliable
+    # and its appearance/posture crops bleed one identity into the other. Marking
+    # both detections "contested" makes the z0_reproj ground solve and the per-view
+    # covariances ride on the cameras where the players ARE distinct (e.g. C1/C4
+    # while C2-C6 overlap), and mutes identity-descriptor sampling from the merged
+    # boxes. The merge GATE is untouched. 0.0 disables (byte-identical).
+    contested_iou: float = 0.0
+    contested_conf_scale: float = 0.25      # z0_reproj weight multiplier for contested members
+    contested_sigma_scale: float = 2.5      # foot-pixel sigma multiplier -> per-view ground cov
+    contested_mute_appearance: bool = True  # skip appearance/posture/kp samples when contested
     # Cross-camera ground fusion for the EMITTED cluster position (feeds P4 Kalman +
     # ground_tracks). The merge GATE (max pairwise spread) is UNCHANGED across all
     # modes, so clustering/identity is byte-identical; only the reported position moves.
@@ -317,6 +329,12 @@ class P3AssociationConfig:
                     or not math.isfinite(float(value)):
                 raise ValueError(f"{name} must be a finite number")
         _require_range("ground_sigma_px_bbox_frac", self.ground_sigma_px_bbox_frac, 0.0, 1.0)
+        _require_range("contested_iou", self.contested_iou, 0.0, 1.0)
+        _require_range("contested_conf_scale", self.contested_conf_scale, 0.0, 1.0)
+        if self.contested_sigma_scale < 1.0:
+            raise ValueError("contested_sigma_scale must be >= 1.0")
+        if type(self.contested_mute_appearance) is not bool:
+            raise ValueError("contested_mute_appearance must be a boolean")
         for name in ("graph_motion_enabled", "purity_split_enabled", "posture_enabled",
                      "graph_corrob_merge"):
             if type(getattr(self, name)) is not bool:

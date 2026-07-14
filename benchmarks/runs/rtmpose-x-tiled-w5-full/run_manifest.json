@@ -1,0 +1,608 @@
+{
+  "schema_version": "cricket_phase1_run/v2",
+  "prediction_schema_version": "g1_player_frame/v0",
+  "run_id": "tiled-nms55-full",
+  "created_at": "2026-07-13T23:16:56Z",
+  "model_id": "rtmpose_x_body8",
+  "device": "cuda:0",
+  "skeleton": "halpe26",
+  "pose_data_root": "/home/ubuntu/pose_data",
+  "prediction_dir": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions",
+  "detector": "rtmdet_m_person_tiled",
+  "tiled_det": true,
+  "tile_grid": [
+    4,
+    2
+  ],
+  "tile_overlap": 0.25,
+  "det_batch_size": 8,
+  "pose_batch_size": 256,
+  "io_workers": 12,
+  "cv2_threads": 2,
+  "prefetch_batches": 3,
+  "perf": true,
+  "bbox_thr": 0.3,
+  "nms_thr": 0.55,
+  "git_sha": "fbdd9bf5957d380a601c5ddc145ab8f5fa7c61d9",
+  "summary": {
+    "records_written": 33600,
+    "records_written_this_run": 33600,
+    "records_reused": 0,
+    "total_players_detected": 106263,
+    "failed_frames": 0,
+    "wall_clock_s": 6500.01,
+    "fps_overall": 5.17,
+    "timings": {
+      "decode_seconds": 2.323,
+      "detect_seconds": 6066.776,
+      "pose_seconds": 394.627,
+      "write_seconds": 13.068
+    },
+    "status": "pass"
+  },
+  "delivery_count": 8,
+  "camera_count": 56,
+  "cameras": [
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2995,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_1__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3007,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_1__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2751,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_2__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2857,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_2__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3000,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_3__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3010,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_3__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3001,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_4__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3006,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_4__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2878,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_5__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3007,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_5__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2990,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_6__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3012,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_6__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2937,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_7__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 3609,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M1_1_14_7__cam_04.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_01",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2397,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M2_1_12_1__cam_01.jsonl"
+    },
+    {
+      "group": "bt_01",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_04",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2402,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_01__CCPL080626M2_1_12_1__cam_04.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_1__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1685,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_1__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 670,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_1__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_2__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1799,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_2__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 730,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_2__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_3__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1741,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_3__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 458,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_3__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_4__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1785,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_4__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 768,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_4__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_5__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1616,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_5__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 600,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_5__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_6__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1656,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_6__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 611,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_6__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1200,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_7__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1357,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_7__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 672,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M1_1_14_7__cam_07.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_02",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1427,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M2_1_12_1__cam_02.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_05",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 568,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M2_1_12_1__cam_05.jsonl"
+    },
+    {
+      "group": "bt_02",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_07",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1650,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_02__CCPL080626M2_1_12_1__cam_07.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1733,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_1__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_1",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_1__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1801,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_2__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_2",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_2__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1670,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_3__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_3",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1802,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_3__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1803,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_4__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_4",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1801,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_4__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1561,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_5__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_5",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1821,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_5__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1590,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_6__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_6",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1800,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_6__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1631,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_7__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M1_1_14_7",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1802,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M1_1_14_7__cam_06.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_03",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 1159,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M2_1_12_1__cam_03.jsonl"
+    },
+    {
+      "group": "bt_03",
+      "delivery_id": "CCPL080626M2_1_12_1",
+      "camera_id": "cam_06",
+      "frames_processed": 600,
+      "frames_skipped": 0,
+      "people": 2037,
+      "failed": 0,
+      "predictions": "/home/ubuntu/pose-rtm-x-tiled-w5-full/predictions/bt_03__CCPL080626M2_1_12_1__cam_06.jsonl"
+    }
+  ],
+  "failures": []
+}
