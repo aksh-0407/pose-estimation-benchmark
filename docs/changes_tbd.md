@@ -45,7 +45,7 @@ spikes ≈ half the events).
   noisy foot ray (the foot ray carries ~1 m grazing error).
 - Tighten the P4a χ² gate / process noise so a single far measurement after a short gap is
   not admitted wholesale.
-**Code**: `src/identity/p5_global_id/runner.py:110-141` (emission), `p4_global_id.yaml` (gates),
+**Code**: `src/identity/p5_global_id/runner.py:110-141` (emission), `configs/05_global_id.yaml` (gates),
 `src/identity/p5_global_id/ground_kalman.py`.
 **Verify**: `emit_smoothness.py` e_max should drop from 100–1500 m/s toward < ~30 m/s.
 
@@ -91,7 +91,7 @@ relabel so boundary frames don't keep the losing id.
 **Do**: fit the identity's canonical skeleton (bone lengths from its multi-view frames) to a
 lone 2D view, PnP-style, with honest covariance. Turns single-cam frames into "3D with a
 wider error bar" → coverage up, ground position physically constrained (damps teleports too).
-**Code**: new module consuming P3.5 lift + P6; `wip` V2-L1/F16 notes.
+**Code**: new module consuming the 04 binding lift + terminal 3D lift; `wip` V2-L1/F16 notes.
 **Verify**: P6 coverage up on `M2_2_3_*` (from ~0.5); emitted single-cam spikes down.
 
 ## C9 🟡 (M) Detection recall on the deep field / small subjects
