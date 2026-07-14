@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from collections import deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from itertools import combinations
 from pathlib import Path
@@ -114,21 +116,52 @@ def run_association(
     records_by_frame = load_synchronized_records(prediction_files, delivery_id)
 
     # Pass A: build (and cache) per-frame detections once — including appearance
-    # descriptors, which require the frame images.
+    # descriptors, which require the frame images. Frame decode is prefetched on a
+    # small thread pool (W5-PERF): decoding 7 cameras x 2560x1440 serially left the
+    # solver idle ~70% of Pass A; workers decode frame f+1..f+2 while f is processed.
+    # Order and outputs are unchanged (byte-identical, verified) — only the imread
+    # moves off the main thread.
     detections_by_frame: dict[int, dict] = {}
     appearance_images_missing = 0
-    for frame_index in sorted(records_by_frame):
+    frame_order = sorted(records_by_frame)
+
+    def _decode_frame_images(frame_index: int) -> dict[str, "np.ndarray | None"]:
+        images: dict[str, "np.ndarray | None"] = {}
+        if not config.appearance_enabled:
+            return images
+        for camera_id, record in sorted(records_by_frame[frame_index].items()):
+            camera_number = int(camera_id.rsplit("_", 1)[1])
+            image_path = (
+                drive_root / "dataset" / record["capture_group"] / delivery_id
+                / f"camera{camera_number:02d}" / record["frame_name"]
+            )
+            images[camera_id] = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        return images
+
+    decode_pool = ThreadPoolExecutor(max_workers=4) if config.appearance_enabled else None
+    inflight: "deque[tuple[int, Future]]" = deque()
+    if decode_pool is not None:
+        cv2.setNumThreads(1)  # 4 workers x 1 thread; never oversubscribe under --jobs N
+        for frame_index in frame_order[:3]:
+            inflight.append((frame_index, decode_pool.submit(_decode_frame_images, frame_index)))
+    for position, frame_index in enumerate(frame_order):
+        if decode_pool is not None:
+            queued_index, future = inflight.popleft()
+            assert queued_index == frame_index
+            nxt = position + 3
+            if nxt < len(frame_order):
+                inflight.append(
+                    (frame_order[nxt], decode_pool.submit(_decode_frame_images, frame_order[nxt]))
+                )
+            frame_images = future.result()
+        else:
+            frame_images = {}
         camera_records = records_by_frame[frame_index]
         detections = {}
         for camera_id, record in sorted(camera_records.items()):
             image = None
             if config.appearance_enabled:
-                camera_number = int(camera_id.rsplit("_", 1)[1])
-                image_path = (
-                    drive_root / "dataset" / record["capture_group"] / delivery_id
-                    / f"camera{camera_number:02d}" / record["frame_name"]
-                )
-                image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+                image = frame_images.get(camera_id)
                 if image is None:
                     appearance_images_missing += 1
             detections[camera_id] = record_to_detections(
@@ -147,6 +180,8 @@ def run_association(
             # cameras where the players are distinct.
             detections = mark_contested_detections(detections, config.contested_iou)
         detections_by_frame[frame_index] = detections
+    if decode_pool is not None:
+        decode_pool.shutdown(wait=False)
     if config.association_mode == "tracklet_graph":
         # Feet cut off at the frame edge project garbage ground points; re-anchor
         # those detections on upper-body height planes (sticky per tracklet).

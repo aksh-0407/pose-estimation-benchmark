@@ -348,7 +348,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--deliveries", default=None,
-                        help="Comma-separated delivery ids (default: all 8).")
+                        help="Comma-separated delivery ids; 'all' discovers every delivery "
+                             "in the input tree's predictions/ (default: the 8 benchmark ids).")
     parser.add_argument("--input-tree", default="benchmarks/runs/rtmpose-x-tiled-w5-full",
                         help="P1 predictions run dir (flat predictions/*.jsonl).")
     parser.add_argument("--output-tree", required=True,
@@ -404,10 +405,22 @@ def main(argv: list[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
     if args.skip_render and args.until_stage == "render":
         args.until_stage = "p6_3d"
-    deliveries = (
-        [d.strip() for d in args.deliveries.split(",") if d.strip()]
-        if args.deliveries else list(ALL_DELIVERIES)
-    )
+    if args.deliveries == "all":
+        # Discover every delivery present in the input tree's P1 predictions
+        # (filenames are <capture_group>__<delivery>__cam_NN.jsonl).
+        seen = set()
+        for pred in sorted((ROOT / args.input_tree / "predictions").glob("*.jsonl")):
+            parts = pred.stem.split("__")
+            if len(parts) == 3:
+                seen.add(parts[1])
+        if not seen:
+            raise SystemExit(f"--deliveries all: no predictions found under {args.input_tree}")
+        deliveries = sorted(seen)
+    else:
+        deliveries = (
+            [d.strip() for d in args.deliveries.split(",") if d.strip()]
+            if args.deliveries else list(ALL_DELIVERIES)
+        )
     stages = _stage_window(args.from_stage, args.until_stage)
     do_render = "render" in stages
     if do_render and not args.artifacts_root and not args.panel_only:

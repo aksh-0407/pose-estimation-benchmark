@@ -88,3 +88,40 @@ def test_suppression_disabled_is_empty_and_umpire_protection_works():
     assert decide(quality, roles, dict(DEFAULTS)) == {}
     cfg = dict(DEFAULTS, suppression_enabled=True, suppress_protect_umpires=True)
     assert decide(quality, roles, cfg) == {}
+
+
+# ------------------------------------------------------- v1.2 auto-flip
+def test_epoched_cost_prefers_correct_axis_sign_without_runner():
+    """The mirrored roster must resolve the right end from geometry alone."""
+    from scripts.roles.assigner import assign_roles_epoched
+
+    axis = np.array([0.0, 1.0])
+    series = {
+        "STR": _series(8.8, 0.2),
+        "NST": _series(-8.8, -0.3),
+        "WK": _series(12.0, 0.1),      # keeper behind +stumps
+        "UMP1": _series(-11.0, 0.4),   # bowler's-end umpire behind -stumps
+        "UMP2": _series(8.8, 19.0),    # square leg at the striker's end
+    }
+    _, cost_correct = assign_roles_epoched(series, axis, min_track_frames=60, return_cost=True)
+    _, cost_flipped = assign_roles_epoched(series, -axis, min_track_frames=60, return_cost=True)
+    assert cost_correct < cost_flipped  # geometry disambiguates the end
+
+    roles_correct, _ = assign_roles_epoched(series, axis, min_track_frames=60, return_cost=True)
+    assert roles_correct["WK"].role == "wicketkeeper"
+    assert roles_correct["STR"].role == "striker"
+
+
+def test_epoched_cost_penalises_unfilled_slots():
+    """Fewer accepted assignments must not fake a better score."""
+    from scripts.roles.assigner import assign_roles_epoched
+
+    axis = np.array([0.0, 1.0])
+    full = {
+        "STR": _series(8.8, 0.2), "NST": _series(-8.8, -0.3),
+        "WK": _series(12.0, 0.1), "UMP1": _series(-11.0, 0.4),
+    }
+    sparse = {"LONE": _series(30.0, 30.0)}  # one far fielder, nothing assignable
+    _, cost_full = assign_roles_epoched(full, axis, min_track_frames=60, return_cost=True)
+    _, cost_sparse = assign_roles_epoched(sparse, axis, min_track_frames=60, return_cost=True)
+    assert cost_full < cost_sparse

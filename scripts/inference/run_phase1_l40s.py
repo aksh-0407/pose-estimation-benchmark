@@ -112,6 +112,11 @@ def parse_args() -> argparse.Namespace:
     mdl.add_argument("--tile-cols", type=int, default=4)
     mdl.add_argument("--tile-rows", type=int, default=2)
     mdl.add_argument("--tile-overlap", type=float, default=0.25)
+    mdl.add_argument("--no-tiled-fast", dest="tiled_fast", action="store_false",
+                     help="Disable the fast tiled path (crop prep in prefetch workers + "
+                          "direct data_preprocessor/predict). Fast path is parity-checked "
+                          "against the generic path (W5-PERF).")
+    parser.set_defaults(tiled_fast=True)
 
     rt = parser.add_argument_group("runtime")
     rt.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
@@ -135,8 +140,11 @@ def parse_args() -> argparse.Namespace:
                     help="Disable the tqdm progress bar")
     rt.add_argument("--no-perf", dest="perf", action="store_false",
                     help="Disable cudnn.benchmark + TF32 (on by default for CUDA)")
+    rt.add_argument("--no-amp", dest="amp", action="store_false",
+                    help="Disable fp16 autocast for detector+pose forwards (on by default; "
+                         "W5-PERF: verified box/keypoint parity within tolerance on L40S)")
     rt.add_argument("--show-torch-warnings", action="store_true")
-    rt.set_defaults(resume=True, show_progress=True, perf=True)
+    rt.set_defaults(resume=True, show_progress=True, perf=True, amp=True)
 
     sw = parser.add_argument_group("sweep (batch autotune, writes nothing)")
     sw.add_argument("--sweep", action="store_true",
@@ -378,6 +386,111 @@ def detect_person_boxes_tiled_batch(detector, inference_detector, entries, args)
             merged = merged[np.argsort(merged[:, 4])[::-1][: args.max_people]]
         out.append(merged.astype(np.float32))
     return out
+
+
+DET_INPUT_LONG_SIDE = 640  # matches the RTMDet test pipeline Resize scale
+
+
+def make_tiled_loader(args):
+    """Prefetch-worker loader: decode + slice tiles + resize crops off the GPU thread.
+
+    Produces entry["tile_crops"] (uint8 BGR, pipeline-scale) and entry["tile_metas"]
+    (offset/ori_shape/img_shape/scale_factor per crop; full frame is the last crop),
+    so the GPU loop never runs per-crop Python preprocessing (W5-PERF: the generic
+    inference_detector pipeline was the tiled-mode bottleneck, not GPU compute).
+    """
+    import cv2
+
+    from detector_bakeoff import tile_layout
+
+    def load(item):
+        entry = p1.load_frame_for_batch(item)
+        img = entry["img"]
+        h, w = img.shape[:2]
+        tiles = tile_layout(w, h, (args.tile_cols, args.tile_rows), args.tile_overlap)
+        crops, metas = [], []
+        for (x, y, tw, th) in tiles + [(0, 0, w, h)]:
+            crop = img[y:y + th, x:x + tw]
+            scale = DET_INPUT_LONG_SIDE / max(tw, th)
+            rw, rh = int(round(tw * scale)), int(round(th * scale))
+            crops.append(cv2.resize(crop, (rw, rh), interpolation=cv2.INTER_LINEAR))
+            metas.append({
+                "offset": (x, y),
+                "tile": (x, y, tw, th),
+                "ori_shape": (th, tw),
+                "img_shape": (rh, rw),
+                "scale_factor": (rw / tw, rh / th),
+            })
+        entry["tile_crops"] = crops
+        entry["tile_metas"] = metas
+        return entry
+
+    return load
+
+
+def detect_person_boxes_tiled_fast(detector, entries, args):
+    """Tiled detection without the generic per-image pipeline: pre-resized crops from
+    the prefetch workers go straight through data_preprocessor -> predict (one batched
+    forward for all crops of all frames in the batch). Post-processing (person filter,
+    interior-clip drop, offset, NMS + IoM containment) matches the generic tiled path.
+    """
+    import numpy as np
+    import torch
+    from mmdet.structures import DetDataSample
+
+    from detector_bakeoff import _drop_tile_clipped, nms_xyxy, suppress_contained
+
+    if not entries:
+        return []
+    inputs, samples, plan = [], [], []
+    for idx, entry in enumerate(entries):
+        for crop, meta in zip(entry["tile_crops"], entry["tile_metas"]):
+            inputs.append(torch.from_numpy(np.ascontiguousarray(crop.transpose(2, 0, 1))))
+            samples.append(DetDataSample(metainfo={
+                "img_shape": meta["img_shape"],
+                "ori_shape": meta["ori_shape"],
+                "scale_factor": meta["scale_factor"],
+            }))
+            plan.append((idx, meta))
+    with torch.no_grad():
+        data = detector.data_preprocessor({"inputs": inputs, "data_samples": samples}, False)
+        results = detector._run_forward(data, mode="predict")
+    per_entry: list[list[np.ndarray]] = [[] for _ in entries]
+    frame_shapes = [entry["img"].shape[:2] for entry in entries]
+    for result, (idx, meta) in zip(results, plan):
+        pred = result.pred_instances.cpu().numpy()
+        keep = np.logical_and(pred.labels == args.det_cat_id, pred.scores > args.bbox_thr)
+        boxes = np.concatenate((pred.bboxes[keep], pred.scores[keep, None]), axis=1)
+        x, y, tw, th = meta["tile"]
+        fh, fw = frame_shapes[idx]
+        if (tw, th) != (fw, fh):  # tile crop (full frame is exempt from clip-drop)
+            boxes = _drop_tile_clipped(boxes, meta["tile"], (fw, fh))
+            if boxes.shape[0]:
+                boxes = boxes.copy()
+                boxes[:, [0, 2]] += x
+                boxes[:, [1, 3]] += y
+        if boxes.shape[0]:
+            per_entry[idx].append(boxes)
+    out = []
+    for chunks in per_entry:
+        if not chunks:
+            out.append(np.zeros((0, 5), dtype=np.float32))
+            continue
+        merged = nms_xyxy(np.concatenate(chunks), iou_thr=args.nms_thr)
+        merged = suppress_contained(merged, iom_thr=0.7)
+        if args.max_people is not None and merged.shape[0] > args.max_people:
+            merged = merged[np.argsort(merged[:, 4])[::-1][: args.max_people]]
+        out.append(merged.astype(np.float32))
+    return out
+
+
+def _amp_context(args, device: str):
+    """fp16 autocast for inference forwards (W5-PERF). No-op on CPU or --no-amp."""
+    if getattr(args, "amp", False) and device.startswith("cuda"):
+        import torch
+
+        return torch.autocast("cuda", dtype=torch.float16)
+    return nullcontext()
 
 
 def _sync(device: str) -> None:
@@ -723,8 +836,13 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
             if progress is not None and skipped_here:
                 progress.update(skipped_here)
 
+            tiled_loader = (
+                make_tiled_loader(args)
+                if args.tiled_det and args.tiled_fast else None
+            )
             for loaded, load_failures in p1.prefetch_decoded_batches(
-                pending_all, decode_pool, args.det_batch_size, args.prefetch_batches, timings
+                pending_all, decode_pool, args.det_batch_size, args.prefetch_batches, timings,
+                loader=tiled_loader,
             ):
                 for _, frame_path, exc in load_failures:
                     cam_failed += 1
@@ -736,19 +854,24 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
 
                 try:
                     start = time.perf_counter()
-                    if args.tiled_det:
-                        batch_boxes = detect_person_boxes_tiled_batch(
-                            detector, inference_detector, loaded, args)
-                    else:
-                        batch_boxes = p1.detect_person_boxes_batch(
-                            detector, inference_detector, loaded, args)
+                    with _amp_context(args, device):
+                        if args.tiled_det and args.tiled_fast:
+                            batch_boxes = detect_person_boxes_tiled_fast(
+                                detector, loaded, args)
+                        elif args.tiled_det:
+                            batch_boxes = detect_person_boxes_tiled_batch(
+                                detector, inference_detector, loaded, args)
+                        else:
+                            batch_boxes = p1.detect_person_boxes_batch(
+                                detector, inference_detector, loaded, args)
                     _sync(device)
                     timings["detect_seconds"] += time.perf_counter() - start
                     for entry, boxes in zip(loaded, batch_boxes):
                         entry["boxes"] = boxes
                     start = time.perf_counter()
-                    batch_results = p1.inference_topdown_batch(
-                        pose_model, pose_pipeline, loaded, args.pose_batch_size)
+                    with _amp_context(args, device):
+                        batch_results = p1.inference_topdown_batch(
+                            pose_model, pose_pipeline, loaded, args.pose_batch_size)
                     _sync(device)
                     timings["pose_seconds"] += time.perf_counter() - start
                 except Exception as exc:  # noqa: BLE001
@@ -883,6 +1006,8 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
         "prediction_dir": p1.rel(pred_dir),
         "detector": "rtmdet_m_person_tiled" if args.tiled_det else "rtmdet_m_person",
         "tiled_det": bool(args.tiled_det),
+        "amp": bool(getattr(args, "amp", False)),
+        "tiled_fast": bool(getattr(args, "tiled_fast", False)) if args.tiled_det else None,
         "tile_grid": [args.tile_cols, args.tile_rows] if args.tiled_det else None,
         "tile_overlap": args.tile_overlap if args.tiled_det else None,
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,

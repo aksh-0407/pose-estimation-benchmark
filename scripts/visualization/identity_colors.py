@@ -5,10 +5,17 @@ from __future__ import annotations
 import hashlib
 import re
 
+# 20 maximally-separated colours (W7-RENDER): golden-ratio hue stepping with two
+# alternating saturation/value bands, so numerically adjacent global ids (P1, P2, ...)
+# land far apart in hue AND neighbouring hues differ in brightness. BGR order.
+# Wraparound now every 21st id instead of every 13th; pairwise separation is
+# asserted by tests/test_render_labels.py.
 IDENTITY_PALETTE: tuple[tuple[int, int, int], ...] = (
-    (78, 220, 255), (255, 139, 92), (129, 236, 145), (230, 126, 255),
-    (120, 187, 255), (255, 211, 92), (126, 255, 219), (181, 162, 255),
-    (90, 164, 255), (255, 116, 166), (105, 238, 205), (196, 231, 105),
+    (38, 38, 255), (224, 125, 85), (38, 255, 164), (207, 85, 224),
+    (218, 255, 38), (85, 160, 224), (255, 38, 92), (85, 224, 91),
+    (110, 38, 255), (224, 172, 85), (38, 255, 237), (224, 85, 195),
+    (146, 255, 38), (85, 114, 224), (255, 56, 38), (85, 224, 137),
+    (183, 38, 255), (224, 218, 85), (38, 200, 255), (224, 85, 148),
 )
 UNKNOWN_COLOR = (150, 150, 150)
 

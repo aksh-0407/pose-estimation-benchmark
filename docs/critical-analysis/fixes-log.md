@@ -572,6 +572,41 @@ weighting (flag-gated off), vedant global_id rewrite (awaiting changelog).
 isolated to non-core in-pack tracks); `_3` teleport-proxy replacement; identity GT
 labelling; mosaic sign-off of v8.0 by the user.
 
+### W5-PERF + W7-RENDER + W8-ROLES-v1.2 - Production-Scale Enablement (2026-07-14)
+
+**W5-PERF (P1 tiled throughput 5.6 -> 16-18 fps, 2.9-3.2x).** fp16 autocast alone gained
+~nothing — the tiled bottleneck was CPU: 9 crops/frame each running mmdet's generic
+per-image Python pipeline inside the GPU loop. Fix: crop slicing + resize moved into the
+decode-prefetch workers (`make_tiled_loader`), pre-sized crops fed straight through
+`data_preprocessor -> predict` (`detect_person_boxes_tiled_fast`; generic path kept via
+`--no-tiled-fast`). Parity: identical person counts, matched-box delta <= 3.3 px, fp16
+usable-joint delta <= 3.7 px (sub-threshold joints excluded by every consumer). Sweep:
+det-batch 4 optimal (15.99 fps probe; 17.7-18 fps in production). CPU side: P3
+appearance decode prefetch (4 threads, byte-identical, ~2x Pass A); driver
+`--deliveries all` discovery; `run_v8_l40s.sh` launcher.
+
+**W7-RENDER (mosaic upgrades, user directives).** (1) Collision-aware chip placement —
+candidates above/below/beside then stacked with leader lines; two adjacent players can
+no longer draw unreadable overlapping labels (frame-verified on the `_7` CAM-04 pack).
+(2) Skeleton body-paint identity overlay (torso quad + limb capsules + head disc,
+0.35 blend, `--no-body-paint` to disable). (3) Roles removed from tile chips — roster
+panel only (brightened). (4) Palette 12 -> 20 max-separation colours (golden-ratio hue,
+two brightness bands; wraparound every 21st id). Tests: tests/test_render_labels.py.
+
+**W8-ROLES-v1.2 (bowling-end auto-flip).** Three fixes composed: (a) plausibility band
+on run detection (3.0-9.5 m/s) — tracking teleports previously read as 20-31 m/s "runs"
+and could vote the wrong end (measured on 4/8 clips); (b) when no plausible run exists,
+a two-sign trial of the epoch solver decides the end by roster-geometry fit cost,
+computed on the PRE-SHOT window only (post-shot running swaps the batters' ends and
+blurred whole-delivery medians); unfilled slots pay max-cost so accept-less cannot fake
+a better score; (c) `--force-axis-sign` hook for future cross-delivery consensus.
+Result on v8.0 x8: core roster 4/4 + both umpires on ALL deliveries; sources:
+run_detected 7/8, cost_flip 1/8. FINDING: the `_14_x` clips do NOT share one bowling
+end (clean opposite-direction runs in `_2` vs `_3`) — the naming is not one-over-per-
+group, so no over-consensus constraint applies. OPEN: end-orientation (striker vs
+non-striker end swap) is visually confirmed correct only on `_2`; the 8 production
+mosaics will arbitrate the rest. 209 tests green.
+
 ## Current Default / Recommended State
 
 - **Default: `configs/v8/`** (tiled+NMS0.55 detection, no-spawn P2, v7 identity stack,

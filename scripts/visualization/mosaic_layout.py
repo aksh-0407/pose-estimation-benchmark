@@ -111,6 +111,7 @@ def infer_bowling_direction(
     window_frames: int = 50,
     early_fraction: float = 0.5,
     min_speed_mps: float = 3.0,
+    max_speed_mps: float | None = None,
     frame_rate_fps: float = 50.0,
 ) -> np.ndarray | None:
     """Signed bowling direction from the fastest early run ALONG the pitch axis.
@@ -142,6 +143,11 @@ def infer_bowling_direction(
                     continue
                 along = float((np.asarray(point_b) - np.asarray(point_a)) @ axis)
                 speed = abs(along) * frame_rate_fps / gap
+                if max_speed_mps is not None and speed > max_speed_mps:
+                    # W8-ROLES v1.2: teleport/ID-switch artifacts read as 20-30 m/s
+                    # "runs" and can vote the wrong end; a human bowler cannot
+                    # exceed ~9.5 m/s. Legacy callers (mosaic mirroring) pass None.
+                    continue
                 if speed > best_speed:
                     best_speed, best_sign = speed, float(np.sign(along))
     if best_sign == 0.0 or best_speed < min_speed_mps:

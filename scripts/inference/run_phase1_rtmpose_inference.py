@@ -315,6 +315,7 @@ def prefetch_decoded_batches(
     det_batch_size: int,
     depth: int,
     timings: dict[str, float],
+    loader=None,
 ):
     """Yield ``(loaded, load_failures)`` per detector batch while decoding ahead.
 
@@ -331,9 +332,11 @@ def prefetch_decoded_batches(
     inflight: deque = deque()
     nxt = 0
 
+    load = loader or load_frame_for_batch
+
     def submit(index: int):
         return [
-            (idx, path, executor.submit(load_frame_for_batch, (idx, path)))
+            (idx, path, executor.submit(load, (idx, path)))
             for idx, path in batches[index]
         ]
 

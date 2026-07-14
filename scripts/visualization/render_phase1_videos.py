@@ -85,6 +85,7 @@ class VideoSettings:
     ball_trail_frames: int
     show: str
     letterbox_tiles: bool = False
+    body_paint: bool = True
 
 
 import functools
@@ -218,6 +219,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--mode", choices=["all", "per-camera", "mosaic", "ground"], default="all")
     parser.add_argument("--show", choices=["p2", "p3", "p4"], default=None)
+    parser.add_argument("--no-body-paint", dest="body_paint", action="store_false",
+                        help="Disable the skeleton body-paint identity overlay "
+                             "(W7-RENDER; on by default)")
     parser.add_argument("--letterbox-tiles", action="store_true",
                         help="Aspect-correct wide tiles (C07) by bottom-padding instead of stretching (F2/R-1).")
     parser.add_argument("--crf", type=int, default=22)
@@ -480,6 +484,106 @@ def confidence_color(score: float) -> tuple[int, int, int]:
     return (78, 118, 255)
 
 
+COCO_TORSO = (5, 6, 12, 11)  # L-shoulder, R-shoulder, R-hip, L-hip (quad order)
+COCO_HEAD = (0, 1, 2, 3, 4)  # nose, eyes, ears
+
+
+def _rects_overlap(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool:
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    return ax1 < bx2 and bx1 < ax2 and ay1 < by2 and by1 < ay2
+
+
+def place_chip(
+    bbox: tuple[int, int, int, int],
+    chip_wh: tuple[int, int],
+    image_wh: tuple[int, int],
+    reserves: tuple[int, int],
+    placed: list[tuple[int, int, int, int]],
+) -> tuple[int, int, bool]:
+    """Collision-aware chip placement (W7-RENDER).
+
+    Candidates in preference order: above, below, right-of-box, left-of-box, then
+    stacked upward above the box (leader line advised). Returns (x, y_baseline,
+    stacked) for the first candidate that avoids every previously placed chip and
+    the tile's header/footer reserves; falls back to the legacy inside-the-box spot
+    when everything collides (still recorded, so later chips dodge it).
+    """
+
+    x, y, x2, y2 = bbox
+    chip_w, chip_h = chip_wh
+    width_limit, height_limit = image_wh
+    top_clear, bottom_clear = reserves
+
+    def rect(cx: int, cy_baseline: int) -> tuple[int, int, int, int]:
+        return (cx, cy_baseline - chip_h, cx + chip_w, cy_baseline)
+
+    base_x = int(np.clip(x, 6, max(6, width_limit - chip_w - 6)))
+    candidates: list[tuple[int, int, bool]] = [
+        (base_x, y - 8, False),                          # above
+        (base_x, y2 + 10 + chip_h, False),               # below
+        (min(x2 + 6, width_limit - chip_w - 6), y + chip_h + 4, False),   # right of box
+        (max(6, x - chip_w - 6), y + chip_h + 4, False),                  # left of box
+    ]
+    for level in range(1, 5):                            # stacked above, rising
+        candidates.append((base_x, y - 8 - level * (chip_h + 4), True))
+    for level in range(1, 5):                            # stacked below, descending
+        candidates.append((base_x, y2 + 10 + chip_h + level * (chip_h + 4), True))
+    for level in range(1, 5):                            # stacked beside, right column
+        candidates.append(
+            (min(x2 + 6, width_limit - chip_w - 6), y + level * (chip_h + 6), True)
+        )
+    for cx, cy, stacked in candidates:
+        if cy - chip_h < top_clear or cy > bottom_clear:
+            continue
+        r = rect(cx, cy)
+        if any(_rects_overlap(r, other) for other in placed):
+            continue
+        placed.append(r)
+        return cx, cy, stacked
+    cy = max(top_clear + chip_h, min(y + chip_h + 4, bottom_clear))  # legacy inside
+    placed.append(rect(base_x, cy))
+    return base_x, cy, False
+
+
+def draw_body_paint(
+    overlay: np.ndarray,
+    players: list[dict[str, Any]],
+    colors: list[tuple[int, int, int]],
+    keypoint_threshold: float,
+) -> None:
+    """Skeleton body-paint (W7-RENDER, user-approved style): torso quad + limb
+    capsules + head disc filled with the identity colour on a shared overlay layer
+    (blended once by the caller). Falls back to nothing when torso joints are
+    missing — the bbox outline still identifies the player."""
+
+    for player, color in zip(players, colors):
+        keypoints = player["pose_2d"]["keypoints_px"]
+        confidence = player["pose_2d"]["confidence"]
+        if len(confidence) < 17:
+            continue
+        bbox_h = max(1.0, float(player["bbox_xywh_px"][3]))
+        limb_w = max(4, int(bbox_h) // 7)
+
+        def pt(i):
+            return (int(round(keypoints[i][0])), int(round(keypoints[i][1])))
+
+        torso = [pt(i) for i in COCO_TORSO if float(confidence[i]) >= keypoint_threshold]
+        if len(torso) == 4:
+            cv2.fillConvexPoly(overlay, np.asarray(torso, dtype=np.int32), color, cv2.LINE_AA)
+        for left, right in COCO_17_EDGES:
+            if left >= len(confidence) or right >= len(confidence):
+                continue
+            if min(float(confidence[left]), float(confidence[right])) < keypoint_threshold:
+                continue
+            cv2.line(overlay, pt(left), pt(right), color, limb_w, cv2.LINE_AA)
+        head = [pt(i) for i in COCO_HEAD if float(confidence[i]) >= keypoint_threshold]
+        if head:
+            cx = int(round(sum(h[0] for h in head) / len(head)))
+            cy = int(round(sum(h[1] for h in head) / len(head)))
+            cv2.circle(overlay, (cx, cy), max(3, int(bbox_h) // 10), color, -1, cv2.LINE_AA)
+
+
 _ROLE_TAGS = {
     "bowler": "BOWLER",
     "striker": "STRIKER",
@@ -500,6 +604,7 @@ def draw_players(
     show: str,
     roles: dict[str, str] | None = None,
     suppressed: set[str] | None = None,
+    body_paint: bool = True,
 ) -> int:
     players = [
         scale_player(player, sx=sx, sy=sy)
@@ -511,13 +616,25 @@ def draw_players(
     point_radius = 3 if compact else 5
     font_scale = 0.42 if compact else 0.56
 
-    for player_index, player in enumerate(players, start=1):
+    def _player_color(player):
         if show == "p3" and player.get("_cluster_id") is not None:
-            color = color_for_global_id(
+            return color_for_global_id(
                 f"cluster:{record['frame_index']}:{player['_cluster_id']}"
             )
-        else:
-            color = color_for_player(player.get("global_player_id"), player.get("local_track_id"))
+        return color_for_player(player.get("global_player_id"), player.get("local_track_id"))
+
+    colors = [_player_color(player) for player in players]
+    if body_paint and players:
+        overlay = image.copy()
+        draw_body_paint(overlay, players, colors, keypoint_threshold)
+        cv2.addWeighted(overlay, 0.35, image, 0.65, 0, dst=image)
+    # Left-to-right processing makes the collision-aware chip placement stable.
+    order = sorted(range(len(players)), key=lambda i: players[i]["bbox_xywh_px"][0])
+    placed_chips: list[tuple[int, int, int, int]] = []
+
+    for player_index, order_index in enumerate(order, start=1):
+        player = players[order_index]
+        color = colors[order_index]
         x, y, w, h = [int(round(value)) for value in player["bbox_xywh_px"]]
         x2, y2 = x + w, y + h
         detection_confidence = player.get("detection_confidence")
@@ -525,7 +642,8 @@ def draw_players(
             detection_confidence = player.get("track_confidence")
         detection_conf = float(detection_confidence or 0.0)
 
-        blend_rect(image, (x, y), (x2, y2), color, 0.08)
+        if not body_paint:
+            blend_rect(image, (x, y), (x2, y2), color, 0.08)
         cv2.rectangle(image, (x, y), (x2, y2), color, line_thickness, cv2.LINE_AA)
         corner = max(12, min(w, h) // 7)
         cv2.line(image, (x, y), (x + corner, y), (255, 255, 255), line_thickness, cv2.LINE_AA)
@@ -539,28 +657,23 @@ def draw_players(
             identity = f"C{player.get('_cluster_id')}" if player.get("_cluster_id") is not None else "unmatched"
         else:
             identity = player.get("local_track_id") or f"det-{player_index}"
-        # Core-role tag on the chip (P5 roles.json); fielders/unknown stay untagged
-        # so the named roles pop visually.
-        role_tag = _ROLE_TAGS.get((roles or {}).get(str(identity), "")) if show == "p4" else None
-        if role_tag:
-            label = f"{identity} {role_tag}  trk {float(player.get('track_confidence') or 0.0):.2f}"
-        else:
-            label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
-        # Adaptive placement: above the box when there is room under the header,
-        # otherwise below the box, otherwise inside it — and always horizontally
-        # clamped so the id is never cut off at a tile edge.
+        # Roles are shown ONLY in the roster panel (user directive) — chips carry
+        # identity + confidence, kept short so side-by-side players stay readable.
+        label = f"{identity}  trk {float(player.get('track_confidence') or 0.0):.2f}"
+        # Collision-aware placement (W7-RENDER): candidates above/below/beside the
+        # box, then stacked upward with a leader line — two adjacent players can no
+        # longer draw unreadable overlapping chips.
         (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)
         chip_w, chip_h = text_w + 20, text_h + 14
         height_limit, width_limit = image.shape[:2]
         top_clear = 52 if compact else 78
         bottom_clear = height_limit - (32 if compact else 42)
-        if y - 8 - chip_h >= top_clear:
-            label_y = y - 8                      # above the box
-        elif y2 + 10 + chip_h <= bottom_clear:
-            label_y = y2 + 10 + text_h           # below the box
-        else:
-            label_y = max(top_clear + chip_h, min(y + chip_h + 4, bottom_clear))  # inside
-        label_x = int(np.clip(x, 6, max(6, width_limit - chip_w - 6)))
+        label_x, label_y, stacked = place_chip(
+            (x, y, x2, y2), (chip_w, chip_h), (width_limit, height_limit),
+            (top_clear, bottom_clear), placed_chips,
+        )
+        if stacked:
+            cv2.line(image, (label_x + 6, label_y + 2), (x + 6, y), color, 1, cv2.LINE_AA)
         next_x, _ = draw_chip(image, label, (label_x, label_y), color=color, scale=font_scale)
         bar_w = 56 if compact else 84
         bar_h = 5 if compact else 7
@@ -685,6 +798,7 @@ def render_feed_frame(
     letterbox: bool = False,
     roles: dict[str, str] | None = None,
     suppressed: set[str] | None = None,
+    body_paint: bool = True,
 ) -> np.ndarray:
     output_width, output_height = output_size
     source_height, source_width = image.shape[:2]
@@ -724,6 +838,7 @@ def render_feed_frame(
         show=show,
         roles=roles,
         suppressed=suppressed,
+        body_paint=body_paint,
     )
     if ghosts:
         avoid_rects = [
@@ -983,7 +1098,7 @@ def draw_roster_panel(
             entry.get("role") or "-",
             (x0 + column_width - 90, y),
             scale=0.42,
-            color=(120, 132, 150),
+            color=(210, 224, 240),
             thickness=1,
         )
     overflow = len(roster) - rows_per_column * columns
@@ -1432,6 +1547,7 @@ def render_mosaic_video(
                         letterbox=settings.letterbox_tiles,
                         roles=roles,
                         suppressed=suppressed,
+                        body_paint=settings.body_paint,
                     )
                     total_players += len(record.get("players", []))
                     for player in record.get("players", []):
@@ -1695,6 +1811,7 @@ def main() -> int:
         ball_trail_frames=max(0, args.ball_trail_frames),
         show=show,
         letterbox_tiles=args.letterbox_tiles,
+        body_paint=args.body_paint,
     )
 
     selected_cameras = args.cameras or sorted(prediction_paths_by_camera)

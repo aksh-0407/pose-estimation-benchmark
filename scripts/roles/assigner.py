@@ -263,7 +263,8 @@ def assign_roles_epoched(
     epoch_frames: int = 40,
     role_epoch_latch_count: int = 3,
     role_assignment_max_cost: float = 8.0,
-) -> dict[str, RoleAssignment]:
+    return_cost: bool = False,
+):
     """Per-epoch linear_sum_assignment over the roster slots + latch debounce (B.1).
 
     Uniqueness is enforced in two layers: within an epoch by the Hungarian solve
@@ -276,9 +277,10 @@ def assign_roles_epoched(
 
     all_frames = sorted({f for s in per_id_series.values() for f, _ in s})
     if not all_frames:
-        return {}
+        return ({}, float("inf")) if return_cost else {}
     if bowling_direction is None:
-        return _no_axis_fallback(per_id_series, frame_rate_fps, min_track_frames)
+        fallback = _no_axis_fallback(per_id_series, frame_rate_fps, min_track_frames)
+        return (fallback, float("inf")) if return_cost else fallback
 
     axis = np.asarray(bowling_direction, dtype=float)
     axis = axis / max(float(np.linalg.norm(axis)), 1e-9)
@@ -287,6 +289,8 @@ def assign_roles_epoched(
     candidate: dict[str, str] = {}
     streak: dict[str, int] = {}
     strength: dict[tuple[str, str], int] = {}  # (pid, slot) -> total latched epochs
+    fit_cost_total = 0.0
+    fit_epochs = 0
 
     for epoch_start, epoch_end in _epoch_bounds(all_frames, epoch_frames):
         stats: dict[str, dict] = {}
@@ -315,6 +319,17 @@ def assign_roles_epoched(
             for r, c in zip(row_ind, col_ind)
             if cost[r, c] <= role_assignment_max_cost
         }
+        # Sign-comparable fit score (v1.2 auto-flip): accepted assignments pay their
+        # cost; slots the Hungarian could have filled but landed above the gate pay
+        # the max cost, so "accept less" can never fake a better score.
+        possible = min(len(EPOCH_SLOTS), len(track_ids))
+        accepted_costs = [
+            float(cost[r, c]) for r, c in zip(row_ind, col_ind)
+            if cost[r, c] <= role_assignment_max_cost
+        ]
+        fit_cost_total += sum(accepted_costs)
+        fit_cost_total += (possible - len(accepted_costs)) * role_assignment_max_cost
+        fit_epochs += 1
 
         for pid, slot in this_epoch.items():
             if candidate.get(pid) == slot:
@@ -343,4 +358,7 @@ def assign_roles_epoched(
             roles[pid] = RoleAssignment("fielder", 0.4, "heuristic_v1")
         else:
             roles[pid] = RoleAssignment("unknown", 0.0, "heuristic_v1")
+    if return_cost:
+        mean_cost = fit_cost_total / fit_epochs if fit_epochs else float("inf")
+        return roles, mean_cost
     return roles
