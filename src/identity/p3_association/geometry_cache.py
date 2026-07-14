@@ -13,12 +13,12 @@ from itertools import combinations
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     camera_center_from_P,
     compute_fundamental_matrix,
     compute_right_epipole,
 )
-from scripts.association.config import P3AssociationConfig
+from identity.p3_association.config import P3AssociationConfig
 
 
 @dataclass(frozen=True)

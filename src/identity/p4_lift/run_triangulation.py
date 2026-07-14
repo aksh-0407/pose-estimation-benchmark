@@ -13,13 +13,13 @@ from typing import Any
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from pose_estimation.cricket.contract import validate_group1_frame  # noqa: E402
-from pose_estimation.schemas import CameraCalibration  # noqa: E402
-from pose_estimation.triangulation import (  # noqa: E402
+from core.contract import validate_group1_frame  # noqa: E402
+from core.schemas import CameraCalibration  # noqa: E402
+from identity.common.triangulation import (  # noqa: E402
     _COCO17_PARENT,
     _HALPE26_PARENT,
     butterworth_smooth,
@@ -56,11 +56,11 @@ def _median_bone_lengths(
         if lengths:
             out[(child, parent)] = float(np.median(lengths))
     return out
-from scripts.association.cluster_lift import cluster_purity, lift_frame  # noqa: E402
-from scripts.association.jsonl_io import load_synchronized_records  # noqa: E402
-from scripts.global_id.jsonl_io import read_correspondence_rows  # noqa: E402
-from scripts.tracking.calibration import load_projection_matrices_from_drive  # noqa: E402
-from scripts.tracking.runner import discover_prediction_files, infer_match_id  # noqa: E402
+from identity.p3_association.cluster_lift import cluster_purity, lift_frame  # noqa: E402
+from identity.p3_association.jsonl_io import load_synchronized_records  # noqa: E402
+from identity.p5_global_id.jsonl_io import read_correspondence_rows  # noqa: E402
+from core.calibration import load_projection_matrices_from_drive  # noqa: E402
+from identity.p2_tracking.runner import discover_prediction_files, infer_match_id  # noqa: E402
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

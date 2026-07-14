@@ -6,12 +6,12 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from scripts.association.config import load_association_config  # noqa: E402
-from scripts.association.runner import run_association  # noqa: E402
+from identity.p3_association.config import load_association_config  # noqa: E402
+from identity.p3_association.runner import run_association  # noqa: E402
 
 
 def build_arg_parser() -> argparse.ArgumentParser:

@@ -28,7 +28,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
 from pose_estimation.triangulation import ransac_triangulate_point, reprojection_errors_for_point  # noqa: E402
 from scripts.tracking.calibration import load_projection_matrices_from_drive  # noqa: E402

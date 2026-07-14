@@ -6,12 +6,12 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from scripts.global_id.config import load_global_id_config  # noqa: E402
-from scripts.global_id.runner import run_global_id  # noqa: E402
+from identity.p5_global_id.config import load_global_id_config  # noqa: E402
+from identity.p5_global_id.runner import run_global_id  # noqa: E402
 
 
 def build_arg_parser() -> argparse.ArgumentParser:

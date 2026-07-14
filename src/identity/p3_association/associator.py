@@ -22,7 +22,7 @@ from itertools import combinations
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     bbox_bottom_center_px,
     ground_contact_pixel,
     ground_contact_pixel_ex,
@@ -38,20 +38,20 @@ from pose_estimation.cricket.geometry import (
     sampson_distance,
     triangulate_dlt,
 )
-from pose_estimation.triangulation import (
+from identity.common.triangulation import (
     ransac_triangulate_point,
     reprojection_errors_for_point,
     triangulate_skeleton_ransac,
 )
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     PoseProportions,
     PostureAggregate,
     limb_proportion_descriptor,
     torso_anthropometric_ok,
 )
-from scripts.association.config import P3AssociationConfig
-from scripts.association.appearance import appearance_distance
-from scripts.association.geometry_cache import GeometryCache, PairGeometry
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.appearance import appearance_distance
+from identity.p3_association.geometry_cache import GeometryCache, PairGeometry
 
 _L_ANKLE, _R_ANKLE = 15, 16  # COCO-17 ankle indices
 # Body joints used by the pose-shape descriptor (skip the 5 face joints 0-4).

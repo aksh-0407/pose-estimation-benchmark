@@ -15,7 +15,7 @@ Pipeline (all offline over one delivery, deterministic):
    never weld two players together.
 2. ``harvest_calibration`` — bootstrap same-player anchors (tight ground agreement
    + spatial isolation) and different-player pairs (consistently metres apart),
-   fit per-cue LLR distributions (see :mod:`scripts.association.cue_calibration`).
+   fit per-cue LLR distributions (see :mod:`identity.p3_association.cue_calibration`).
 3. ``solve`` — fuse per-pair aggregated cues into edge LLRs, then constrained
    agglomerative clustering (cannot-link: same-camera temporal overlap) with a
    local move-refinement pass. Every cluster becomes a persistent ``binding_id``.
@@ -33,14 +33,14 @@ import numpy as np
 
 from dataclasses import replace as dc_replace
 
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     camera_center_from_P,
     derive_facing_pairs,
     ground_covariance,
     ground_mahalanobis_sq,
     upper_body_ground_estimate,
 )
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     STATURE_QUANTITIES,
     PostureAccumulator,
     PostureAggregate,
@@ -48,15 +48,15 @@ from pose_estimation.cricket.pose_shape import (
     posture_distance_z,
     posture_from_skeleton,
 )
-from scripts.association.appearance import appearance_distance
-from scripts.association.associator import (
+from identity.p3_association.appearance import appearance_distance
+from identity.p3_association.associator import (
     Correspondence,
     Detection3,
     _build_correspondence,
     _foot_pixel,
 )
-from scripts.association.config import P3AssociationConfig
-from scripts.association.cue_calibration import (
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.cue_calibration import (
     CueCalibration,
     fit_cue_calibration,
     fit_pair_distribution,
@@ -949,11 +949,11 @@ class TrackletGraphBuilder:
         outlier views.
         """
 
-        from pose_estimation.cricket.pose_shape import (
+        from identity.common.pose_shape import (
             STATURE_QUANTITIES,
             posture_distance_z,
         )
-        from scripts.association.cluster_lift import cluster_purity
+        from identity.p3_association.cluster_lift import cluster_purity
 
         cfg = self.config
 
@@ -1142,7 +1142,7 @@ class TrackletGraphBuilder:
         cluster never has two sampled views of the same frame.
         """
 
-        from scripts.association.cluster_lift import cluster_purity, lift_frame
+        from identity.p3_association.cluster_lift import cluster_purity, lift_frame
 
         lifts = self._cluster_lifts(keys)
         if len(lifts) < self.config.graph_shape_min_frames:
@@ -1153,7 +1153,7 @@ class TrackletGraphBuilder:
     def _cluster_lifts(self, keys: list[ChunkKey]) -> list:
         """Per-frame multi-view lifts for one cluster from the sampled keypoints."""
 
-        from scripts.association.cluster_lift import lift_frame
+        from identity.p3_association.cluster_lift import lift_frame
 
         per_frame: dict[int, dict[str, np.ndarray]] = {}
         for key in keys:
@@ -1191,7 +1191,7 @@ class TrackletGraphBuilder:
         distributions cannot be fitted.
         """
 
-        from pose_estimation.cricket.pose_shape import descriptor_distance
+        from identity.common.pose_shape import descriptor_distance
 
         shapes: dict[ChunkKey, tuple] = {}
         for root, keys in members.items():
@@ -1347,7 +1347,7 @@ class TrackletGraphBuilder:
         shape round) can weld the pieces back together.
         """
 
-        from scripts.association.cluster_lift import cluster_purity
+        from identity.p3_association.cluster_lift import cluster_purity
 
         evictions = 0
         next_cluster_id = max(cluster_members, default=-1) + 1

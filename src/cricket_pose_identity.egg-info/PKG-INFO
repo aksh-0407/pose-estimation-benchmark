@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: cricket-pose-identity
+Version: 8.1.0
+Summary: Group-1 cricket multi-camera 3D pose & identity pipeline
+Requires-Python: >=3.10

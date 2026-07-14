@@ -9,13 +9,13 @@ from typing import Any, Iterable
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     PoseProportions,
     PostureAggregate,
     descriptor_distance,
     posture_distance_z,
 )
-from scripts.global_id.config import P4Config
+from identity.p5_global_id.config import P4Config
 
 
 @dataclass(frozen=True)
@@ -348,7 +348,7 @@ def merge_colocated_ids(
     entries in the ``id_switch_report`` schema (with ``reason: colocated``).
     """
 
-    from pose_estimation.cricket.pose_shape import (
+    from identity.common.pose_shape import (
         STATURE_QUANTITIES,
         posture_distance_z,
     )

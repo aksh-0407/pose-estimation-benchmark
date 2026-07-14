@@ -9,8 +9,8 @@ from pathlib import Path
 
 import numpy as np
 
-from pose_estimation.cricket.contract import validate_group1_frame
-from pose_estimation.cricket.tracking_metrics import (
+from core.contract import validate_group1_frame
+from identity.common.metrics import (
     colocated_identity_metrics,
     cross_camera_agreement,
     evaluate_ground_truth,
@@ -19,33 +19,33 @@ from pose_estimation.cricket.tracking_metrics import (
     teleport_proxy,
     track_completeness,
 )
-from scripts.association.jsonl_io import load_synchronized_records
-from scripts.global_id.config import P4Config
-from scripts.global_id.global_track import GlobalTrack
-from scripts.global_id.jsonl_io import (
+from identity.p3_association.jsonl_io import load_synchronized_records
+from identity.p5_global_id.config import P4Config
+from identity.p5_global_id.global_track import GlobalTrack
+from identity.p5_global_id.jsonl_io import (
     read_correspondence_rows,
     row_to_correspondences,
     write_jsonl,
     write_prediction_streams,
 )
-from scripts.global_id.stitching import (
+from identity.p5_global_id.stitching import (
     merge_colocated_ids,
     build_link_costs,
     extract_segments,
     remap_ids,
     solve_flow,
 )
-from pose_estimation.cricket.geometry import upper_body_ground_estimate
-from scripts.global_id.role_proxy import OnlineRoleProxy
-from scripts.global_id.track_manager import TrackManager
-from scripts.tracking.calibration import current_calibration_dir
-from scripts.visualization.mosaic_layout import load_pitch_axis
-from scripts.tracking.calibration import (
+from identity.common.geometry import upper_body_ground_estimate
+from identity.p5_global_id.role_proxy import OnlineRoleProxy
+from identity.p5_global_id.track_manager import TrackManager
+from core.calibration import current_calibration_dir
+from identity.visualization.mosaic_layout import load_pitch_axis
+from core.calibration import (
     build_ground_calibrators,
     load_image_sizes_from_drive,
     load_projection_matrices_from_drive,
 )
-from scripts.tracking.runner import discover_prediction_files, infer_match_id
+from identity.p2_tracking.runner import discover_prediction_files, infer_match_id
 
 
 def _write_json(path: Path, payload) -> None:

@@ -33,7 +33,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RENDERER = ROOT / "scripts" / "visualization" / "render_phase1_videos.py"
 
 

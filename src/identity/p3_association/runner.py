@@ -13,12 +13,12 @@ from pathlib import Path
 import numpy as np
 import cv2
 
-from pose_estimation.cricket.geometry import derive_facing_pairs
-from pose_estimation.cricket.tracking_metrics import (
+from identity.common.geometry import derive_facing_pairs
+from identity.common.metrics import (
     association_proxy_metrics,
     pair_link_churn,
 )
-from scripts.association.associator import (
+from identity.p3_association.associator import (
     AnchorState,
     TemporalLinkMemory,
     associate_frame,
@@ -26,14 +26,14 @@ from scripts.association.associator import (
     select_anchor,
     smooth_emit_feet,
 )
-from scripts.association.config import P3AssociationConfig
-from scripts.association.cue_calibration import CueCalibration
-from scripts.association.geometry_cache import build_geometry_cache
-from scripts.association.tracklet_graph import (
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.cue_calibration import CueCalibration
+from identity.p3_association.geometry_cache import build_geometry_cache
+from identity.p3_association.tracklet_graph import (
     TrackletGraphBuilder,
     apply_feet_approximation,
 )
-from scripts.association.jsonl_io import (
+from identity.p3_association.jsonl_io import (
     apply_correspondences,
     correspondence_row,
     load_synchronized_records,
@@ -41,13 +41,13 @@ from scripts.association.jsonl_io import (
     write_correspondence_rows,
     write_prediction_streams,
 )
-from scripts.tracking.calibration import (
+from core.calibration import (
     build_ground_calibrators,
     current_calibration_dir,
     load_image_sizes_from_drive,
     load_projection_matrices_from_drive,
 )
-from scripts.tracking.runner import discover_prediction_files, infer_match_id
+from identity.p2_tracking.runner import discover_prediction_files, infer_match_id
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -270,7 +270,7 @@ def run_association(
         )
     lift_purity_by_binding: dict[str, dict] = {}
     if config.graph_lift_feedback and lift_samples:
-        from scripts.association.cluster_lift import cluster_purity, lift_frame
+        from identity.p3_association.cluster_lift import cluster_purity, lift_frame
 
         for binding, frames in sorted(lift_samples.items()):
             lifts = [

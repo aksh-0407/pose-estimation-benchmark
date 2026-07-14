@@ -1,4 +1,4 @@
-from scripts.visualization.identity_colors import color_for_global_id, color_for_player
+from identity.visualization.identity_colors import color_for_global_id, color_for_player
 
 
 def test_global_identity_color_is_stable_and_sequential_ids_are_distinct():

@@ -26,12 +26,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     PoseProportions,
     limb_proportion_descriptor,
     merge_descriptor,
 )
-from pose_estimation.triangulation import (
+from identity.common.triangulation import (
     point_covariance_3d,
     reprojection_errors_for_point,
     triangulate_skeleton_ransac,

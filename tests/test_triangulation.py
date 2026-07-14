@@ -1,6 +1,6 @@
 import numpy as np
 
-from pose_estimation.triangulation import (
+from identity.common.triangulation import (
     reprojection_errors_for_point,
     triangulate_point_dlt,
     triangulate_skeleton_ransac,
@@ -53,7 +53,7 @@ def test_skeleton_ransac_rejects_bad_view():
 
 def test_fill_occluded_joints_interpolates_temporal_gap():
     import numpy as np
-    from pose_estimation.triangulation import fill_occluded_joints
+    from identity.common.triangulation import fill_occluded_joints
     T, J = 5, 2
     seq = np.full((T, J, 3), np.nan)
     conf = np.zeros((T, J))
@@ -69,7 +69,7 @@ def test_fill_occluded_joints_interpolates_temporal_gap():
 
 
 def test_cheirality_rejects_point_behind_cameras():
-    from pose_estimation.triangulation import ransac_triangulate_point
+    from identity.common.triangulation import ransac_triangulate_point
 
     p1 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]], dtype=float)
     p2 = np.array([[1, 0, 0, -1], [0, 1, 0, 0], [0, 0, 1, 0]], dtype=float)
@@ -85,7 +85,7 @@ def test_cheirality_rejects_point_behind_cameras():
 
 
 def test_cheirality_accepts_front_point_with_negative_scaled_projection():
-    from pose_estimation.triangulation import ransac_triangulate_point
+    from identity.common.triangulation import ransac_triangulate_point
 
     p1 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]], dtype=float)
     p2 = np.array([[1, 0, 0, -1], [0, 1, 0, 0], [0, 0, 1, 0]], dtype=float)
@@ -98,7 +98,7 @@ def test_cheirality_accepts_front_point_with_negative_scaled_projection():
 
 
 def test_butterworth_smooth_reduces_jitter_zero_phase():
-    from pose_estimation.triangulation import butterworth_smooth
+    from identity.common.triangulation import butterworth_smooth
 
     rng = np.random.default_rng(7)
     t = np.arange(200)
@@ -116,7 +116,7 @@ def test_butterworth_smooth_reduces_jitter_zero_phase():
 
 
 def test_butterworth_smooth_preserves_nan_gaps_and_short_segments():
-    from pose_estimation.triangulation import butterworth_smooth
+    from identity.common.triangulation import butterworth_smooth
 
     seq = np.zeros((60, 1, 3))
     seq[:25, 0, 0] = np.linspace(0, 1, 25)
@@ -132,7 +132,7 @@ def test_butterworth_smooth_preserves_nan_gaps_and_short_segments():
 def test_dense_fill_does_not_bridge_long_real_gaps():
     # C6 (component form): with rows == real frames, a 300-frame real gap must NOT
     # be interpolated by a 25-frame gate even if only 2 observed rows surround it.
-    from pose_estimation.triangulation import fill_occluded_joints
+    from identity.common.triangulation import fill_occluded_joints
 
     frames = [0, 1, 2, 300, 301]
     timeline = list(range(frames[0], frames[-1] + 1))

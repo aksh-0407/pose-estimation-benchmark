@@ -2,7 +2,7 @@
 
 Sits between P1 (2D inference) and P2 (per-camera tracking):
 
-    python -m scripts.stabilization.run_stabilization \
+    python -m identity.p1_stabilization.run_stabilization \
         --input-run-dir <p1-run> --output-run-dir <p1b-run> \
         --delivery-id CCPL080626M1_1_14_1 --config configs/p1b_stabilization.yaml
 """
@@ -13,12 +13,12 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from scripts.stabilization.config import load_stabilization_config  # noqa: E402
-from scripts.stabilization.runner import run_stabilization  # noqa: E402
+from identity.p1_stabilization.config import load_stabilization_config  # noqa: E402
+from identity.p1_stabilization.runner import run_stabilization  # noqa: E402
 
 
 def build_arg_parser() -> argparse.ArgumentParser:

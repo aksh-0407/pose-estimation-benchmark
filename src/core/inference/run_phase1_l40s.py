@@ -45,18 +45,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "scripts" / "inference"))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
 # Reuse the proven internals from the stock runner (module import has no main() side effects).
-import run_phase1_rtmpose_inference as p1  # noqa: E402
-from pose_estimation.cricket.contract import (  # noqa: E402
+from core.inference import run_phase1_rtmpose_inference as p1  # noqa: E402
+from core.contract import (  # noqa: E402
     SCHEMA_VERSION as P1_SCHEMA_VERSION,
     SKELETON as P1_SKELETON,
     validate_group1_frame,
 )
-from pose_estimation.cricket.dataset import (  # noqa: E402
+from core.dataset import (  # noqa: E402
     FRAME_RE,
     camera_label,
     parse_frame_id,

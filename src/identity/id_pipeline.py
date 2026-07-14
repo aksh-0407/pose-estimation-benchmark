@@ -8,7 +8,7 @@ per stage so eight deliveries can fan out across cores without oversubscription
 
 Example (all 8, v3 P2 -> v5 P3/P4, diff against the frozen baseline)::
 
-    python -m scripts.pipetrack.run_id_pipeline \
+    python -m identity.id_pipeline \
         --input-tree benchmarks/runs/pipetrack_v3 \
         --output-tree benchmarks/runs/pipetrack_v5 \
         --baseline benchmarks/runs/pipetrack_v3/_baseline_snapshot \
@@ -93,7 +93,7 @@ def run_delivery(
 
     if not skip_p3:
         result["p3_rc"] = _run_stage(
-            "scripts.association.run_cross_camera_association",
+            "identity.p3_association.run_cross_camera_association",
             ["--input-run-dir", str(p2_dir), "--output-run-dir", str(p3_dir),
              "--drive-root", drive_root, "--delivery-id", delivery,
              "--config", p3_config, "--expected-frames", str(expected_frames)],
@@ -102,7 +102,7 @@ def run_delivery(
         if result["p3_rc"] not in (0, 1):  # 1 = warn/fail verdict but ran
             return result
     result["p4_rc"] = _run_stage(
-        "scripts.global_id.run_global_id",
+        "identity.p5_global_id.run_global_id",
         ["--input-run-dir", str(p3_dir), "--output-run-dir", str(p4_dir),
          "--drive-root", drive_root, "--delivery-id", delivery,
          "--config", p4_config, "--expected-frames", str(expected_frames)],

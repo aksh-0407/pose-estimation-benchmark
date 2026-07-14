@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from pose_estimation.cricket.geometry import compute_fundamental_matrix
-from scripts.association.associator import (
+from identity.common.geometry import compute_fundamental_matrix
+from identity.p3_association.associator import (
     AnchorState,
     Detection3,
     _foot_pixel,
@@ -13,8 +13,8 @@ from scripts.association.associator import (
     smooth_emit_feet,
     solve_optional_assignment,
 )
-from scripts.association.config import P3AssociationConfig
-from scripts.association.geometry_cache import PairGeometry
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.geometry_cache import PairGeometry
 
 
 def _det(camera: str, *, ankle_confidence: float = 0.0) -> Detection3:
@@ -79,7 +79,7 @@ def test_degenerate_pair_reallocates_epipolar_weight_to_ground():
     # reallocate its weight to the trustworthy ground cue, instead of scoring the
     # pair with a full-weight, unreliable Sampson term.
     import pytest
-    from pose_estimation.cricket.geometry import pixel_to_ground_xy
+    from identity.common.geometry import pixel_to_ground_xy
 
     projection_a = np.array([[800.0, 0.0, 640.0, 0.0], [0.0, 800.0, 360.0, 0.0], [0, 0, 1, 5.0]])
     projection_b = projection_a.copy()
@@ -139,7 +139,7 @@ def test_smooth_emit_feet_median_kills_spike_and_is_identity_safe():
 
 def test_ground_contact_v3_prefers_halpe_feet():
     import numpy as np
-    from pose_estimation.cricket.geometry import ground_contact_pixel_ex
+    from identity.common.geometry import ground_contact_pixel_ex
 
     bbox = [100.0, 100.0, 60.0, 200.0]  # bottom at y=300
     kpts = np.zeros((17, 2))
@@ -184,7 +184,7 @@ def test_ground_contact_v3_prefers_halpe_feet():
 
 def test_ground_contact_v3_striding_uses_planted_foot():
     import numpy as np
-    from pose_estimation.cricket.geometry import ground_contact_pixel_ex
+    from identity.common.geometry import ground_contact_pixel_ex
 
     bbox = [100.0, 100.0, 60.0, 200.0]
     kpts = np.zeros((17, 2)); conf = np.zeros(17)
@@ -210,7 +210,7 @@ def _det_at(camera: str, bbox: list[float], index: int = 0) -> Detection3:
 
 
 def test_mark_contested_flags_same_camera_overlap_only():
-    from scripts.association.associator import mark_contested_detections
+    from identity.p3_association.associator import mark_contested_detections
 
     overlap_a = _det_at("cam_02", [100.0, 100.0, 80.0, 200.0], 0)
     overlap_b = _det_at("cam_02", [120.0, 110.0, 80.0, 200.0], 1)   # IoU ~0.6
@@ -226,7 +226,7 @@ def test_mark_contested_flags_same_camera_overlap_only():
 
 
 def test_mark_contested_zero_threshold_is_noop_identity():
-    from scripts.association.associator import mark_contested_detections
+    from identity.p3_association.associator import mark_contested_detections
 
     dets = {"cam_02": [_det_at("cam_02", [100.0, 100.0, 80.0, 200.0], 0)]}
     assert mark_contested_detections(dets, 0.0) is dets
@@ -235,7 +235,7 @@ def test_mark_contested_zero_threshold_is_noop_identity():
 def test_contested_sigma_and_conf_scaling():
     from dataclasses import replace as dc_replace
 
-    from scripts.association.associator import _member_ground_sigma_px
+    from identity.p3_association.associator import _member_ground_sigma_px
 
     config = P3AssociationConfig(contested_iou=0.45, contested_sigma_scale=2.5)
     det = _det_at("cam_02", [100.0, 100.0, 80.0, 200.0])
@@ -247,7 +247,7 @@ def test_contested_sigma_and_conf_scaling():
 def test_contested_all_members_inflates_emitted_cov():
     from dataclasses import replace as dc_replace
 
-    from scripts.association.associator import _finalize_ground_cov
+    from identity.p3_association.associator import _finalize_ground_cov
 
     config = P3AssociationConfig(
         emit_ground_cov=True, contested_iou=0.45, contested_sigma_scale=2.0

@@ -9,12 +9,12 @@ from typing import Iterator
 
 import numpy as np
 
-from pose_estimation.cricket.contract import validate_group1_frame
-from pose_estimation.cricket.geometry import ground_contact_pixel
-from scripts.tracking.calibration import GroundPlaneCalibrator
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.pose_vector import build_pose_vector
-from scripts.tracking.tracker import CameraTracker, Detection
+from core.contract import validate_group1_frame
+from identity.common.geometry import ground_contact_pixel
+from core.calibration import GroundPlaneCalibrator
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.pose_vector import build_pose_vector
+from identity.p2_tracking.tracker import CameraTracker, Detection
 
 
 def read_prediction_frames(path: str | Path) -> Iterator[dict]:

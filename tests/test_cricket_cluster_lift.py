@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import ground_from_reprojection_ex
-from pose_estimation.triangulation import point_covariance_3d
-from scripts.association.cluster_lift import cluster_purity, lift_frame
+from identity.common.geometry import ground_from_reprojection_ex
+from identity.common.triangulation import point_covariance_3d
+from identity.p3_association.cluster_lift import cluster_purity, lift_frame
 
 # Realistic-focal cameras (f = 1000 px) with distinct viewpoints: FRONT looks +z,
 # SIDE is ~orthogonal (good parallax), FACING looks -z from the far side (the
@@ -132,8 +132,8 @@ def test_ground_from_reprojection_ex_covariance_shrinks_with_more_views():
 
 
 def test_chimera_veto_pass_lets_refine_evict_intruder():
-    from scripts.association.config import P3AssociationConfig
-    from scripts.association.tracklet_graph import TrackletGraphBuilder, _pair_key
+    from identity.p3_association.config import P3AssociationConfig
+    from identity.p3_association.tracklet_graph import TrackletGraphBuilder, _pair_key
 
     projections = {"cam_01": P_FRONT, "cam_02": P_SIDE, "cam_03": P_FACING}
     config = P3AssociationConfig(
@@ -152,7 +152,7 @@ def test_chimera_veto_pass_lets_refine_evict_intruder():
     chunks = {}
     for cam_id, truth in (("cam_01", person_a), ("cam_02", person_a), ("cam_03", person_b)):
         key = (cam_id, f"{cam_id}_trk_X", 0)
-        from scripts.association.tracklet_graph import _ChunkState
+        from identity.p3_association.tracklet_graph import _ChunkState
         chunk = _ChunkState(key=key)
         for frame in range(0, 40, 5):
             obs = np.array([[*(_project(projections[cam_id], X)), 0.9] for X in truth])

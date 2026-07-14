@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from scripts.stabilization.config import LinkConfig
+from identity.p1_stabilization.config import LinkConfig
 
 
 @dataclass

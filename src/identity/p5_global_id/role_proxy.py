@@ -25,8 +25,8 @@ from collections import defaultdict, deque
 
 import numpy as np
 
-from scripts.global_id.track_manager import TrackManager
-from scripts.roles.assigner import STUMPS_FROM_CENTRE_M
+from identity.p5_global_id.track_manager import TrackManager
+from identity.p6_roles.assigner import STUMPS_FROM_CENTRE_M
 
 
 class OnlineRoleProxy:

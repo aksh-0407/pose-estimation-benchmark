@@ -35,11 +35,11 @@ from collections import Counter
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from pose_estimation.cricket.ground_kalman import RoleParams, SingerGroundKalman
-from pose_estimation.cricket.pose_shape import descriptor_distance, posture_distance_z
-from scripts.association.associator import Correspondence
-from scripts.global_id.config import P4Config
-from scripts.global_id.global_track import CONFIRMED, DELETED, LOST, TENTATIVE, GlobalTrack
+from identity.p5_global_id.ground_kalman import RoleParams, SingerGroundKalman
+from identity.common.pose_shape import descriptor_distance, posture_distance_z
+from identity.p3_association.associator import Correspondence
+from identity.p5_global_id.config import P4Config
+from identity.p5_global_id.global_track import CONFIRMED, DELETED, LOST, TENTATIVE, GlobalTrack
 
 _LARGE_COST = 1e12
 

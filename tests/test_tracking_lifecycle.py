@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from scripts.tracking.kalman import KalmanBoxTracker
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.pose_vector import PoseVector
-from scripts.tracking.tracker import CameraTracker, Detection
+from identity.p2_tracking.kalman import KalmanBoxTracker
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.pose_vector import PoseVector
+from identity.p2_tracking.tracker import CameraTracker, Detection
 
 
 def _det(x, y, w=40.0, h=100.0, conf=0.9):

@@ -20,25 +20,25 @@ try:
 except Exception:  # pragma: no cover - tqdm is optional in minimal envs.
     tqdm = None
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
-from pose_estimation.cricket.dataset import (
+from core.dataset import (
     parse_prediction_filename,
     repo_relative,
     resolve_delivery_camera_dirs,
 )
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     ground_point_visible_in,
     project_ground_to_pixel,
 )
-from pose_estimation.cricket.phase1_outputs import COCO_17_EDGES
-from scripts.visualization.identity_colors import (
+from core.inference.phase1_outputs import COCO_17_EDGES
+from identity.visualization.identity_colors import (
     IDENTITY_PALETTE,
     color_for_global_id,
     color_for_player,
 )
-from scripts.visualization.mosaic_layout import (
+from identity.visualization.mosaic_layout import (
     MONITOR_SLOT,
     ROSTER_SLOT,
     MosaicLayout,
@@ -1689,12 +1689,12 @@ def derive_layout_for_run(
     """Calibration-derived mosaic layout, falling back gracefully without it."""
 
     try:
-        from scripts.tracking.calibration import (
+        from core.calibration import (
             build_ground_calibrators,
             current_calibration_dir,
             load_projection_matrices_from_drive,
         )
-        from scripts.tracking.runner import infer_match_id
+        from identity.p2_tracking.runner import infer_match_id
 
         match_id = infer_match_id(delivery_id)
         projections = {
@@ -1884,8 +1884,8 @@ def main() -> int:
             print(f"  layout note: {note}")
         mosaic_projections: dict[str, np.ndarray] = {}
         try:
-            from scripts.tracking.calibration import load_projection_matrices_from_drive
-            from scripts.tracking.runner import infer_match_id
+            from core.calibration import load_projection_matrices_from_drive
+            from identity.p2_tracking.runner import infer_match_id
 
             mosaic_projections = load_projection_matrices_from_drive(
                 drive_root, infer_match_id(delivery_id)

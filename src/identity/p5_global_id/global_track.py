@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from pose_estimation.cricket.ground_kalman import SingerGroundKalman
-from pose_estimation.cricket.pose_shape import PoseProportions, PostureAggregate, merge_descriptor
+from identity.p5_global_id.ground_kalman import SingerGroundKalman
+from identity.common.pose_shape import PoseProportions, PostureAggregate, merge_descriptor
 
 TENTATIVE = "tentative"
 CONFIRMED = "confirmed"

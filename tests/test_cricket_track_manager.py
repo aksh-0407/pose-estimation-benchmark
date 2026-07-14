@@ -4,10 +4,10 @@ from dataclasses import replace
 
 import numpy as np
 
-from scripts.association.associator import Correspondence, Detection3
-from scripts.global_id.config import P4AConfig, P4Config
-from scripts.global_id.global_track import CONFIRMED, TENTATIVE
-from scripts.global_id.track_manager import TrackManager
+from identity.p3_association.associator import Correspondence, Detection3
+from identity.p5_global_id.config import P4AConfig, P4Config
+from identity.p5_global_id.global_track import CONFIRMED, TENTATIVE
+from identity.p5_global_id.track_manager import TrackManager
 
 
 def _correspondence(frame: int, xy=(0.0, 0.0), confidence=0.8) -> Correspondence:
@@ -158,7 +158,7 @@ def _skeleton(shin_z: float) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _descriptor(shin_z: float):
-    from pose_estimation.cricket.pose_shape import limb_proportion_descriptor
+    from identity.common.pose_shape import limb_proportion_descriptor
     points, conf = _skeleton(shin_z)
     return limb_proportion_descriptor(points, conf, n_views=3)
 
@@ -304,7 +304,7 @@ def test_ownership_claim_expires_and_transfers():
 
 
 def _posture(head_top: float, torso: float):
-    from pose_estimation.cricket.pose_shape import PostureAggregate
+    from identity.common.pose_shape import PostureAggregate
     return PostureAggregate(
         median={"head_top_m": head_top, "torso_len_m": torso},
         se={"head_top_m": 0.01, "torso_len_m": 0.01},

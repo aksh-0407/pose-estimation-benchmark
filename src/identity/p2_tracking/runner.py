@@ -10,12 +10,12 @@ from datetime import datetime, timezone
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-from scripts.tracking.calibration import (
+from core.calibration import (
     build_ground_calibrators,
     current_calibration_dir,
 )
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.jsonl_io import track_camera_file
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.jsonl_io import track_camera_file
 
 CANONICAL_PREDICTION_RE = re.compile(
     r"^(?P<capture_group>bt_\d{2})__(?P<delivery_id>.+)__(?P<camera_id>cam_\d{2})\.jsonl$"

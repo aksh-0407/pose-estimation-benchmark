@@ -16,7 +16,7 @@ Designed as the A/B workhorse for the fix campaign (docs/critical-analysis/to-do
 
 Example (v6.0 ground baseline)::
 
-    python -m scripts.pipetrack.run_full_pipeline \
+    python -m main \
         --input-tree benchmarks/runs/rtmpose-x \
         --output-tree benchmarks/runs/pipetrack_v6.0 \
         --artifacts-root artifacts/pipetrack_v6.0 \
@@ -27,7 +27,7 @@ Example (v6.0 ground baseline)::
 
 Example (P3+ experiment reusing the frozen baseline's P2)::
 
-    python -m scripts.pipetrack.run_full_pipeline \
+    python -m main \
         --from-stage p3 --base-tree benchmarks/runs/pipetrack_v6.0 \
         --output-tree benchmarks/runs/pipetrack_v6.1-f02 \
         --p3-config configs/experiments/v6_f02_c07__p3.yaml \
@@ -46,11 +46,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from scripts.pipetrack.run_id_pipeline import (  # noqa: E402
+from identity.id_pipeline import (  # noqa: E402
     ALL_DELIVERIES,
     _dig,
     _fmt,
@@ -151,14 +151,14 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
             if not args.enable_stabilization:
                 continue
             rc = _run_stage(
-                "scripts.stabilization.run_stabilization",
+                "identity.p1_stabilization.run_stabilization",
                 common(Path(args.input_tree).resolve(), out_dir)
                 + ["--config", args.p1b_config],
                 args.python, log,
             )
         elif stage == "p2":
             rc = _run_stage(
-                "scripts.tracking.run_per_camera_tracking",
+                "identity.p2_tracking.run_per_camera_tracking",
                 common(plan.p2_input(), out_dir)
                 + ["--config", args.p2_config,
                    "--expected-frames", str(args.expected_frames),
@@ -167,7 +167,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
             )
         elif stage == "p3":
             rc = _run_stage(
-                "scripts.association.run_cross_camera_association",
+                "identity.p3_association.run_cross_camera_association",
                 common(plan.stage_dir("p2"), out_dir)
                 + ["--config", args.p3_config,
                    "--expected-frames", str(args.expected_frames)],
@@ -177,7 +177,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
             if not args.enable_lift:
                 continue
             rc = _run_stage(
-                "scripts.export.triangulate_predictions",
+                "identity.p4_lift.run_triangulation",
                 common(plan.stage_dir("p3"), out_dir)
                 + ["--id-source", "binding",
                    "--reprojection-threshold-px", str(args.tri_reproj_px),
@@ -192,7 +192,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
             )
         elif stage == "p4":
             rc = _run_stage(
-                "scripts.global_id.run_global_id",
+                "identity.p5_global_id.run_global_id",
                 common(plan.stage_dir("p3"), out_dir)
                 + ["--config", args.p4_config,
                    "--expected-frames", str(args.expected_frames)],
@@ -200,7 +200,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
             )
         elif stage == "p5":
             rc = _run_stage(
-                "scripts.roles.run_role_assignment",
+                "identity.p6_roles.run_role_assignment",
                 common(plan.stage_dir("p4"), out_dir)
                 + (["--config", args.p5_config] if args.p5_config else []),
                 args.python, log,
@@ -209,7 +209,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
                 # Wave-6 (P5b): role-aware peripheral suppression. Explicit paths so a
                 # reused base-tree p4 never makes the probe read the wrong p5 dir.
                 rc = _run_stage(
-                    "scripts.roles.suppress_peripherals",
+                    "identity.p6_roles.suppress_peripherals",
                     ["--input-run-dir", str(plan.stage_dir("p4")),
                      "--roles-path", str(out_dir / "roles.json"),
                      "--output-path", str(out_dir / "suppression.json")]
@@ -218,7 +218,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
                 )
         elif stage == "p6_3d":
             rc = _run_stage(
-                "scripts.export.triangulate_predictions",
+                "identity.p4_lift.run_triangulation",
                 common(plan.stage_dir("p4"), out_dir)
                 + ["--reprojection-threshold-px", str(args.tri_reproj_px),
                    "--min-views", str(args.tri_min_views),
@@ -251,7 +251,7 @@ def run_render(plan: DeliveryPlan) -> int:
     args, delivery = plan.args, plan.delivery
     artifact_dir = Path(args.artifacts_root).resolve() / "mosaics" / delivery
     return _run_stage(
-        "scripts.visualization.render_phase1_videos",
+        "identity.visualization.render_videos",
         ["--run-dir", str(plan.stage_dir("p4")), "--drive-root", args.drive_root,
          "--delivery-id", delivery, "--artifact-dir", str(artifact_dir),
          "--mode", "mosaic", "--show", "p4"],

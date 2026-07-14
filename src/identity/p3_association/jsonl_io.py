@@ -9,13 +9,13 @@ from typing import Iterable
 
 import numpy as np
 
-from pose_estimation.cricket.contract import KEYPOINT_COUNT, validate_group1_frame
-from pose_estimation.cricket.geometry import ground_contact_pixel
-from scripts.association.appearance import extract_appearance_descriptor
-from scripts.association.associator import Correspondence, Detection3
-from scripts.tracking.calibration import GroundPlaneCalibrator
-from scripts.tracking.jsonl_io import read_prediction_frames
-from scripts.tracking.runner import PredictionFile
+from core.contract import KEYPOINT_COUNT, validate_group1_frame
+from identity.common.geometry import ground_contact_pixel
+from identity.p3_association.appearance import extract_appearance_descriptor
+from identity.p3_association.associator import Correspondence, Detection3
+from core.calibration import GroundPlaneCalibrator
+from identity.p2_tracking.jsonl_io import read_prediction_frames
+from identity.p2_tracking.runner import PredictionFile
 
 
 RecordsByFrame = dict[int, dict[str, dict]]

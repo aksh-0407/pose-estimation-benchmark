@@ -18,7 +18,7 @@ def _running_series(start_along, end_along, frames=200, axis=np.array([0.0, 1.0]
 
 
 def test_epoched_assigns_full_roster_uniquely():
-    from scripts.roles.assigner import assign_roles_epoched
+    from identity.p6_roles.assigner import assign_roles_epoched
 
     axis = np.array([0.0, 1.0])
     series = {
@@ -45,7 +45,7 @@ def test_epoched_assigns_full_roster_uniquely():
 
 
 def test_epoched_never_duplicates_single_slots():
-    from scripts.roles.assigner import assign_roles_epoched
+    from identity.p6_roles.assigner import assign_roles_epoched
 
     axis = np.array([0.0, 1.0])
     # two equally keeper-ish tracks: only one may hold the slot
@@ -61,7 +61,7 @@ def test_epoched_never_duplicates_single_slots():
 
 # ------------------------------------------------------- Wave-6 suppression
 def test_suppression_decide_protects_core_and_drops_bad_peripherals():
-    from scripts.roles.suppress_peripherals import DEFAULTS, decide
+    from identity.p6_roles.suppress_peripherals import DEFAULTS, decide
 
     cfg = dict(DEFAULTS, suppression_enabled=True)
     quality = {
@@ -80,7 +80,7 @@ def test_suppression_decide_protects_core_and_drops_bad_peripherals():
 
 
 def test_suppression_disabled_is_empty_and_umpire_protection_works():
-    from scripts.roles.suppress_peripherals import DEFAULTS, decide
+    from identity.p6_roles.suppress_peripherals import DEFAULTS, decide
 
     quality = {"UMP": {"mean_kp_conf": 0.1, "mean_det_conf": 0.1, "completeness": 0.05,
                        "single_cam_rate": 1.0, "observations": 10}}
@@ -93,7 +93,7 @@ def test_suppression_disabled_is_empty_and_umpire_protection_works():
 # ------------------------------------------------------- v1.2 auto-flip
 def test_epoched_cost_prefers_correct_axis_sign_without_runner():
     """The mirrored roster must resolve the right end from geometry alone."""
-    from scripts.roles.assigner import assign_roles_epoched
+    from identity.p6_roles.assigner import assign_roles_epoched
 
     axis = np.array([0.0, 1.0])
     series = {
@@ -114,7 +114,7 @@ def test_epoched_cost_prefers_correct_axis_sign_without_runner():
 
 def test_epoched_cost_penalises_unfilled_slots():
     """Fewer accepted assignments must not fake a better score."""
-    from scripts.roles.assigner import assign_roles_epoched
+    from identity.p6_roles.assigner import assign_roles_epoched
 
     axis = np.array([0.0, 1.0])
     full = {

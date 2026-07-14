@@ -19,13 +19,13 @@ try:
 except Exception:  # pragma: no cover - tqdm is optional outside the runtime env.
     tqdm = None
 
-from pose_estimation.cricket.dataset import (
+from core.dataset import (
     frame_paths_for_camera,
     parse_frame_id,
     repo_relative,
     resolve_delivery_camera_dirs,
 )
-from pose_estimation.cricket.phase1_outputs import (
+from core.inference.phase1_outputs import (
     SCHEMA_VERSION,
     build_phase1_frame_record,
     nms_predictions,
@@ -33,7 +33,7 @@ from pose_estimation.cricket.phase1_outputs import (
     scale_prediction,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def rel(path: str | Path) -> str:
@@ -488,7 +488,7 @@ def aggregate_phase1_run(config: P1RunConfig) -> dict[str, Any]:
         "preload_full_frame": config.preload_full_frame,
         "resize_long_side": config.resize_long_side,
         "decode_workers": config.decode_workers,
-        "git_sha": git_sha(Path(__file__).resolve().parents[2]),
+        "git_sha": git_sha(Path(__file__).resolve().parents[3]),
         "prediction_dir": rel(prediction_dir),
         "delivery_metrics_dir": rel(delivery_metrics_root),
         "visualizations": None,
@@ -962,7 +962,7 @@ def run_phase1_delivery(config: P1RunConfig, adapter: PoseAdapter) -> dict[str, 
         "preload_full_frame": config.preload_full_frame,
         "resize_long_side": config.resize_long_side,
         "decode_workers": config.decode_workers,
-        "git_sha": git_sha(Path(__file__).resolve().parents[2]),
+        "git_sha": git_sha(Path(__file__).resolve().parents[3]),
         "prediction_dir": rel(prediction_dir),
         "visualizations": None,
         "summary": {

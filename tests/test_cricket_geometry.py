@@ -1,10 +1,10 @@
-"""Tests for the cross-camera geometry primitives (pose_estimation.cricket.geometry)."""
+"""Tests for the cross-camera geometry primitives (identity.common.geometry)."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     bbox_bottom_center_px,
     camera_axis_lookat,
     camera_center_from_P,
@@ -23,7 +23,7 @@ from pose_estimation.cricket.geometry import (
     sampson_distance,
     triangulate_dlt,
 )
-from pose_estimation.triangulation import triangulate_point_dlt
+from identity.common.triangulation import triangulate_point_dlt
 
 
 def test_robust_fuse_ground_rejects_outlier_camera():
@@ -84,7 +84,7 @@ def test_ground_from_reprojection_recovers_point_and_beats_median():
 
 
 def test_ground_contact_v2_midpoint_planted_and_plausibility():
-    from pose_estimation.cricket.geometry import ground_contact_pixel_ex
+    from identity.common.geometry import ground_contact_pixel_ex
 
     bbox = [100.0, 200.0, 80.0, 240.0]  # bottom at (140, 440)
     conf = np.zeros(17); conf[15] = 0.9; conf[16] = 0.9
@@ -305,7 +305,7 @@ def test_ground_from_reprojection_ex_diverging_solve_returns_nan_not_crash():
     set must degrade to NaN, never raise."""
     import numpy as np
 
-    from pose_estimation.cricket.geometry import ground_from_reprojection_ex
+    from identity.common.geometry import ground_from_reprojection_ex
 
     # two cameras with pathological projections that force wild steps
     feet = np.array([[1e9, 1e9], [-1e9, -1e9]], dtype=float)

@@ -6,9 +6,9 @@ from collections import deque
 
 import numpy as np
 
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.kalman import KalmanBoxTracker
-from scripts.tracking.pose_vector import PoseVector, masked_weighted_cosine
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.kalman import KalmanBoxTracker
+from identity.p2_tracking.pose_vector import PoseVector, masked_weighted_cosine
 
 TENTATIVE = "tentative"
 CONFIRMED = "confirmed"

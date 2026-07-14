@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from scripts.visualization.identity_colors import IDENTITY_PALETTE, color_for_global_id
-from scripts.visualization.render_phase1_videos import (
+from identity.visualization.identity_colors import IDENTITY_PALETTE, color_for_global_id
+from identity.visualization.render_videos import (
     _rects_overlap,
     draw_body_paint,
     place_chip,

@@ -6,7 +6,7 @@ import json
 
 import numpy as np
 
-from scripts.visualization.mosaic_layout import (
+from identity.visualization.mosaic_layout import (
     MONITOR_SLOT,
     ROSTER_SLOT,
     derive_mosaic_layout,

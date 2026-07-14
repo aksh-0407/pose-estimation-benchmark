@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from scripts.association.associator import Detection3, _constrained_cluster, _triangulate_members
-from scripts.association.config import P3AssociationConfig
+from identity.p3_association.associator import Detection3, _constrained_cluster, _triangulate_members
+from identity.p3_association.config import P3AssociationConfig
 
 
 def _look_at_projection(center: np.ndarray) -> np.ndarray:

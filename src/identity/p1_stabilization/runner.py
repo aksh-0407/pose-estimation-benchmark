@@ -15,10 +15,10 @@ from pathlib import Path
 
 import numpy as np
 
-from pose_estimation.cricket.contract import validate_group1_frame
-from scripts.stabilization.config import StabilizationConfig
-from scripts.stabilization.linker import link_micro_tracks
-from scripts.stabilization.smoothing import mean_jitter_px, smooth_track_keypoints
+from core.contract import validate_group1_frame
+from identity.p1_stabilization.config import StabilizationConfig
+from identity.p1_stabilization.linker import link_micro_tracks
+from identity.p1_stabilization.smoothing import mean_jitter_px, smooth_track_keypoints
 
 CANONICAL_PREDICTION_RE = re.compile(
     r"^(?P<capture_group>bt_\d{2})__(?P<delivery_id>.+)__(?P<camera_id>cam_\d{2})\.jsonl$"

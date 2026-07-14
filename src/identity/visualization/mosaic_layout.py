@@ -33,7 +33,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import camera_axis_lookat, derive_facing_pairs
+from identity.common.geometry import camera_axis_lookat, derive_facing_pairs
 
 MONITOR_SLOT = "__monitor__"
 ROSTER_SLOT = "__roster__"

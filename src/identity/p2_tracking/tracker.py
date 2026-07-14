@@ -7,9 +7,9 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.pose_vector import PoseVector, masked_weighted_cosine
-from scripts.tracking.track import CONFIRMED, DORMANT, TENTATIVE, Track
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.pose_vector import PoseVector, masked_weighted_cosine
+from identity.p2_tracking.track import CONFIRMED, DORMANT, TENTATIVE, Track
 
 _LARGE = 1e6  # sentinel "no match" cost; never NaN/inf into linear_sum_assignment
 

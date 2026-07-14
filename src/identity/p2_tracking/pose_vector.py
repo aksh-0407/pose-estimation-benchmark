@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from scripts.tracking.config import TrackingConfig
+from identity.p2_tracking.config import TrackingConfig
 
 L_SHOULDER, R_SHOULDER, L_HIP, R_HIP = 5, 6, 11, 12
 KEYPOINT_COUNT = 17

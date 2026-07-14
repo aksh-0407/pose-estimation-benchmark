@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pose_estimation.cricket.pose_shape import DEFAULT_POSTURE_SIGMA_SYS
+from identity.common.pose_shape import DEFAULT_POSTURE_SIGMA_SYS
 
 SCHEMA_VERSION = "cue_calibration/v1"
 

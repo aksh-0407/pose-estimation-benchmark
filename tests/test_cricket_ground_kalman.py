@@ -1,10 +1,10 @@
-"""Tests for the Singer ground-plane Kalman filter (pose_estimation.cricket.ground_kalman)."""
+"""Tests for the Singer ground-plane Kalman filter (identity.p5_global_id.ground_kalman)."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from pose_estimation.cricket.ground_kalman import (
+from identity.p5_global_id.ground_kalman import (
     ROLE_PARAMS,
     RoleParams,
     SingerGroundKalman,
@@ -85,7 +85,7 @@ def test_all_roles_defined():
 
 def test_per_measurement_R_overrides_role_noise():
     import numpy as np
-    from pose_estimation.cricket.ground_kalman import SingerGroundKalman
+    from identity.p5_global_id.ground_kalman import SingerGroundKalman
 
     # Two identical filters; one gets a HUGE per-measurement R for an outlier
     # observation — its state must move far less than the trusting filter's.
@@ -114,7 +114,7 @@ def test_per_measurement_R_overrides_role_noise():
 
 def test_switch_role_inflates_stable_blocks_role_dependently():
     import numpy as np
-    from pose_estimation.cricket.ground_kalman import SingerGroundKalman
+    from identity.p5_global_id.ground_kalman import SingerGroundKalman
 
     # C3: the Lyapunov branch could never execute; the explicit inflation must be
     # finite, role-dependent, and larger for more agile roles.
@@ -131,7 +131,7 @@ def test_switch_role_inflates_stable_blocks_role_dependently():
 
 def test_unknown_role_falls_back_instead_of_raising():
     import numpy as np
-    from pose_estimation.cricket.ground_kalman import SingerGroundKalman
+    from identity.p5_global_id.ground_kalman import SingerGroundKalman
 
     f = SingerGroundKalman(np.zeros(2), "twelfth_man", dt=0.02)  # C4: no KeyError
     f.switch_role("mystery_role")

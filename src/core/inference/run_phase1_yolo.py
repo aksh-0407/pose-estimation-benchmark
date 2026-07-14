@@ -7,11 +7,11 @@ import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
-from pose_estimation.cricket.phase1_runner import P1RunConfig, run_phase1_delivery
-from pose_estimation.cricket.phase1_yolo_adapter import YOLOPoseAdapter, load_model_config
+from core.inference.phase1_runner import P1RunConfig, run_phase1_delivery
+from core.inference.yolo_adapter import YOLOPoseAdapter, load_model_config
 
 
 DEFAULT_MODEL_CONFIG = ROOT / "configs" / "model_envs.yaml"

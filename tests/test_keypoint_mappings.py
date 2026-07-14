@@ -1,6 +1,6 @@
 import numpy as np
 
-from pose_estimation.keypoints import map_keypoints
+from core.keypoints import map_keypoints
 
 
 def test_wholebody_133_maps_first_17_to_coco17():

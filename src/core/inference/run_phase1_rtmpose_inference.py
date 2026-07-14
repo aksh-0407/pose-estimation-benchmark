@@ -34,17 +34,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
 import yaml
 
-from pose_estimation.cricket.contract import (
+from core.contract import (
     SCHEMA_VERSION as P1_SCHEMA_VERSION,
     SKELETON as P1_SKELETON,
     validate_group1_frame,
 )
-from pose_estimation.cricket.dataset import FRAME_RE, camera_label, parse_frame_id, repo_relative
+from core.dataset import FRAME_RE, camera_label, parse_frame_id, repo_relative
 
 # Detailed per-frame failure records are only for the manifest dump (the real
 # counts live in cam_failed). Cap the retained list so a pathological run cannot
@@ -572,7 +572,7 @@ def inference_topdown_batch(pose_model, pose_pipeline, entries: list[dict[str, A
 
 def coco17_source_indices(source_skeleton: str) -> list[int] | None:
     """Indices into the source skeleton that yield COCO-17 order, or None if unmapped."""
-    from pose_estimation.keypoints import load_keypoint_mappings
+    from core.keypoints import load_keypoint_mappings
 
     mapping = load_keypoint_mappings()["source_to_coco_17"].get(source_skeleton)
     return mapping["source_indices"] if mapping else None

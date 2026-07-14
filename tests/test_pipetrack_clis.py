@@ -6,12 +6,12 @@ from pathlib import Path
 
 import numpy as np
 
-from pose_estimation.cricket.contract import example_group1_frame, validate_group1_frame
-from scripts.association.config import P3AssociationConfig
-from scripts.association.runner import run_association
-from scripts.export.triangulate_predictions import triangulate_canonical_run
-from scripts.global_id.config import P4AConfig, P4Config
-from scripts.global_id.runner import run_global_id
+from core.contract import example_group1_frame, validate_group1_frame
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.runner import run_association
+from identity.p4_lift.run_triangulation import triangulate_canonical_run
+from identity.p5_global_id.config import P4AConfig, P4Config
+from identity.p5_global_id.runner import run_global_id
 
 
 DELIVERY = "MATCHM1_1_1_1"

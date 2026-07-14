@@ -1,6 +1,6 @@
-from pose_estimation.cricket.contract import example_group1_frame
-from scripts.tracking.config import TrackingConfig
-from scripts.tracking.jsonl_io import frame_to_detections
+from core.contract import example_group1_frame
+from identity.p2_tracking.config import TrackingConfig
+from identity.p2_tracking.jsonl_io import frame_to_detections
 
 
 def test_null_detection_confidence_falls_back_to_pose_mean():

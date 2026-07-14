@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from scripts.association.config import P3AssociationConfig
-from scripts.association.geometry_cache import build_geometry_cache
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.geometry_cache import build_geometry_cache
 
 
 def _projection(center: np.ndarray) -> np.ndarray:

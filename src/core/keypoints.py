@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MAPPING = ROOT / "configs" / "keypoint_mappings.yaml"
 
 

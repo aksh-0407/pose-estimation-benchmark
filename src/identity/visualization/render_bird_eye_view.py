@@ -32,7 +32,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def read_jsonl(path: Path):
@@ -94,7 +94,7 @@ def stable_color(global_id: str):
     identically instead of the old independent golden-ratio hash.
     """
 
-    from scripts.visualization.identity_colors import color_for_global_id
+    from identity.visualization.identity_colors import color_for_global_id
 
     b, g, r = color_for_global_id(str(global_id))
     return (r / 255.0, g / 255.0, b / 255.0)

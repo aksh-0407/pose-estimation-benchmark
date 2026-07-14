@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from pose_estimation.cricket.ground_kalman import ROLE_PARAMS
+from identity.p5_global_id.ground_kalman import ROLE_PARAMS
 
 
 def _default_role_params() -> dict[str, dict[str, float]]:

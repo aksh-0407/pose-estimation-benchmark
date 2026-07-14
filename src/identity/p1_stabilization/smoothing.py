@@ -14,7 +14,7 @@ import math
 
 import numpy as np
 
-from scripts.stabilization.config import GatingConfig, SmoothingConfig
+from identity.p1_stabilization.config import GatingConfig, SmoothingConfig
 
 
 def _alpha(cutoff: float, dt: float) -> float:

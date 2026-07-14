@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scripts.pipetrack.run_full_pipeline import (
+from main import (
     DeliveryPlan,
     _stage_window,
     build_arg_parser,

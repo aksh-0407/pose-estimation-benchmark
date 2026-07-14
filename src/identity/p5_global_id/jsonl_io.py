@@ -8,11 +8,11 @@ from typing import Iterable
 
 import numpy as np
 
-from pose_estimation.cricket.contract import validate_group1_frame
-from pose_estimation.cricket.pose_shape import PoseProportions, PostureAggregate
-from scripts.association.associator import Correspondence, Detection3
-from scripts.association.jsonl_io import RecordsByFrame
-from scripts.tracking.runner import PredictionFile
+from core.contract import validate_group1_frame
+from identity.common.pose_shape import PoseProportions, PostureAggregate
+from identity.p3_association.associator import Correspondence, Detection3
+from identity.p3_association.jsonl_io import RecordsByFrame
+from identity.p2_tracking.runner import PredictionFile
 
 
 def read_correspondence_rows(path: str | Path) -> list[dict]:

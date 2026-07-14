@@ -12,11 +12,11 @@ from typing import Any
 
 import cv2
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
-from pose_estimation.cricket.phase1_outputs import COCO_17_EDGES
-from scripts.visualization.identity_colors import color_for_player
+from core.inference.phase1_outputs import COCO_17_EDGES
+from identity.visualization.identity_colors import color_for_player
 
 
 def parse_args() -> argparse.Namespace:

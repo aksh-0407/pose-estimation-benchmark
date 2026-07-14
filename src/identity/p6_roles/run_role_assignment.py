@@ -3,7 +3,7 @@
 Follows the same phase-folder convention as P2-P4: consumes a canonical P4 run,
 writes ``roles.json`` + ``run_manifest.json`` into its own run dir. The mosaic
 renderer (and any downstream consumer) reads roles ONLY from that artifact, so
-improving the logic in :mod:`scripts.roles.assigner` never touches consumers.
+improving the logic in :mod:`identity.p6_roles.assigner` never touches consumers.
 """
 
 from __future__ import annotations
@@ -16,15 +16,15 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "src"))
 
-from scripts.roles.assigner import assign_roles, assign_roles_epoched  # noqa: E402
-from scripts.roles.config import load_role_assigner_config  # noqa: E402
-from scripts.tracking.calibration import current_calibration_dir  # noqa: E402
-from scripts.tracking.runner import infer_match_id  # noqa: E402
-from scripts.visualization.mosaic_layout import (  # noqa: E402
+from identity.p6_roles.assigner import assign_roles, assign_roles_epoched  # noqa: E402
+from identity.p6_roles.config import load_role_assigner_config  # noqa: E402
+from core.calibration import current_calibration_dir  # noqa: E402
+from identity.p2_tracking.runner import infer_match_id  # noqa: E402
+from identity.visualization.mosaic_layout import (  # noqa: E402
     infer_bowling_direction,
     load_pitch_axis,
 )

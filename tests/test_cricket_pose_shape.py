@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     PoseProportions,
     SEGMENT_COUNT,
     descriptor_distance,
@@ -83,7 +83,7 @@ def test_parallax_gating_excludes_low_parallax_segments():
     parallax_ok[[L_KNEE, R_KNEE]] = False  # knees triangulated with poor parallax
     descriptor = limb_proportion_descriptor(points, conf, parallax_ok, n_views=2)
     # Any segment touching a knee (thigh_*, shin_*) must be dropped.
-    from pose_estimation.cricket.pose_shape import SEGMENT_NAMES
+    from identity.common.pose_shape import SEGMENT_NAMES
 
     for name in ("thigh_l", "thigh_r", "shin_l", "shin_r"):
         assert not descriptor.mask[SEGMENT_NAMES.index(name)]

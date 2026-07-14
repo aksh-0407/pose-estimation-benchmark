@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.setup.check_assets import asset_rows, summarize
+from tools.check_assets import asset_rows, summarize
 
 
 def test_asset_summary_detects_missing_required_asset(tmp_path: Path):

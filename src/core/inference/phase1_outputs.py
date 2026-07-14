@@ -8,7 +8,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-from pose_estimation.cricket.contract import (
+from core.contract import (
     KEYPOINT_COUNT,
     SCHEMA_VERSION,
     SKELETON,

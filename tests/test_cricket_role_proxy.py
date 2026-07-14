@@ -4,7 +4,7 @@ from collections import deque
 
 import numpy as np
 
-from scripts.global_id.role_proxy import OnlineRoleProxy
+from identity.p5_global_id.role_proxy import OnlineRoleProxy
 
 
 def _proxy() -> OnlineRoleProxy:

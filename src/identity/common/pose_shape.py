@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import camera_center_from_P, pixel_to_ground_xy
+from identity.common.geometry import camera_center_from_P, pixel_to_ground_xy
 
 # COCO-17 joint indices
 NOSE, L_EYE, R_EYE, L_EAR, R_EAR = 0, 1, 2, 3, 4

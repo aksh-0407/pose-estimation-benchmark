@@ -39,7 +39,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 RUNNER = ROOT / "scripts" / "inference" / "run_phase1_l40s.py"
 GROUP_RE = re.compile(r"^bt_?0*(?P<num>\d+)$", re.IGNORECASE)
 

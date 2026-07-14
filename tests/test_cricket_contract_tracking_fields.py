@@ -9,7 +9,7 @@ from copy import deepcopy
 
 import pytest
 
-from pose_estimation.cricket.contract import (
+from core.contract import (
     example_group1_frame,
     validate_group1_frame,
 )

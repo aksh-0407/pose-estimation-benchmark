@@ -10,10 +10,10 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "src"))
 
-from pose_estimation.ue_export import build_pose_packet, write_jsonl
+from core.ue_transform import build_pose_packet, write_jsonl
 
 
 def parse_args() -> argparse.Namespace:

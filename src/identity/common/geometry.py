@@ -1,7 +1,7 @@
 """Multi-view geometry primitives for cross-camera association (P3) and lifting.
 
 Stateless math shared by the association engine, the global-ID tracker, and the
-3D lift. Two-view triangulation delegates to :mod:`pose_estimation.triangulation`
+3D lift. Two-view triangulation delegates to :mod:`identity.common.triangulation`
 (the repo's weighted-DLT/RANSAC home) rather than re-implementing the SVD solve.
 """
 
@@ -11,7 +11,7 @@ from itertools import combinations
 
 import numpy as np
 
-from pose_estimation.triangulation import triangulate_point_dlt
+from identity.common.triangulation import triangulate_point_dlt
 
 
 def camera_center_from_P(projection_matrix: np.ndarray) -> np.ndarray:
@@ -32,7 +32,7 @@ def triangulate_dlt(
 ) -> np.ndarray:
     """Two-view DLT triangulation → world ``[X, Y, Z]`` (or NaNs if degenerate).
 
-    Thin wrapper over :func:`pose_estimation.triangulation.triangulate_point_dlt`
+    Thin wrapper over :func:`identity.common.triangulation.triangulate_point_dlt`
     so there is a single DLT implementation in the codebase.
     """
 

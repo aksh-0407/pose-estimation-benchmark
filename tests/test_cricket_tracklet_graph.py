@@ -4,24 +4,24 @@ from __future__ import annotations
 
 import numpy as np
 
-from pose_estimation.cricket.geometry import (
+from identity.common.geometry import (
     fuse_ground_estimates,
     ground_covariance,
     ground_mahalanobis_sq,
     pixel_to_ground_xy,
 )
-from pose_estimation.cricket.pose_shape import (
+from identity.common.pose_shape import (
     PostureAccumulator,
     PostureSample,
     ground_anchored_skeleton,
     posture_distance_z,
     posture_from_skeleton,
 )
-from pose_estimation.cricket.tracking_metrics import pair_link_churn
-from scripts.association.associator import Detection3
-from scripts.association.config import P3AssociationConfig
-from scripts.association.cue_calibration import CueCalibration, fit_cue_calibration
-from scripts.association.tracklet_graph import TrackletGraphBuilder
+from identity.common.metrics import pair_link_churn
+from identity.p3_association.associator import Detection3
+from identity.p3_association.config import P3AssociationConfig
+from identity.p3_association.cue_calibration import CueCalibration, fit_cue_calibration
+from identity.p3_association.tracklet_graph import TrackletGraphBuilder
 
 
 # ----------------------------------------------------------------- synthetic rig
@@ -392,7 +392,7 @@ def test_pair_link_churn_zero_for_stable_and_positive_for_flicker():
 # --------------------------------------------- feet approximation + synthetics
 
 def test_pixel_to_plane_recovers_position_above_feet():
-    from pose_estimation.cricket.geometry import pixel_to_plane_xy
+    from identity.common.geometry import pixel_to_plane_xy
     feet = np.array([3.0, -1.0])
     hip_world = np.array([3.0, -1.0, 0.93])
     hip_px = _project(CAM_A, hip_world)
@@ -401,7 +401,7 @@ def test_pixel_to_plane_recovers_position_above_feet():
 
 
 def test_upper_body_ground_estimate_prefers_hips_then_falls_back():
-    from pose_estimation.cricket.geometry import upper_body_ground_estimate
+    from identity.common.geometry import upper_body_ground_estimate
     feet = np.array([2.0, 5.0])
     keypoints = np.zeros((17, 2))
     conf = np.zeros(17)
@@ -420,7 +420,7 @@ def test_upper_body_ground_estimate_prefers_hips_then_falls_back():
 
 
 def test_feet_approximation_is_sticky_per_tracklet():
-    from scripts.association.tracklet_graph import apply_feet_approximation
+    from identity.p3_association.tracklet_graph import apply_feet_approximation
     config = _graph_config()
     image_h = 1080
     true_feet = np.array([0.0, -10.0])

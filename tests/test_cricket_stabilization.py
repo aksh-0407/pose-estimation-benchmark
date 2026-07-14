@@ -8,17 +8,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from pose_estimation.cricket.contract import KEYPOINT_COUNT, SCHEMA_VERSION, SKELETON, validate_group1_frame
-from scripts.stabilization.config import (
+from core.contract import KEYPOINT_COUNT, SCHEMA_VERSION, SKELETON, validate_group1_frame
+from identity.p1_stabilization.config import (
     GatingConfig,
     LinkConfig,
     SmoothingConfig,
     StabilizationConfig,
     load_stabilization_config,
 )
-from scripts.stabilization.linker import link_micro_tracks
-from scripts.stabilization.runner import run_stabilization
-from scripts.stabilization.smoothing import OneEuroFilter, mean_jitter_px, smooth_track_keypoints
+from identity.p1_stabilization.linker import link_micro_tracks
+from identity.p1_stabilization.runner import run_stabilization
+from identity.p1_stabilization.smoothing import OneEuroFilter, mean_jitter_px, smooth_track_keypoints
 
 
 # --------------------------------------------------------------------------- config

@@ -4,8 +4,8 @@ from dataclasses import replace
 
 import numpy as np
 
-from scripts.global_id.config import P4BConfig, P4Config
-from scripts.global_id.stitching import (
+from identity.p5_global_id.config import P4BConfig, P4Config
+from identity.p5_global_id.stitching import (
     Segment,
     build_link_costs,
     extract_segments,
@@ -142,7 +142,7 @@ def test_occupancy_bridge_pose_requirement_blocks_shapeless_long_links():
 
 
 def test_posture_stitch_gate_blocks_different_builds():
-    from pose_estimation.cricket.pose_shape import PostureAggregate
+    from identity.common.pose_shape import PostureAggregate
 
     def posture(head_top):
         return PostureAggregate(
@@ -170,7 +170,7 @@ def test_posture_stitch_gate_blocks_different_builds():
 def test_bowler_detection_is_direction_signed():
     # H2: a sprint AGAINST the bowling direction must not win the bowler crown.
     import numpy as np
-    from scripts.roles.assigner import _windowed_axis_speed
+    from identity.p6_roles.assigner import _windowed_axis_speed
 
     axis = np.array([0.0, 1.0])
     toward = [(f, np.array([0.0, -20.0 + 0.1 * f])) for f in range(100)]
@@ -204,7 +204,7 @@ def test_normalized_costs_make_long_gap_stitches_selectable():
 def test_merge_colocated_ids_disjoint_cameras_merges_and_shared_blocks():
     import numpy as np
 
-    from scripts.global_id.stitching import merge_colocated_ids
+    from identity.p5_global_id.stitching import merge_colocated_ids
 
     # A and B co-located every frame; A lives in cam_01, B in cam_02 (disjoint)
     # C and D co-located but BOTH appear in cam_03 (same camera-frame) => block.
@@ -236,7 +236,7 @@ def test_merge_colocated_ids_disjoint_cameras_merges_and_shared_blocks():
 def test_merge_colocated_ids_needs_min_frames():
     import numpy as np
 
-    from scripts.global_id.stitching import merge_colocated_ids
+    from identity.p5_global_id.stitching import merge_colocated_ids
 
     records = []
     ground = {}

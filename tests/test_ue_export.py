@@ -1,6 +1,6 @@
 import numpy as np
 
-from pose_estimation.ue_export import build_pose_packet, cricket_world_to_ue_cm
+from core.ue_transform import build_pose_packet, cricket_world_to_ue_cm
 
 
 def test_cricket_world_to_ue_cm_axis_mapping():
