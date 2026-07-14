@@ -36,17 +36,17 @@ writes a canonical run directory. Full detail in
 
 ```bash
 # P1 — 2D pose over a delivery (RTMPose-X, top-down); emits COCO-17 + Halpe-26
-conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+conda run -n pose-lab python src/core/inference/run_phase1_rtmpose_inference.py \
   --model-id rtmpose_x_body8 --deliveries CCPL080626M1_1_14_1 \
-  --run-id rtmpose-x --run-dir benchmarks/runs/rtmpose-x
+  --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
 
 # P2→P4 identity (batch driver over deliveries), then inspect the metric panel
-PY=/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python
-$PY -m scripts.pipetrack.run_id_pipeline \
-  --input-tree benchmarks/runs/pipetrack_v3 --output-tree benchmarks/runs/pipetrack_v5 --jobs 8
+PY=/home/aksh/miniconda3/envs/pose-lab/bin/python
+$PY -m identity.id_pipeline \
+  --input-tree data/derived/runs/pipetrack_v3 --output-tree data/derived/runs/pipetrack_v5 --jobs 8
 
 # Render the mosaic (7 tiles + bird's-eye monitor + roster), coloured by global ID
-$PY -m scripts.visualization.render_phase1_videos \
+$PY -m identity.visualization.render_videos \
   --drive-root drive --run-dir <p4-run> --delivery-id CCPL080626M1_1_14_1 --mode mosaic --show p4
 ```
 

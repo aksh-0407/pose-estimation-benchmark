@@ -31,7 +31,7 @@ follows the conventions of `wip/methods_log.md`.
 ## Evaluation Standard
 
 All candidate changes are evaluated against the frozen `pipetrack_v6.0` baseline
-(`benchmarks/runs/pipetrack_v6.0/_baseline_snapshot`) across all 8 deliveries. A fix is only
+(`data/derived/runs/pipetrack_v6.0/_baseline_snapshot`) across all 8 deliveries. A fix is only
 marked Accepted if it produces a significant, generalized improvement without introducing
 clustering, identity, or collision regressions. Every change is behind a config flag; with all
 flags off the pipeline is byte-identical to the baseline. Same-camera collisions must stay 0
@@ -60,8 +60,8 @@ Metrics (read jointly as a panel, never singly — each alone is gameable):
 - **2D jitter (px)** — P1.5 `stabilization_metrics.json`, when the stage runs.
 - **3D lift: mean/p95 reprojection (px), coverage** — `triangulation_metrics.json`.
 
-Driver: `scripts/pipetrack/run_full_pipeline.py` (full chain + extended panel + baseline diff);
-inner loop: `scripts/pipetrack/run_id_pipeline.py`. Configs frozen in `configs/v6/`; per-fix
+Driver: `src/main.py` (full chain + extended panel + baseline diff);
+inner loop: `src/identity/id_pipeline.py`. Configs frozen in `configs/v6/`; per-fix
 variants in `configs/experiments/`.
 
 ## Summary of Fixes
@@ -91,14 +91,14 @@ variants in `configs/experiments/`.
 Purpose:
 
 - Establish the fixed comparison point for the fix campaign, built for the first time from the
-  full 8-delivery RTMPose-X (Halpe-26) P1 data (`benchmarks/runs/rtmpose-x`) rather than the
+  full 8-delivery RTMPose-X (Halpe-26) P1 data (`data/derived/runs/rtmpose-x`) rather than the
   RTMPose-L P2 tree that v3/v5 reused.
 
 Implementation:
 
 - Frozen config set `configs/v6/` (P3/P4 = copies of the validated `*_v5.yaml` flag stacks;
   P2 = committed defaults; P1.5 present but `enabled: false`).
-- New full-chain driver `scripts/pipetrack/run_full_pipeline.py`: P1.5(off) → P2 → P3 → P4 →
+- New full-chain driver `src/main.py`: P1.5(off) → P2 → P3 → P4 →
   P5 roles → 3D lift → mosaic render, per-delivery parallel, extended joint panel,
   `pipeline_manifest.json` provenance (config sha256), `--base-tree` stage reuse for cheap A/Bs.
 - `triangulation_metrics.json` gained `mean/p95_reprojection_error_px` and
@@ -147,7 +147,7 @@ Implementation:
 
 - Driver `--enable-stabilization` + `configs/experiments/v6_f01_stabilization__p1b.yaml`
   (`enabled: true`, otherwise identical to the frozen v6 copy). Full fresh chain from the
-  rtmpose-x P1 data. Run tree: `benchmarks/runs/pipetrack_v6.1-f01`.
+  rtmpose-x P1 data. Run tree: `data/derived/runs/pipetrack_v6.1-f01`.
 - En route, the stage's byte-identity guarantee was found broken against insertion-ordered P1
   files (the writer re-sorted JSON keys); fixed by preserving parsed key order, with a
   scrambled-key regression test.
@@ -180,7 +180,7 @@ Purpose:
 Implementation:
 
 - `configs/experiments/v6_wave1__{p3,p4}.yaml` + `--tri-cheirality --tri-smoother butterworth`;
-  run tree `benchmarks/runs/pipetrack_v6.1-wave1` (P3→P4→P5→3D, baseline P2 reused).
+  run tree `data/derived/runs/pipetrack_v6.1-wave1` (P3→P4→P5→3D, baseline P2 reused).
 
 Result (vs v6.0; all 8 chains rc=0, collisions 0):
 
@@ -215,7 +215,7 @@ Purpose:
 Implementation:
 
 - `configs/experiments/v6_wave3__{p3,p4}.yaml` + `--enable-lift --tri-cheirality
-  --tri-smoother butterworth`; run tree `benchmarks/runs/pipetrack_v6.2-wave3`
+  --tri-smoother butterworth`; run tree `data/derived/runs/pipetrack_v6.2-wave3`
   (P3 → P3.5 → P4 → P5 → 3D from the frozen baseline's P2).
 
 Result (vs v6.0; all 8 chains rc=0, collisions 0):
@@ -280,7 +280,7 @@ stack re-baselines.
 
 Composition: P1.5 on + FR-fixed P2 (C1/C2) + Wave-3 P3 stack + C5 single-cam emit +
 conservative F13 + asymmetric R (ceiling 0.8 m) + P3.5 lift + native-26 skeleton +
-dense-fill + cheirality + Butterworth. Run tree `benchmarks/runs/pipetrack_v7-rc1`.
+dense-fill + cheirality + Butterworth. Run tree `data/derived/runs/pipetrack_v7-rc1`.
 
 Result (vs v6.0, reweighted panel — agreement / IDs / persistence / fragments primary):
 
@@ -321,7 +321,7 @@ stack introduced beyond measured waves.
 ### v7-rc2 - Composed Stack on Fixed Code (post bug-pass validation)
 
 Same flags as rc1; code now carries the H3 gate (legacy default) and G7 normalized stitch
-costs. Run tree `benchmarks/runs/pipetrack_v7-rc2`.
+costs. Run tree `data/derived/runs/pipetrack_v7-rc2`.
 
 Result (vs v6.0; primary axes first):
 
@@ -375,7 +375,7 @@ detection) and Wave 6 (role-focused peripheral suppression), plus the open list 
 distant fielder is ~9 px tall; cam_07 medians ZERO detections/frame on `_7`. Missed players
 become single-cam ghosts and fragment fodder for every identity stage.
 
-**Method.** Detector-only sweep (`scripts/inference/detector_bakeoff.py` +
+**Method.** Detector-only sweep (`tools/detector_bakeoff/detector_bakeoff.py` +
 `_report.py`), 2 hard deliveries (`_7`, `M2`) x 7 cams x stride 5 = 1,680 frames on the
 remote L40S (`quidich-gpu-intern`; the new standing home for all GPU work). Candidates:
 m640 (baseline), m1280/m2560 (native-resolution RTMDet-m), t640 (SAHI-style 4x2 tiles +
@@ -409,7 +409,7 @@ Fix: trust the cameras where the players are distinct.
 **Implementation** (flag `contested_iou`, default 0.0 = off).
 Same-camera detection pairs with bbox IoU >= `contested_iou` (0.45 in the experiment
 overlay `configs/experiments/v7_w5b__p3.yaml`) are marked contested
-(`Detection3.contested`, `mark_contested_detections` in `scripts/association/associator.py`;
+(`Detection3.contested`, `mark_contested_detections` in `src/identity/p3_association/associator.py`;
 runner hook pre-gate). Effects: z0_reproj solve weight x`contested_conf_scale` (0.25);
 per-view ground sigma x`contested_sigma_scale` (2.5) in both associator and tracklet-graph
 covariances; emitted `ground_cov` inflated x scale^2 when ALL member views are contested
@@ -490,7 +490,7 @@ tests: full-roster uniqueness + standing-back keeper + no-duplicate-slots (200 t
 keeper are the product; when low-confidence poses/tracking of peripheral players
 (umpires/fielders) hinder the output, DROP them rather than extrapolate.
 
-**Implementation.** New `scripts/roles/suppress_peripherals.py` (P5b, runs inside the
+**Implementation.** New `src/identity/p6_roles/suppress_peripherals.py` (P5b, runs inside the
 driver's p5 stage with explicit paths): per-global-id quality aggregates (mean keypoint
 conf, delivery-span completeness, single-cam rate, det conf) -> `suppression.json` next
 to roles.json. Core roles are NEVER suppressed; umpires optionally protectable
@@ -539,7 +539,7 @@ L40S, v7 identity stack, v1.1 roles, W6 suppression) vs rc2 across the full pane
 **The stack.** P1 = tiled RTMDet-m (4x2 grid + full frame, cross-tile NMS 0.55, IoM-0.7
 containment) + RTMPose-X, produced on the L40S; P2 = v7 + `lowconf_can_spawn: false`;
 P3/P4 = v7 unchanged; P5 = roles v1.1 (epoch Hungarian, 2-umpire roster) + Wave-6
-peripheral suppression ON. Frozen tree `benchmarks/runs/pipetrack_v8.0` (+ metrics
+peripheral suppression ON. Frozen tree `data/derived/runs/pipetrack_v8.0` (+ metrics
 snapshot); driver defaults now `configs/v8/`.
 
 **Final 8-delivery panel vs v7-rc2 (full table in the run tree):**
@@ -616,7 +616,7 @@ and cam_01's P004 are the same striker (shirt 66). Mechanism: P3 minted two clus
 player (a keeper-head fragment contaminated P011's cluster, blocking every pairwise merge);
 P4 binding continuity kept both ids; the renderer projects each id's fused position into all
 cameras -> each camera draws the other id as a ghost on its live player. A new diagnostic
-(`scripts/global_id/diagnose_colocated_ids.py`) found 8 such mergeable events across the 8
+(`tools/diagnosis/diagnose_colocated_ids.py`) found 8 such mergeable events across the 8
 deliveries.
 
 **Fix 1 - P3 union-lift merge** (`graph_union_lift_merge`, tracklet_graph.py): candidate
@@ -755,7 +755,7 @@ Literature check (July 2026, web research; reshapes the Wave-5 detector block):
 > `yolo26x-pose-full-db8`.
 
 
-- Pipeline stages and render: `/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python`.
-- P1 inference (not re-run in this campaign unless F18 triggers): `cricket-rtmpose-l`.
-- Tests: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH="" pytest` in `cricket-yolo26x-pose`.
+- Pipeline stages and render: `/home/aksh/miniconda3/envs/pose-lab/bin/python`.
+- P1 inference (not re-run in this campaign unless F18 triggers): `pose-lab`.
+- Tests: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH="" pytest` in `pose-lab`.
 - BLAS threads capped to 1 per stage process by the drivers (oversubscription lesson).

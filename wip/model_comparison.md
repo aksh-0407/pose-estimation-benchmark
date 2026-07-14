@@ -30,7 +30,7 @@ feet (fixes-log W5 research note).
 ## Detector findings (the part that actually moved the needle)
 
 The detector, not the pose model, was the upstream bottleneck:
-- **YOLO26x-pose** (`yolo26x-pose-full-db8`, kept in `benchmarks/runs/`): historical
+- **YOLO26x-pose** (`yolo26x-pose-full-db8`, kept in `data/derived/runs/`): historical
   comparison run; not adopted (RTMPose mandate + top-down pipeline).
 - **Bake-off (docs/runs/bakeoff_w5/)**: tiled RTMDet-m @640 beat native hi-res decisively —
   RTMDet only detects at its trained object scale (m1280/m2560 lost boxes; t640 was a strict

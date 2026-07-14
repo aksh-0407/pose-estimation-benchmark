@@ -104,8 +104,8 @@ Important calibration finding:
 
 All identity methods are behind config flags (`configs/p3_association_v5.yaml`,
 `configs/p4_global_id_v5.yaml`); flags off reproduces the committed baseline byte-for-byte. Runs land
-in `benchmarks/runs/pipetrack_v5`; the frozen baseline is `benchmarks/runs/pipetrack_v3/_baseline_snapshot`;
-the batch driver is `scripts/pipetrack/run_id_pipeline.py`.
+in `data/derived/runs/pipetrack_v5`; the frozen baseline is `data/derived/runs/pipetrack_v3/_baseline_snapshot`;
+the batch driver is `src/identity/id_pipeline.py`.
 
 | ID | Method | Result | Verdict | Rationale |
 |---|---|---:|---|---|
@@ -357,7 +357,7 @@ Purpose:
 
 Implementation:
 
-- Added `scripts/visualization/render_bird_eye_view.py`.
+- Added `src/identity/visualization/render_bird_eye_view.py`.
 - Renders a top-down field plot from P4 `ground_tracks.jsonl`.
 - Outputs MP4 animation and sampled montage.
 
@@ -423,7 +423,7 @@ Purpose:
 
 Implementation:
 
-- Updated `scripts/visualization/render_phase1_videos.py`.
+- Updated `src/identity/visualization/render_videos.py`.
 - Added `draw_bev_panel` and `compute_ground_extents`.
 - Replaced the bottom-left delivery-monitor slot with a QT-style field plot:
   - boundary ellipse
@@ -492,9 +492,9 @@ Purpose:
 
 Implementation:
 
-- Ran the P6 stage through `scripts/export/triangulate_predictions.py`.
+- Ran the P6 stage through `src/identity/p4_lift/run_triangulation.py`.
 - Triangulates all 17 COCO keypoints per global player across calibrated cameras.
-- Added occlusion extrapolation in `pose_estimation/triangulation.py`:
+- Added occlusion extrapolation in `src/identity/common/triangulation.py`:
   - `fill_occluded_joints`
   - `fill_from_skeletal_prior`
 
@@ -587,7 +587,7 @@ Root cause (verified in code):
 - The facing pairs also use the tighter `opposite_pair_ground_gate_m` (2.5 m), which under
   foot-projection noise can itself split a correct two-view merge.
 
-Implementation (`scripts/association/tracklet_graph.py`, `scripts/association/config.py`):
+Implementation (`src/identity/p3_association/tracklet_graph.py`, `src/identity/p3_association/config.py`):
 
 - `graph_corrob_merge`: a second, conservative merge pass that admits an edge in
   `[graph_llr_merge_single, graph_llr_merge_threshold)` only when it has full co-visible support, no
@@ -624,7 +624,7 @@ Root cause (measured):
   (`w_spatial * new_traj_cost_factor = 0.5`), but a plausible stitch
   (`0.1 * gap + 1.0 * distance + ...`) almost always exceeds 0.5, so nothing merged.
 
-Implementation (`scripts/global_id/stitching.py`, `runner.py`, `config.py`):
+Implementation (`src/identity/p5_global_id/stitching.py`, `runner.py`, `config.py`):
 
 - Threaded each track's accumulated pose-shape descriptor into the segment (`pose_by_id`).
 - Added a hard pose gate (`p4b.pose_stitch_max_distance`) so only same-build fragments merge, an
@@ -650,7 +650,7 @@ Evidence (dumping the M2 ground tracks):
   alive only 6-74 frames** (e.g. 6, 8, 13, 21 frames) - fragments/shadows minted from the many demoted
   clusters (38/41/87 on `_6/_7/M2`).
 
-Implementation (`scripts/global_id/config.py`, `runner.py`):
+Implementation (`src/identity/p5_global_id/config.py`, `runner.py`):
 
 - `p4a.min_emit_frames`: after stitching, any global ID whose total emitted frame-span is below the
   threshold (set to 30 frames = 0.6 s) is dropped; its detections become unlabelled. A real cricket
@@ -675,7 +675,7 @@ Purpose:
 
 - Anti-teleport and anti-fragmentation guardrails inside the online tracker.
 
-Implementation (`scripts/global_id/track_manager.py`, `global_track.py`, `config.py`):
+Implementation (`src/identity/p5_global_id/track_manager.py`, `global_track.py`, `config.py`):
 
 - `adaptive_lost_window` (+ `lost_window_max_frames`): a well-established track earns a longer occlusion
   tolerance (up to 90 frames) so a briefly-hidden regular is re-acquired instead of re-born.
@@ -704,10 +704,10 @@ Purpose:
 
 Implementation:
 
-- `pose_estimation/cricket/geometry.py`: `ground_point_visible_in` - a per-camera visibility test with
+- `src/identity/common/geometry.py`: `ground_point_visible_in` - a per-camera visibility test with
   cheirality (via the pitch-oriented `camera_axis_lookat` forward axis) plus the in-frame check. The
   previous ghost code lacked cheirality and could reproject points that were actually behind the camera.
-- `scripts/visualization/render_phase1_videos.py`: a last-known fused-position store lets a ghost be
+- `src/identity/visualization/render_videos.py`: a last-known fused-position store lets a ghost be
   drawn for an ID gone from *every* camera (not just occluded in one), in each camera that geometrically
   frames that ground, faded by age; "occluded" vs "lost" labels; greyed ghost dots added to the BEV.
 - In-pipeline "ghost verification": the ID-2 pose-gated stitch plus the ID-4 descriptor-gated re-entry
@@ -723,10 +723,10 @@ Conclusion:
 
 Fixes made during the file-by-file audit:
 
-- `pose_estimation/cricket/ground_kalman.py` `cap_covariance`: bounded **both** position-variance axes
+- `src/identity/p5_global_id/ground_kalman.py` `cap_covariance`: bounded **both** position-variance axes
   during long Lost windows; the previous version broke after the first over-threshold axis and could
   leave the other unbounded.
-- `scripts/association/tracklet_graph.py`: the fragment posture-veto now uses the fragment's
+- `src/identity/p3_association/tracklet_graph.py`: the fragment posture-veto now uses the fragment's
   best-supported posture aggregate rather than only its first chunk (which was often undefined), so the
   veto can actually fire.
 

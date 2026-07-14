@@ -17,12 +17,12 @@ git clone <this-repo> pose-estimation && cd pose-estimation
 pip install -r requirements.txt
 
 # P1 model env + weights (RTMPose-X + RTMDet detector)
-python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8 --download-assets
-python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing
+python3 tools/setup_model_envs.py --models rtmpose_x_body8 --download-assets
+python3 tools/check_assets.py --models rtmpose_x_body8 --fail-missing
 ```
 
 The tracking/association/global-ID/triangulation stages (P2–P6) run in an env with
-NumPy ≥ 1.23.5 and SciPy ≥ 1.10 (e.g. `cricket-yolo26x-pose`). See the per-stage commands
+NumPy ≥ 1.23.5 and SciPy ≥ 1.10 (e.g. `pose-lab`). See the per-stage commands
 in [docs/scripts.md](docs/scripts.md).
 
 ## Workflow
@@ -33,10 +33,10 @@ in [docs/scripts.md](docs/scripts.md).
 3. Before committing, run the checks:
    ```bash
    python3 -m pytest -q
-   python3 scripts/setup/audit_repo.py --fail
+   python3 tools/audit_repo.py --fail
    ```
 4. Commit only source, configs, docs, and the small committed run metrics
-   (`benchmarks/runs/<run>/**/​*_metrics.json`, manifests). Do **not** commit weights,
+   (`data/derived/runs/<run>/**/​*_metrics.json`, manifests). Do **not** commit weights,
    frames, or raw per-frame prediction dumps — they are gitignored.
 5. Push and open a pull request.
 

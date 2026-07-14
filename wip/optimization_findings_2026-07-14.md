@@ -23,7 +23,7 @@ On an 8-vCPU box the CPU batch is capped at 8 cores of throughput — already re
 ## SHIPPED — byte-identical, verified by execution
 
 ### 1. P2 incremental medoid cache — 15.5× (the big one)
-`scripts/tracking/track.py` + `config.py`. Sample-profiling showed **86.9% of P2
+`src/identity/p2_tracking/track.py` + `config.py`. Sample-profiling showed **86.9% of P2
 self-time in `masked_weighted_cosine`**, driven by `Track.gallery_repr()` recomputing
 the O(K²) gallery **medoid** (K=`pose_gallery_size`=30) on every hit — even though each
 hit only appends one member, so only that member's ~29 distances are new.
@@ -41,7 +41,7 @@ per-pair values in the same member order with the same first-minimum tie-break. 
 - 212/212 tests pass.
 
 ### 2. P3 `ground_anchored_skeleton` vectorised — bit-identical
-`pose_estimation/cricket/pose_shape.py` (12% of P3 self-time; also the billboard-posture
+`src/identity/common/pose_shape.py` (12% of P3 self-time; also the billboard-posture
 path). Replaced the per-joint Python loop (independent ray-plane intersections, no
 cross-joint reduction) with batched numpy. Proven byte-identical on **20,000 random
 cases** (incl. NaN/edge cases, both ground_xy and foot-pixel paths, 0 mismatches) and
@@ -94,6 +94,6 @@ The CPU batch is core-bound; the only ways past 8-core throughput are (a) more D
 with cores (a 16–32 vCPU box would ~2–4× the batch with no code change).
 
 ## New/changed files
-- `scripts/tracking/track.py`, `scripts/tracking/config.py` — P2 medoid cache.
-- `pose_estimation/cricket/pose_shape.py` — vectorised ground_anchored_skeleton.
-- `scripts/visualization/render_all_mosaics.py`, `scripts/inference/run_phase1_parallel.py` — new launchers.
+- `src/identity/p2_tracking/track.py`, `src/identity/p2_tracking/config.py` — P2 medoid cache.
+- `src/identity/common/pose_shape.py` — vectorised ground_anchored_skeleton.
+- `src/identity/visualization/render_all_mosaics.py`, `src/core/inference/run_phase1_parallel.py` — new launchers.

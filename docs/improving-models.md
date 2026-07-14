@@ -44,10 +44,10 @@ The open issues, their evidence, and prioritised fixes are enumerated per phase 
 - **2D denoising** — the P1 output feeds everything, so cleaner 2D helps every stage.
   Confidence gating, outlier rejection, and temporal smoothing of keypoints (One-Euro /
   Savitzky-Golay) are the front-line jitter levers.
-- **Multi-view geometric denoising** — `pose_estimation/triangulation.py`
+- **Multi-view geometric denoising** — `src/identity/common/triangulation.py`
   (`ransac_triangulate_point`, `triangulate_skeleton_ransac`) rejects a bad view using the
   geometry of the others; `confidence_ema_smooth` smooths the 3D trajectory.
-- **Ground-plane solving** — `pose_estimation/cricket/geometry.py` (`ground_from_reprojection`
+- **Ground-plane solving** — `src/identity/common/geometry.py` (`ground_from_reprojection`
   = the `z0_reproj` emitter, `ground_covariance`, `robust_fuse_ground`) turns multi-view foot
   pixels into a position with uncertainty on the low-parallax facing geometry.
 - **Cue fusion** — the P3 tracklet graph fuses ground/epipolar/appearance/pose-shape/motion

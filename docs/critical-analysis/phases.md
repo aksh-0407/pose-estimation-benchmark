@@ -59,7 +59,7 @@ Two structural changes, both justified below:
    global-ID-keyed 3D (now with native-26 keypoints, cheirality, frame-aware fills and a
    zero-phase Butterworth by default).
 
-`scripts/pipetrack/run_full_pipeline.py` now defaults to this order with `configs/v8/`
+`src/main.py` now defaults to this order with `configs/v8/`
 (tiled-detection stack; `configs/v7/` = the previous identity-stack cut). The legacy
 order remains reproducible via `--no-enable-stabilization --no-enable-lift` + `configs/v6/`.
 
@@ -101,15 +101,15 @@ excellent and a full learned volumetric net is unnecessary (see
 
 | Phase | Entry script | Input | Output |
 |---|---|---|---|
-| P1 | `scripts/inference/run_phase1_rtmpose_inference.py` | frames, `model_envs.yaml` | `predictions/*.jsonl` (COCO-17 + Halpe-26) |
-| P1.5 | `scripts/stabilization/run_stabilization.py` | P1 run | stabilized run (drop-in P2 input) |
-| P2 | `scripts/tracking/run_per_camera_tracking.py` | P1/P1.5 run, calib, `p2_tracking.yaml` | `predictions/*` + `local_track_id` |
-| P3 | `scripts/association/run_cross_camera_association.py` | P2 run, calib, `p3_association.yaml` | `predictions/*` + `diagnostics/correspondences.jsonl` |
-| P4 | `scripts/global_id/run_global_id.py` | P3 run, calib, `p4_global_id.yaml` | `global_player_id`, `diagnostics/ground_tracks.jsonl`, `id_switch_report.json` |
-| P5 | `scripts/roles/run_role_assignment.py` | P4 run, calib | `p5/roles.json` |
-| P6 / P3.5 | `scripts/export/triangulate_predictions.py` | P4 run (today) / P3 run (proposed), calib | `pose_3d.keypoints_world_m` |
-| export | `scripts/export/export_ue_packets.py` | triangulated 3D | UE pose packets |
-| render | `scripts/visualization/render_phase1_videos.py` | P4 run + P3 corr + P5 roles + frames + calib + ball | `visualizations/videos/<delivery>__all_cameras.mp4` |
+| P1 | `src/core/inference/run_phase1_rtmpose_inference.py` | frames, `model_envs.yaml` | `predictions/*.jsonl` (COCO-17 + Halpe-26) |
+| P1.5 | `src/identity/p1_stabilization/run_stabilization.py` | P1 run | stabilized run (drop-in P2 input) |
+| P2 | `src/identity/p2_tracking/run_per_camera_tracking.py` | P1/P1.5 run, calib, `p2_tracking.yaml` | `predictions/*` + `local_track_id` |
+| P3 | `src/identity/p3_association/run_cross_camera_association.py` | P2 run, calib, `p3_association.yaml` | `predictions/*` + `diagnostics/correspondences.jsonl` |
+| P4 | `src/identity/p5_global_id/run_global_id.py` | P3 run, calib, `p4_global_id.yaml` | `global_player_id`, `diagnostics/ground_tracks.jsonl`, `id_switch_report.json` |
+| P5 | `src/identity/p6_roles/run_role_assignment.py` | P4 run, calib | `p5/roles.json` |
+| P6 / P3.5 | `src/identity/p4_lift/run_triangulation.py` | P4 run (today) / P3 run (proposed), calib | `pose_3d.keypoints_world_m` |
+| export | `src/identity/export/export_ue_packets.py` | triangulated 3D | UE pose packets |
+| render | `src/identity/visualization/render_videos.py` | P4 run + P3 corr + P5 roles + frames + calib + ball | `visualizations/videos/<delivery>__all_cameras.mp4` |
 
-Batch driver for P3→P4 across all 8 deliveries: `scripts/pipetrack/run_id_pipeline.py`
+Batch driver for P3→P4 across all 8 deliveries: `src/identity/id_pipeline.py`
 (caps BLAS threads, prints a joint metric panel, diffs against a frozen baseline).

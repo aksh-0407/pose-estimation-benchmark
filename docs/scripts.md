@@ -32,10 +32,10 @@ then **RTMPose-X** estimates keypoints per box. Output is harmonised to **COCO-1
 (`pose_2d_native`, 26 kpts incl. 6 foot points); `pose_2d.keypoints_px == pose_2d_native[0:17]`.
 
 ```bash
-conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+conda run -n pose-lab python src/core/inference/run_phase1_rtmpose_inference.py \
   --model-id rtmpose_x_body8 --deliveries CCPL080626M1_1_14_1 \
   --det-batch-size 32 --pose-batch-size 96 --io-workers 16 --prefetch-batches 3 \
-  --run-id rtmpose-x --run-dir benchmarks/runs/rtmpose-x
+  --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
 ```
 
 Key flags: `--groups/--deliveries/--cameras/--frame-limit` (scope), `--list` (preview),
@@ -61,13 +61,13 @@ a constant-velocity Kalman filter + ByteTrack-style two-stage association, with 
 weighted-cosine **pose distance** cue and a calibrated ground-reachability gate.
 
 ```bash
-$PY -m scripts.tracking.run_per_camera_tracking \
+$PY -m identity.p2_tracking.run_per_camera_tracking \
   --input-run-dir <p1-run> --output-run-dir <p2-run> \
-  --drive-root drive --delivery-id <delivery> --config configs/p2_tracking.yaml \
+  --drive-root drive --delivery-id <delivery> --config configs/02_tracking.yaml \
   --expected-frames 600
 ```
 
-**Reads:** P1 `predictions/*.jsonl`, calibration, `configs/p2_tracking.yaml`.
+**Reads:** P1 `predictions/*.jsonl`, calibration, `configs/02_tracking.yaml`.
 **Writes:** re-emitted `predictions/*.jsonl` (+ `local_track_id`), tracking metrics.
 
 ## P3 — `run_cross_camera_association.py`
@@ -79,15 +79,15 @@ that respects the one-detection-per-camera and same-camera cannot-link constrain
 emitted per-player ground position uses the z=0 reprojection solver (`z0_reproj`).
 
 ```bash
-$PY -m scripts.association.run_cross_camera_association \
+$PY -m identity.p3_association.run_cross_camera_association \
   --input-run-dir <p2-run> --output-run-dir <p3-run> \
-  --drive-root drive --delivery-id <delivery> --config configs/p3_association.yaml \
+  --drive-root drive --delivery-id <delivery> --config configs/03_association.yaml \
   --expected-frames 600
 ```
 
 **Writes:** `predictions/*.jsonl`, `association_metrics.json`, and
 `diagnostics/correspondences.jsonl` (per-frame cross-camera cluster membership). A ground
--accuracy evaluator is `scripts/association/eval_ground_accuracy.py`.
+-accuracy evaluator is `tools/diagnosis/eval_ground_accuracy.py`.
 
 ## P4 — `run_global_id.py`
 
@@ -96,9 +96,9 @@ with a role-aware Singer-acceleration Kalman), stitches fragmented tracklets (po
 min-cost-flow path cover), and emits fused per-player ground tracks.
 
 ```bash
-$PY -m scripts.global_id.run_global_id \
+$PY -m identity.p5_global_id.run_global_id \
   --input-run-dir <p3-run> --output-run-dir <p4-run> \
-  --drive-root drive --delivery-id <delivery> --config configs/p4_global_id.yaml \
+  --drive-root drive --delivery-id <delivery> --config configs/05_global_id.yaml \
   [--ground-truth labels.jsonl]
 ```
 
@@ -108,15 +108,15 @@ MOTA/IDF1-style metrics; without labels, all identity figures are explicitly pro
 
 ### The batch identity driver
 
-`scripts/pipetrack/run_id_pipeline.py` re-runs P3→P4 across all 8 deliveries in parallel
+`src/identity/id_pipeline.py` re-runs P3→P4 across all 8 deliveries in parallel
 (BLAS threads capped), then prints a joint metric panel (agreement, distinct IDs,
 teleports, collisions, single-camera rate, churn) and optionally diffs it against a frozen
 baseline snapshot.
 
 ```bash
-$PY -m scripts.pipetrack.run_id_pipeline \
-  --input-tree benchmarks/runs/pipetrack_v3 --output-tree benchmarks/runs/pipetrack_v5 \
-  --baseline benchmarks/runs/pipetrack_v3/_baseline_snapshot --jobs 8
+$PY -m identity.id_pipeline \
+  --input-tree data/derived/runs/pipetrack_v3 --output-tree data/derived/runs/pipetrack_v5 \
+  --baseline data/derived/runs/pipetrack_v3/_baseline_snapshot --jobs 8
 ```
 
 ## P5 — `run_role_assignment.py`
@@ -153,19 +153,19 @@ Renders the diagnostic videos from a P4 run, colouring skeletons by stable globa
 
 ```bash
 # mosaic: 7 calibration-ordered camera tiles + bird's-eye monitor + roster
-$PY -m scripts.visualization.render_phase1_videos \
+$PY -m identity.visualization.render_videos \
   --drive-root drive --run-dir <p4-run> --delivery-id <delivery> --mode mosaic --show p4
 
 # bird's-eye ground view only
-$PY -m scripts.visualization.render_phase1_videos \
+$PY -m identity.visualization.render_videos \
   --drive-root drive --run-dir <p4-run> --delivery-id <delivery> --mode ground --show p4
 ```
 
 `--mode {all,per-camera,mosaic,ground}`; `--show {p2,p3,p4}` selects which stage's IDs to
 overlay. The tile layout is derived from calibration (no hardcoded camera IDs) by
-`scripts/visualization/mosaic_layout.py`; stable ID colours come from
-`scripts/visualization/identity_colors.py`. A standalone top-down renderer is
-`scripts/visualization/render_bird_eye_view.py`.
+`src/identity/visualization/mosaic_layout.py`; stable ID colours come from
+`src/identity/visualization/identity_colors.py`. A standalone top-down renderer is
+`src/identity/visualization/render_bird_eye_view.py`.
 
 ---
 
@@ -173,11 +173,11 @@ overlay. The tile layout is derived from calibration (no hardcoded camera IDs) b
 
 | Script | When | Purpose |
 | ------ | ---- | ------- |
-| `scripts/setup/setup_model_envs.py` | first | Create the model conda env + download P1 weights (RTMPose-X + RTMDet). |
-| `scripts/setup/check_assets.py` | before runs | Report which checkpoints are present (`--fail-missing`). |
-| `scripts/setup/check_environment.py` | debugging | Print Python, binaries (`nvidia-smi`, `ffmpeg`, …), packages, GPU. |
-| `scripts/setup/sync_model_store.py` | after asset changes | Regenerate `models/<id>/model.yaml`/`README`/checksums. |
-| `scripts/setup/audit_repo.py --fail` | before commit | Fail if weights/frames/raw artifacts got tracked by mistake. |
+| `tools/setup_model_envs.py` | first | Create the model conda env + download P1 weights (RTMPose-X + RTMDet). |
+| `tools/check_assets.py` | before runs | Report which checkpoints are present (`--fail-missing`). |
+| `tools/check_environment.py` | debugging | Print Python, binaries (`nvidia-smi`, `ffmpeg`, …), packages, GPU. |
+| `tools/sync_model_store.py` | after asset changes | Regenerate `models/<id>/model.yaml`/`README`/checksums. |
+| `tools/audit_repo.py --fail` | before commit | Fail if weights/frames/raw artifacts got tracked by mistake. |
 
 `configs/*.yaml` are documented in [configuration.md](configuration.md). Metrics and
 proxies in [metrics.md](metrics.md).

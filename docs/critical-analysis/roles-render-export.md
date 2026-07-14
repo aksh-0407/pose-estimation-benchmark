@@ -10,7 +10,7 @@ render** (the diagnostic video that is the visible end product).
 umpire / fielder from ground geometry relative to the pitch axis and bowling direction. The
 mosaic roster reads roles only from `p5/roles.json`.
 
-**Method — `scripts/roles/{assigner,run_role_assignment}.py`.** Uses `load_pitch_axis` /
+**Method — `src/identity/p6_roles/{assigner,run_role_assignment}.py`.** Uses `load_pitch_axis` /
 `infer_bowling_direction` (from `mosaic_layout`) and each player's ground track to assign a role
 by position/motion relative to the pitch. Runs **after** P4.
 
@@ -38,7 +38,7 @@ monitor** + a **team roster** into one video, overlaying skeletons coloured by s
 the ball trail, roles, and occlusion "ghost" markers. This is where identity errors become
 visible — a swapping colour is an ID switch.
 
-**Method — `scripts/visualization/render_phase1_videos.py` (+ `mosaic_layout.py`,
+**Method — `src/identity/visualization/render_videos.py` (+ `mosaic_layout.py`,
 `identity_colors.py`).** The tile layout is **derived from calibration** (no hardcoded camera IDs):
 `derive_mosaic_layout` places columns/rows and mirrors by camera look-direction, with bottom-row
 monitor + roster slots. It reads P4 `predictions` (poses + IDs), P3 `correspondences.jsonl`
@@ -72,7 +72,7 @@ raw frames, calibration (for ghost foot-projection), and ball events. Stable ID 
 
 ## UE export
 
-**Method — `scripts/export/export_ue_packets.py`** converts triangulated 3D JSONL into Unreal
+**Method — `src/identity/export/export_ue_packets.py`** converts triangulated 3D JSONL into Unreal
 Engine pose packets tagged with a model version. It is a parallel production branch (it does not
 feed the mosaic).
 

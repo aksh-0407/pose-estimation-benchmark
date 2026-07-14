@@ -8,8 +8,8 @@ The pipeline is driven by YAML in `configs/`. Two families:
   (and their `_v5` variants) tune tracking, cross-camera association, and global identity.
 
 Each stage's config is validated on load (unknown keys are rejected) by the stage's
-`config.py` (`scripts/tracking/config.py`, `scripts/association/config.py`,
-`scripts/global_id/config.py`).
+`config.py` (`src/identity/p2_tracking/config.py`, `src/identity/p3_association/config.py`,
+`src/identity/p5_global_id/config.py`).
 
 ---
 
@@ -24,7 +24,7 @@ strengths/risks) plus a `default_target` block (production target `nvidia_gpu` /
 How each model is **installed and run**: a reusable install `profiles:` block (conda +
 pip recipes per ecosystem) and a per-model `models:` block (conda `env_name`, mmpose
 `config`, `checkpoint`, and downloadable `assets:` with optional `fallback_urls`).
-RTMPose-X runs in `cricket-rtmpose-l` (mmpose 1.3.2 / mmcv 2.1.0 / mmdet 3.2.0 /
+RTMPose-X runs in `pose-lab` (mmpose 1.3.2 / mmcv 2.1.0 / mmdet 3.2.0 /
 torch 2.1.0-cu121) with the shared RTMDet-m person detector.
 
 ### `keypoint_mappings.yaml`

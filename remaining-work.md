@@ -30,13 +30,13 @@ fit). No re-run needed unless a materially different calibration appears.
 
 ### 1.2 Identity ground-truth labelling → IDF1 / MOTA / HOTA
 All identity numbers are proxies (agreement / persistence / coloc / teleports, read jointly).
-`pose_estimation/cricket/tracking_metrics.py::evaluate_ground_truth` is implemented and takes
+`src/identity/common/metrics.py::evaluate_ground_truth` is implemented and takes
 a hand-labelled JSONL. Needed: a few hundred labelled frames on 2–3 deliveries (suggest `_7`,
 `M2_1_12_1`, `_6` — hard clips). Until then tuning stays proxy-guided. Recurring ask across
 `wip/` and the campaign docs since v5.
 
 ### 1.3 Vedant's `global_id/` rewrite — parked for his changelog
-`vedant2/scripts/global_id/*` is a parallel rebuild lineage (track_manager differs from every
+`vedant2/src/identity/p5_global_id/*` is a parallel rebuild lineage (track_manager differs from every
 commit by 1000+ lines). His `roles/` contribution was evaluated, de-bugged (uniqueness latch,
 standing-back keeper, crease anchors, 2 umpire slots) and merged as roles v1/v1.2. The
 global_id rewrite must NOT displace the validated stack without: his changelog, per-change
@@ -58,15 +58,15 @@ roles in roster panel only). While reviewing, arbitrate two open visual question
 ## 2. Implemented, flag-gated OFF — awaiting A/B measurement
 
 ### 2.1 G1 Hartley conditioning + G3 parallax-ordered RANSAC
-`pose_estimation/triangulation.py` (`hartley=`, `parallax_order=`; CLI `--hartley
---parallax-order` on `scripts/export/triangulate_predictions.py`). G1 row-equilibrates DLT
+`src/identity/common/triangulation.py` (`hartley=`, `parallax_order=`; CLI `--hartley
+--parallax-order` on `src/identity/p4_lift/run_triangulation.py`). G1 row-equilibrates DLT
 systems; G3 orders RANSAC seed pairs by ray parallax so exact ties resolve toward good
 geometry. A/B on the reproj/coverage panel (1–2 deliveries suffice); accept if reproj p95
 drops without coverage loss. Note: the batched fast paths support `hartley` but fall back to
 the per-joint loop when `parallax_order=True`.
 
 ### 2.2 Airborne pelvis-emit (V2-L3)
-`scripts/association/associator.py::_triangulated_pelvis_xy` behind `airborne_pelvis_emit`
+`src/identity/p3_association/associator.py::_triangulated_pelvis_xy` behind `airborne_pelvis_emit`
 (P3 config). When a majority of a cluster's views flag airborne (`_airborne_2d_proxy`), the
 emitted ground position becomes the triangulated hip-midpoint vertical projection instead of
 the biased z=0 foot ray (measured bias: ankle-z p95 ≈ 0.56 m ⇒ ~0.5–1 m ground overshoot).
@@ -100,7 +100,7 @@ for downstream consumers; sizeable experiment (`wip` V2-L1 / F16 since v6 planni
 
 ### 3.3 Detector follow-ups (F18)
 Tiled RTMDet-m + NMS 0.55 is the accepted baseline. Queued probes: YOLO26-l and RF-DETR-class
-detectors through the same bake-off harness (`scripts/inference/detector_bakeoff.py` +
+detectors through the same bake-off harness (`tools/detector_bakeoff/detector_bakeoff.py` +
 `detector_bakeoff_report.py`), recall-oracle on `_7`+`M2` first. Also 3×2-grid tiling probe if
 P1 time ever matters more than recall.
 
@@ -169,7 +169,7 @@ inlier metric; exclude fills; hip handling; measure the dormant G1/G3 flags. Ful
 
 ## 6. Product/output tasks not yet requested
 
-- **UE packet export** (`scripts/export/export_ue_packets.py`) has not been run on v8
+- **UE packet export** (`src/identity/export/export_ue_packets.py`) has not been run on v8
   production data — run it per delivery if the company needs UE-format packets rather than
   the JSONL 3D (input contract unchanged; consumes the P6 output).
 - **All-40 mosaic batch** — render on demand (~3 h on the box, 2 parallel).

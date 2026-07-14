@@ -21,8 +21,8 @@ a frame or two; it cannot create an identity error.
 |---|---|
 | **Input** | a P1 run dir (`predictions/*.jsonl`) |
 | **Output** | a stabilized run dir in the identical canonical format — a **drop-in P2 input** (`local_track_id` stays null, schema-valid) + `stabilization_metrics.json` (jitter before/after) |
-| **Config** | `configs/p1b_stabilization.yaml` (all flag-gated; `enabled: false` = byte-identical passthrough) |
-| **CLI** | `python -m scripts.stabilization.run_stabilization --input-run-dir <p1> --output-run-dir <p1b> --delivery-id <D>` |
+| **Config** | `configs/01_stabilization.yaml` (all flag-gated; `enabled: false` = byte-identical passthrough) |
+| **CLI** | `python -m identity.p1_stabilization.run_stabilization --input-run-dir <p1> --output-run-dir <p1b> --delivery-id <D>` |
 
 ## Flowchart
 
@@ -40,12 +40,12 @@ flowchart TD
 
 ## Methods walkthrough
 
-**Micro-track linking — `link_micro_tracks` ([linker.py:35](../../scripts/stabilization/linker.py#L35)).**
+**Micro-track linking — `link_micro_tracks` ([linker.py:35](../../src/identity/p1_stabilization/linker.py#L35)).**
 Greedy IoU association across consecutive frames (`iou_min=0.3`), bridging up to
 `max_gap_frames=2` missed frames. This is *not* identity tracking — it is the temporal
 correspondence a smoother requires, and by construction it cannot span an occlusion.
 
-**One-Euro filter — `OneEuroFilter` ([smoothing.py:26](../../scripts/stabilization/smoothing.py#L26)).**
+**One-Euro filter — `OneEuroFilter` ([smoothing.py:26](../../src/identity/p1_stabilization/smoothing.py#L26)).**
 The One-Euro filter ([Casiez, Roussel & Vogel, CHI 2012](https://gery.casiez.net/1euro/)) is a
 low-pass filter whose cutoff frequency **rises with the signal speed**:
 `cutoff = min_cutoff + β·|ẋ̂|`, where `ẋ̂` is a smoothed derivative. When a joint is still, the
@@ -53,14 +53,14 @@ cutoff is low → strong smoothing (kills jitter); when it moves fast, the cutof
 lag. This is the standard speed/lag trade-off tool for noisy interactive signals and is causal
 (online-friendly). One filter runs per keypoint per coordinate along a micro-track.
 
-**Confidence-gated spike clamp ([smoothing.py:78](../../scripts/stabilization/smoothing.py#L78)).**
+**Confidence-gated spike clamp ([smoothing.py:78](../../src/identity/p1_stabilization/smoothing.py#L78)).**
 Before filtering, a keypoint whose confidence is below `confidence_min (0.3)` **and** whose jump
 from the last filtered position exceeds `max(max_jump_px, max_jump_bbox_frac·bbox_diag)` is
 replaced by the last filtered position — so a single hallucinated ankle 200 px away cannot drag
 the trajectory. Missing/placeholder joints (`(0,0)`) are passed through untouched and do not
 advance their filter.
 
-**Jitter metric — `mean_jitter_px` ([smoothing.py:110](../../scripts/stabilization/smoothing.py#L110)).**
+**Jitter metric — `mean_jitter_px` ([smoothing.py:110](../../src/identity/p1_stabilization/smoothing.py#L110)).**
 Mean frame-to-frame displacement over confident, valid keypoints — the before/after number that
 proves the stage did something.
 

@@ -5,9 +5,9 @@ are flag-gated; defaults are the v8.1 production values.
 
 | Stage | What it smooths | Method | Where |
 |---|---|---|---|
-| **P1b** | 2D keypoints (pixels), per camera | One-Euro filter + spike clamp | `scripts/stabilization/linker.py`, `configs/v8/p1b_stabilization.yaml` |
-| **P4a** | Ground position (x,y world), per player | Singer-acceleration Kalman + χ²-gated posterior | `pose_estimation/cricket/ground_kalman.py`, `configs/v8/p4_global_id.yaml` |
-| **P6** | 3D skeleton (X,Y,Z world), per joint | Zero-phase Butterworth (+ occlusion fill) | `pose_estimation/triangulation.py::butterworth_smooth`, `scripts/export/triangulate_predictions.py` |
+| **P1b** | 2D keypoints (pixels), per camera | One-Euro filter + spike clamp | `src/identity/p1_stabilization/linker.py`, `configs/01_stabilization.yaml` |
+| **P4a** | Ground position (x,y world), per player | Singer-acceleration Kalman + χ²-gated posterior | `src/identity/p5_global_id/ground_kalman.py`, `configs/05_global_id.yaml` |
+| **P6** | 3D skeleton (X,Y,Z world), per joint | Zero-phase Butterworth (+ occlusion fill) | `src/identity/common/triangulation.py::butterworth_smooth`, `src/identity/p4_lift/run_triangulation.py` |
 
 ---
 

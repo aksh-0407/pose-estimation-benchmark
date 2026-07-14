@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Common failures and what to do. When in doubt, start with
-`python3 scripts/setup/check_environment.py` to see what's actually installed.
+`python3 tools/check_environment.py` to see what's actually installed.
 
 ## Model download
 
@@ -13,7 +13,7 @@ and the RTMDet person-detector checkpoint. Options:
 - Retry — it's often transient.
 - Download the file from another network or a verified mirror, then drop it at the exact
   `path` listed for that asset in [`configs/model_envs.yaml`](configuration.md#model-setup).
-- Re-check with `python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing`.
+- Re-check with `python3 tools/check_assets.py --models rtmpose_x_body8 --fail-missing`.
 
 ### mmpose config `_base_` not found
 
@@ -40,7 +40,7 @@ going forward.
 ### P2–P6 import errors (NumPy/SciPy)
 
 The tracking → global-ID → triangulation stages need NumPy ≥ 1.23.5 and SciPy ≥ 1.10. Run
-them in an env that has them (e.g. `cricket-yolo26x-pose`), not the mmpose env.
+them in an env that has them (e.g. `pose-lab`), not the mmpose env.
 
 ### The mosaic render is missing tiles / roles / ground monitor
 

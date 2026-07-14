@@ -19,7 +19,7 @@ order; 18–26 add head/neck/hip + 6 foot keypoints (heels, big/small toes).
   - `pose_2d` — COCO-17 (17 kpts), the contract the rest of the pipeline consumes, and
   - `pose_2d_native` — the full Halpe-26 (26 kpts) for future phases (feet etc.).
   `pose_2d.keypoints_px == pose_2d_native.keypoints_px[0:17]`.
-- Runs in the shared `cricket-rtmpose-l` Conda env (mmpose 1.3.2 / mmcv 2.1.0 /
+- Runs in the shared `pose-lab` Conda env (mmpose 1.3.2 / mmcv 2.1.0 /
   mmdet 3.2.0 / torch 2.1.0-cu121) — **no separate env**.
 
 ---
@@ -36,21 +36,21 @@ order; 18–26 add head/neck/hip + 6 foot keypoints (heels, big/small toes).
 - The dataset laid out as `<drive-root>/dataset/bt_01|bt_02|bt_03/<delivery>/camera<NN>/frame_*.jpg`
   (2560×1440). Default `--drive-root drive`.
 
-## 2. Create the environment (skip if `cricket-rtmpose-l` already exists)
+## 2. Create the environment (skip if `pose-lab` already exists)
 
 ```bash
-python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8
+python3 tools/setup_model_envs.py --models rtmpose_x_body8
 ```
 
-This creates/reuses the `cricket-rtmpose-l` env from the `mmpose_v1` profile in
+This creates/reuses the `pose-lab` env from the `mmpose_v1` profile in
 [`configs/model_envs.yaml`](../configs/model_envs.yaml) (torch is auto-selected for the
 detected driver). It is idempotent — an existing env is left in place.
 
 ## 3. Download the weights + detector
 
 ```bash
-python3 scripts/setup/setup_model_envs.py --models rtmpose_x_body8 --skip-envs --download-assets
-python3 scripts/setup/sync_model_store.py    # regenerate model.yaml / README / checksums
+python3 tools/setup_model_envs.py --models rtmpose_x_body8 --skip-envs --download-assets
+python3 tools/sync_model_store.py    # regenerate model.yaml / README / checksums
 ```
 
 Downloads (~200 MB pose + shared RTMDet-m detector) into `models/rtmpose_x_body8/weights/`
@@ -58,13 +58,13 @@ and `models/rtmdet_m_person/weights/`. Weights and checksums stay local (git-ign
 `model.yaml`/`README.md` are tracked. Verify:
 
 ```bash
-python3 scripts/setup/check_assets.py --models rtmpose_x_body8 --fail-missing
+python3 tools/check_assets.py --models rtmpose_x_body8 --fail-missing
 ```
 
 ## 4. Smoke test (one image)
 
 ```bash
-python3 scripts/setup/run_model_smoke.py --model rtmpose_x_body8
+python3 tools/run_model_smoke.py --model rtmpose_x_body8
 ```
 
 Expect `status: ok`, `instances: 1`, `keypoints: 26`.
@@ -90,20 +90,20 @@ Plug the tuned numbers into the wrapper (resumable; safe to re-run):
 
 ```bash
 DET_BATCH_SIZE=32 POSE_BATCH_SIZE=96 IO_WORKERS=16 PREFETCH_BATCHES=3 \
-  bash scripts/inference/run_rtmpose_x_final.sh
+  bash src/core/inference/run_rtmpose_x_final.sh
 ```
 
 or call the runner directly:
 
 ```bash
-conda run -n cricket-rtmpose-l python scripts/inference/run_phase1_rtmpose_inference.py \
+conda run -n pose-lab python src/core/inference/run_phase1_rtmpose_inference.py \
   --model-id rtmpose_x_body8 \
   --det-batch-size 32 --pose-batch-size 96 \
   --io-workers 16 --cv2-threads 2 --prefetch-batches 3 \
-  --run-id rtmpose-x --run-dir benchmarks/runs/rtmpose-x
+  --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
 ```
 
-Output → `benchmarks/runs/rtmpose-x/predictions/bt_XX__<delivery>__cam_YY.jsonl`
+Output → `data/derived/runs/rtmpose-x/predictions/bt_XX__<delivery>__cam_YY.jsonl`
 (one per camera; 56 cameras = 8 deliveries × 7 cameras spread across bt_01/02/03).
 `run_manifest.json` records config, timings, and FPS on completion.
 
@@ -114,9 +114,9 @@ Useful flags: `--groups/--deliveries/--cameras/--frame-limit` (filter), `--list`
 
 ```bash
 # each finished camera file has exactly 600 lines
-for f in benchmarks/runs/rtmpose-x/predictions/*.jsonl; do echo "$(wc -l < "$f") $f"; done
+for f in data/derived/runs/rtmpose-x/predictions/*.jsonl; do echo "$(wc -l < "$f") $f"; done
 # expect 56 files
-ls benchmarks/runs/rtmpose-x/predictions/*.jsonl | wc -l
+ls data/derived/runs/rtmpose-x/predictions/*.jsonl | wc -l
 ```
 
 ---
@@ -126,21 +126,21 @@ ls benchmarks/runs/rtmpose-x/predictions/*.jsonl | wc -l
 The remote capture box stores frames in a different native layout —
 `/home/ubuntu/pose_data/{bt1,bt2,bt3}/<delivery>/camera<NN>/frame_*.jpg` — and writes to
 a caller-chosen output dir. Use the dedicated runner
-[`run_phase1_l40s.py`](../scripts/inference/run_phase1_l40s.py) (it reuses the exact same
+[`run_phase1_l40s.py`](../src/core/inference/run_phase1_l40s.py) (it reuses the exact same
 mmdet/mmpose building blocks and P1 schema, incl. the 26-keypoint `pose_2d_native`, and
 has the same prefetch + thread-cap optimisation). RTMPose-x is fully wired: just pass
 `--model-id rtmpose_x_body8`.
 
 **One-time setup on the remote machine** (same as §1–4 above): clone the repo, create the
-`cricket-rtmpose-l` env, download the RTMPose-x weights + RTMDet detector,
+`pose-lab` env, download the RTMPose-x weights + RTMDet detector,
 `sync_model_store.py`, then smoke. Confirm the GPU: `run_phase1_l40s.py --list` prints the
 selection with no GPU needed; add `--device cuda:0` runs to check CUDA.
 
 **1. Tune batch sizes for the L40S** (in-process, single model load, writes only `best.json`):
 
 ```bash
-conda activate cricket-rtmpose-l
-python scripts/inference/run_phase1_l40s.py \
+conda activate pose-lab
+python src/core/inference/run_phase1_l40s.py \
   --model-id rtmpose_x_body8 --output-dir /home/ubuntu/pose-rtm-x \
   --sweep --grid          # --grid = real end-to-end det x pose ranking
 ```
@@ -150,17 +150,17 @@ and a projected full-run time. (The grid measures GPU + decode; with the prefetc
 the real run is a bit faster than the projection.)
 
 **2. Full run over all data → `/home/ubuntu/pose-rtm-x/`** using the wrapper
-[`run_rtmpose_x_l40s.sh`](../scripts/inference/run_rtmpose_x_l40s.sh):
+[`run_rtmpose_x_l40s.sh`](../src/core/inference/run_rtmpose_x_l40s.sh):
 
 ```bash
 DET_BATCH_SIZE=<B> POSE_BATCH_SIZE=<P> IO_WORKERS=<W> \
-  bash scripts/inference/run_rtmpose_x_l40s.sh
+  bash src/core/inference/run_rtmpose_x_l40s.sh
 ```
 
 or directly:
 
 ```bash
-python scripts/inference/run_phase1_l40s.py \
+python src/core/inference/run_phase1_l40s.py \
   --pose-data /home/ubuntu/pose_data --output-dir /home/ubuntu/pose-rtm-x \
   --model-id rtmpose_x_body8 \
   --det-batch-size <B> --pose-batch-size <P> \
@@ -175,7 +175,7 @@ it:
 ```bash
 tmux new -s posex
 DET_BATCH_SIZE=<B> POSE_BATCH_SIZE=<P> IO_WORKERS=<W> \
-  bash scripts/inference/run_rtmpose_x_l40s.sh 2>&1 | tee /home/ubuntu/pose-rtm-x/run.log
+  bash src/core/inference/run_rtmpose_x_l40s.sh 2>&1 | tee /home/ubuntu/pose-rtm-x/run.log
 # detach: Ctrl-b d ; reattach: tmux attach -t posex
 ```
 

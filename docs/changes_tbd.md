@@ -20,8 +20,8 @@ projections averaged across cameras** — dominated by single-cam grazing noise;
 - Demote the raw proxy to a secondary tripwire; drive the verdict off the emitted metric +
   agreement + coloc.
 - Re-tune id-overmint thresholds to the real roster (~13) so that rule can fire.
-**Code**: `pose_estimation/cricket/tracking_metrics.py:293` (`teleport_proxy`);
-`scripts/global_id/runner.py:414-447` (verdict).
+**Code**: `src/identity/common/metrics.py:293` (`teleport_proxy`);
+`src/identity/p5_global_id/runner.py:414-447` (verdict).
 **Verify**: re-run `--panel-only`; verdict distribution should track the `docs/diagnosis/02`
 grades, not the single-cam fraction.
 
@@ -31,7 +31,7 @@ observations that share one final id in a frame. (`diagnosis/04`)
 **Do**: at `runner.py:339-349`, when an `(id, frame)` has ≥2 points spread > ~2 m, do NOT
 average — emit the Kalman posterior only (or the point nearest the prior) and log a
 `split_observation` diagnostic.
-**Code**: `scripts/global_id/runner.py:339-349`.
+**Code**: `src/identity/p5_global_id/runner.py:339-349`.
 **Verify**: re-run `emit_smoothness.py`; emitted big-jump total should collapse from 1528
 toward the `M1_1_16_4`-class baseline.
 
@@ -45,8 +45,8 @@ spikes ≈ half the events).
   noisy foot ray (the foot ray carries ~1 m grazing error).
 - Tighten the P4a χ² gate / process noise so a single far measurement after a short gap is
   not admitted wholesale.
-**Code**: `scripts/global_id/runner.py:110-141` (emission), `p4_global_id.yaml` (gates),
-`pose_estimation/cricket/ground_kalman.py`.
+**Code**: `src/identity/p5_global_id/runner.py:110-141` (emission), `p4_global_id.yaml` (gates),
+`src/identity/p5_global_id/ground_kalman.py`.
 **Verify**: `emit_smoothness.py` e_max should drop from 100–1500 m/s toward < ~30 m/s.
 
 ## C4 🔴 (M) Depth-aware association weighting for grazing/facing cameras
@@ -55,8 +55,8 @@ only live cue (ground distance) is noisy exactly there. (`diagnosis/05`)
 **Do**: weight the ground-distance LLR by each camera's calibrated depth-uncertainty
 (down-weight grazing cam_04/cam_07), and **up-weight the triangulation-consistency
 (union-lift) cue**, which is the facing-pair-capable channel.
-**Code**: P3 cue fusion in `scripts/association/` (tracklet_graph + associator);
-config `configs/v8/p3_association.yaml`.
+**Code**: P3 cue fusion in `src/identity/p3_association/` (tracklet_graph + associator);
+config `configs/03_association.yaml`.
 **Verify**: `split_identity.py` cam_04/cam_07 split tallies down; panel `agreement` up on
 `M1_1_14_6`, `M1_1_16_2`, `M2_2_3_*` without collisions.
 
@@ -65,7 +65,7 @@ config `configs/v8/p3_association.yaml`.
 survives; 2 residual coloc pairs. (`diagnosis/05`, `remaining-work.md` §5b)
 **Do**: make `colocated_radius_m` a function of the projecting camera's depth-uncertainty
 (larger for grazing views) with the same disjoint-camera + posture guards.
-**Code**: `scripts/global_id/stitching.py:328` (`merge_colocated_ids`), `p4_global_id.yaml`.
+**Code**: `src/identity/p5_global_id/stitching.py:328` (`merge_colocated_ids`), `p4_global_id.yaml`.
 **Verify**: `coloc` → 0 on all 40; no new same-camera collisions.
 
 ## C6 🟡 (S) Cap the cross-space stitch budget (absolute metres, not gap-scaled)
@@ -73,7 +73,7 @@ survives; 2 residual coloc pairs. (`diagnosis/05`, `remaining-work.md` §5b)
 cross-field stitch → emitted step / possible wrong-person merge. (`diagnosis/06`)
 **Do**: add an absolute metres ceiling on stitch seam distance independent of gap; prefer an
 honest extra id over a teleport. Emit a per-merge `seam_distance`/`overlap` quality flag.
-**Code**: `scripts/global_id/stitching.py:139-226` (`build_link_costs`).
+**Code**: `src/identity/p5_global_id/stitching.py:139-226` (`build_link_costs`).
 **Verify**: `jump_classify.py` step count down; id count may tick up slightly (acceptable).
 
 ## C7 🟡 (M) Lock global id per P2 tracklet, not per frame
@@ -82,7 +82,7 @@ its id should be piecewise-constant. (`diagnosis/07`)
 **Do**: once a `(camera, local_track_id)` binds to a global id with confidence, hold it for
 the tracklet's life unless strongly overridden; apply id remaps as a final whole-tracklet
 relabel so boundary frames don't keep the losing id.
-**Code**: P3 membership + `runner.py` relabel; `scripts/association/`.
+**Code**: P3 membership + `runner.py` relabel; `src/identity/p3_association/`.
 **Verify**: `idswitch_2d.py` total < ~150 (from 517); no agreement regression.
 
 ## C8 🔴 (L) F16 single-view PnP lift — raise multi-camera coverage
@@ -98,7 +98,7 @@ wider error bar" → coverage up, ground position physically constrained (damps 
 **Why**: upstream cause of single-camera players (`diagnosis/09` P1-1/P1-2).
 **Do**: probe 3×2-grid tiling and/or a stronger detector (YOLO26-l, RF-DETR) through the
 existing bake-off harness; recall-oracle on `M2_2_3_*` + cam_07 first.
-**Code**: `scripts/inference/detector_bakeoff.py` + `detector_bakeoff_report.py`.
+**Code**: `tools/detector_bakeoff/detector_bakeoff.py` + `detector_bakeoff_report.py`.
 **Verify**: recall on deep fielders up; single_cam fraction down on M2 innings-2 clips.
 
 ## C10 🟢 (S) Coverage/confidence flag per emitted frame

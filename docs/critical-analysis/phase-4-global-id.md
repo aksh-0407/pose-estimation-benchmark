@@ -12,9 +12,9 @@ left behind. Its hard invariant: two detections in the same camera-frame can nev
 
 | | |
 |---|---|
-| **Input** | P3 run (correspondences + ground points); calibration; `configs/p4_global_id.yaml` (+ `_v5`); optional `--ground-truth` |
+| **Input** | P3 run (correspondences + ground points); calibration; `configs/05_global_id.yaml` (+ `_v5`); optional `--ground-truth` |
 | **Output** | `predictions/*` with `global_player_id`; `diagnostics/ground_tracks.jsonl`; `id_switch_report.json`; `global_id_metrics.json` |
-| **Core** | `scripts/global_id/{track_manager,stitching}.py`; `pose_estimation/cricket/ground_kalman.py` |
+| **Core** | `src/identity/p5_global_id/{track_manager,stitching}.py`; `src/identity/p5_global_id/ground_kalman.py` |
 
 ## Flowchart
 
@@ -40,7 +40,7 @@ ground, state `[x, y, vx, vy, ax, ay]`: continuous dynamics `Fc` with `−α` on
 the **Kalman posterior** (not the raw foot), so a single bad frame can't teleport the reported
 track (`wip/3d_location_issues_v2.md` R2).
 
-**Online assignment — `TrackManager.update` ([track_manager.py:322](../../scripts/global_id/track_manager.py#L322)).**
+**Online assignment — `TrackManager.update` ([track_manager.py:322](../../src/identity/p5_global_id/track_manager.py#L322)).**
 Staged, injective-by-construction (so same-camera collisions are impossible): Stage 0 honours a
 tracklet-graph `binding_id` 1:1 for the whole delivery; Stage 1 sticks to an exact `(camera,
 local_track_id)` owner (TTL 50 frames so a bad merge heals); Stage 2 is a **χ²-gated Mahalanobis**

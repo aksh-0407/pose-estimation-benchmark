@@ -18,9 +18,9 @@ triangulation is unstable — exactly where association is hardest. P3 therefore
 
 | | |
 |---|---|
-| **Input** | P2 run; calibration; `configs/p3_association.yaml` (+ `_v5`) |
+| **Input** | P2 run; calibration; `configs/03_association.yaml` (+ `_v5`) |
 | **Output** | `predictions/*` + `diagnostics/correspondences.jsonl` (per-frame cross-camera cluster membership) + `association_metrics.json` |
-| **Core modules** | `scripts/association/{tracklet_graph,associator,geometry_cache,cue_calibration,appearance}.py`; `pose_estimation/cricket/{geometry,pose_shape}.py` |
+| **Core modules** | `src/identity/p3_association/{tracklet_graph,associator,geometry_cache,cue_calibration,appearance}.py`; `pose_estimation/cricket/{geometry,pose_shape}.py` |
 | **Facing pairs** | `opposite_camera_pairs: [cam_01,cam_04],[cam_02,cam_06],[cam_03,cam_05]` |
 
 ## Flowchart (tracklet-graph mode, the default)
@@ -47,7 +47,7 @@ native size — the camera-07 correction) or the baseline is near-collinear arou
 and reallocated to ground proximity — the key adaptation so facing pairs are not scored on an
 unreliable Sampson distance.
 
-**Ground solving — `ground_from_reprojection` ([geometry.py:540](../../pose_estimation/cricket/geometry.py#L540)).**
+**Ground solving — `ground_from_reprojection` ([geometry.py:540](../../src/identity/common/geometry.py#L540)).**
 The emitted per-player position is the solution of a **z=0-constrained reprojection minimisation**:
 `argmin_{x,y} Σ_c w_c · ρ_Huber(‖project_c([x,y,0]) − foot_c‖)`, solved by **Gauss–Newton with
 Huber IRLS** (`huber_delta_px=8`), initialised from the median homography back-projection, with a
@@ -129,7 +129,7 @@ plane through the ground point — works on facing pairs without triangulation).
 - **V2-L1 (★★) ~50% single-camera frames.** Single-cam rate 0.39–0.61 (`wip/3d_location_issues_v2.md`
   V2-L1): only ~61% of player-frames have ≥2 views, so half get no cross-camera correction. Largely
   an association-binding-rate problem.
-- **P3-1 (★) C07 global-image-size mismatch in config.** `configs/p3_association.yaml` hard-codes
+- **P3-1 (★) C07 global-image-size mismatch in config.** `configs/03_association.yaml` hard-codes
   `image_w/h`; only code that uses the per-camera intrinsic size is correct for C07.
 - **P3-2 (★) Cue-calibration cold-start.** `<3` isolated anchors ⇒ default Gaussians, silently
   weakening cues on crowded deliveries.

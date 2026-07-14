@@ -27,11 +27,11 @@ into, per delivery:
 
 | What | Path |
 |---|---|
-| Run data (all stages) | `benchmarks/runs/pipetrack_v6.0/deliveries/<DELIVERY>/` |
+| Run data (all stages) | `data/derived/runs/pipetrack_v6.0/deliveries/<DELIVERY>/` |
 | Mosaic videos | `artifacts/pipetrack_v6.0/mosaics/<DELIVERY>/<DELIVERY>__all_cameras.mp4` |
-| Frozen metrics snapshot | `benchmarks/runs/pipetrack_v6.0/_baseline_snapshot/` |
-| Run provenance (configs + sha256) | `benchmarks/runs/pipetrack_v6.0/pipeline_manifest.json` |
-| Input 2D poses (P1) | `benchmarks/runs/rtmpose-x/predictions/` |
+| Frozen metrics snapshot | `data/derived/runs/pipetrack_v6.0/_baseline_snapshot/` |
+| Run provenance (configs + sha256) | `data/derived/runs/pipetrack_v6.0/pipeline_manifest.json` |
+| Input 2D poses (P1) | `data/derived/runs/rtmpose-x/predictions/` |
 | Frames / calibration / ball events | `drive/dataset/…` (see `docs/getting-started.md`) |
 
 The 8 deliveries: `CCPL080626M1_1_14_1 … _7` and `CCPL080626M2_1_12_1`.
@@ -43,7 +43,7 @@ Each delivery directory contains one folder per phase. Every phase reads the pre
 independently.
 
 ```
-benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_1/
+data/derived/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_1/
 ├── p2/          per-camera tracking
 │   ├── predictions/<group>__<delivery>__cam_NN.jsonl
 │   ├── diagnostics/
@@ -74,7 +74,7 @@ benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_1/
 
 | Phase | What it does | Key output |
 |---|---|---|
-| P1 (input, `benchmarks/runs/rtmpose-x`) | RTMDet person detection + RTMPose-X pose per frame per camera | `pose_2d` (COCO-17) + `pose_2d_native` (Halpe-26 incl. feet) per player |
+| P1 (input, `data/derived/runs/rtmpose-x`) | RTMDet person detection + RTMPose-X pose per frame per camera | `pose_2d` (COCO-17) + `pose_2d_native` (Halpe-26 incl. feet) per player |
 | P2 | Links detections into per-camera tracklets (ByteTrack-style Kalman + pose-cosine) | `local_track_id` per player |
 | P3 | Decides which tracklets across cameras are the same person (tracklet-graph, ground-plane geometry + calibrated cues) | `correspondences.jsonl`, per-cluster world `ground_xy` |
 | P4 | Persistent global IDs across the whole clip (Singer-Kalman ground tracker + min-cost-flow stitching) | `global_player_id`, `ground_tracks.jsonl` |
@@ -166,7 +166,7 @@ Read one camera stream:
 ```python
 import json
 rows = [json.loads(l) for l in open(
-    "benchmarks/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_1/"
+    "data/derived/runs/pipetrack_v6.0/deliveries/CCPL080626M1_1_14_1/"
     "p6_3d/predictions/bt_01__CCPL080626M1_1_14_1__cam_01.jsonl")]
 for r in rows:
     for p in r["players"]:
@@ -188,9 +188,9 @@ for line in open(".../p4/diagnostics/ground_tracks.jsonl"):
 Re-print the metric panel (with deltas vs the frozen snapshot):
 
 ```bash
-/home/aksh/miniconda3/envs/cricket-yolo26x-pose/bin/python -m scripts.pipetrack.run_full_pipeline \
-  --panel-only --output-tree benchmarks/runs/pipetrack_v6.0 \
-  --baseline benchmarks/runs/pipetrack_v6.0/_baseline_snapshot
+/home/aksh/miniconda3/envs/pose-lab/bin/python -m main \
+  --panel-only --output-tree data/derived/runs/pipetrack_v6.0 \
+  --baseline data/derived/runs/pipetrack_v6.0/_baseline_snapshot
 ```
 
 ## Caveats & campaign status

@@ -36,14 +36,14 @@ flowchart TD
 
 ## Methods walkthrough
 
-**Detection — `boxes_from_det_result` ([run_phase1_rtmpose_inference.py:488](../../scripts/inference/run_phase1_rtmpose_inference.py#L488)).**
+**Detection — `boxes_from_det_result` ([run_phase1_rtmpose_inference.py:488](../../src/core/inference/run_phase1_rtmpose_inference.py#L488)).**
 RTMDet-m (a fast anchor-free one-stage detector, [Lyu et al. 2022, arXiv 2212.07784](https://arxiv.org/abs/2212.07784))
 runs per frame; boxes are kept where `label == person` **and** `score > bbox_thr (0.3)`, then
 de-duplicated with `nms(bboxes, 0.3)`, optionally truncated to the top-N by score. The
 checkpoint is fine-tuned on Objects365 + COCO person, which is why it is used over a generic
 COCO-80 detector.
 
-**Pose — `inference_topdown_batch` ([:531](../../scripts/inference/run_phase1_rtmpose_inference.py#L531)).**
+**Pose — `inference_topdown_batch` ([:531](../../src/core/inference/run_phase1_rtmpose_inference.py#L531)).**
 Each box becomes a top-down sample through `pose_model.cfg.test_dataloader.dataset.pipeline`,
 batched through `pose_model.test_step`. RTMPose ([Jiang et al. 2023, arXiv 2303.07399](https://arxiv.org/abs/2303.07399))
 uses a **SimCC** head: it treats keypoint localisation as *coordinate classification* — each
@@ -52,8 +52,8 @@ which is cheaper and more robust than 2-D heatmap argmax. RTMPose-**X** is the l
 variant, trained on Body8 with the **Halpe-26** skeleton (COCO-17 + head/neck/hip + 6 foot
 keypoints), 384×288 input — the accuracy-first choice.
 
-**Skeleton harmonisation — `select_coco17_pose` ([:586](../../scripts/inference/run_phase1_rtmpose_inference.py#L586))
-and `player_records` ([:622](../../scripts/inference/run_phase1_rtmpose_inference.py#L622)).**
+**Skeleton harmonisation — `select_coco17_pose` ([:586](../../src/core/inference/run_phase1_rtmpose_inference.py#L586))
+and `player_records` ([:622](../../src/core/inference/run_phase1_rtmpose_inference.py#L622)).**
 The native skeleton is reduced to COCO-17 via `configs/keypoint_mappings.yaml`; for Halpe-26
 the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.keypoints_px[0:17]`
 (verified). Both are written per player, so downstream stays on the COCO-17 contract while the
@@ -91,7 +91,7 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 - **P1-1 (★★★) Detector-recall bound.** RTMDet-m @0.3 misses dark/distant/occluded subjects.
   Evidence: the association layer contains dedicated machinery precisely for players the
   detector/pose never tracks — `synthetic tracklets` and `apply_feet_approximation`
-  (`scripts/association/tracklet_graph.py`), and `wip/id_issues.md` ID-2 attributes fragmentation
+  (`src/identity/p3_association/tracklet_graph.py`), and `wip/id_issues.md` ID-2 attributes fragmentation
   partly to weak detection of the "dark umpire". This is the single highest-leverage P1 issue
   because recall lost here is unrecoverable downstream.
 - **P1-2 (★★) No 2D temporal stabilization at source.** Off-the-shelf keypoints jitter; measured

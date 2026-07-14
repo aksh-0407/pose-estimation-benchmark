@@ -9,7 +9,7 @@ for continuing development, evaluation, visualization, or downstream integration
 The two relevant data roots are:
 
 ```text
-benchmarks/runs/rtmpose-l-body8-full-db32-pb96
+data/derived/runs/rtmpose-l-body8-full-db32-pb96
 benchmarks/artifacts/pipetrack-all-deliveries-v2
 ```
 
@@ -195,7 +195,7 @@ identifies capture group `bt_01`, delivery `CCPL080626M1_1_14_1`, and camera
 Phase 1 is stored at:
 
 ```text
-benchmarks/runs/rtmpose-l-body8-full-db32-pb96/
+data/derived/runs/rtmpose-l-body8-full-db32-pb96/
 ```
 
 The run name records the main inference configuration:

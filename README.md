@@ -14,18 +14,25 @@ is the perception pipeline that produces the poses, identities, and 3D locations
 Each stage consumes and produces a **canonical run directory** (`predictions/*.jsonl` +
 `diagnostics/` + a `*_metrics.json`), so any stage can be inspected or re-run on its own.
 
+The identity stages are numbered in execution order (`01…06`); 2D pose inference (**P1**) is
+the shared upstream producer and lives in `src/core/`. Note the logical order **Associate →
+Triangulate → Track**: the 3D lift (`04_lift`) runs *before* global identity so ID can build
+on 3D positions.
+
 | Stage | What it does | Entry point |
 |---|---|---|
-| **P1** 2D inference | Detect people (RTMDet) + estimate 2D keypoints (RTMPose-X, top-down) per camera; emits COCO-17 **and** Halpe-26 | [`scripts/inference/run_phase1_rtmpose_inference.py`](scripts/inference/run_phase1_rtmpose_inference.py) |
-| **P2** per-camera tracking | Link detections into per-camera tracklets (ByteTrack-style Kalman + pose-cosine) | [`scripts/tracking/run_per_camera_tracking.py`](scripts/tracking/run_per_camera_tracking.py) |
-| **P3** cross-camera association | Cluster the same physical player across cameras (tracklet-graph LLR on the ground plane) | [`scripts/association/run_cross_camera_association.py`](scripts/association/run_cross_camera_association.py) |
-| **P4** global identity | Assign persistent global IDs + stitch fragmented tracks (online Singer-KF MOT + min-cost-flow) | [`scripts/global_id/run_global_id.py`](scripts/global_id/run_global_id.py) |
-| **P5** roles | Batter / bowler / fielder from ground geometry | [`scripts/roles/run_role_assignment.py`](scripts/roles/run_role_assignment.py) |
-| **P6** 3D lift | Multi-view triangulation of the full skeleton (weighted-DLT + RANSAC + occlusion fill) | [`scripts/export/triangulate_predictions.py`](scripts/export/triangulate_predictions.py) |
-| **Export / render** | Unreal Engine pose packets; the mosaic + bird's-eye videos | [`scripts/export/export_ue_packets.py`](scripts/export/export_ue_packets.py), [`scripts/visualization/render_phase1_videos.py`](scripts/visualization/render_phase1_videos.py) |
+| **P1** 2D inference (foundation) | Detect people (RTMDet) + estimate 2D keypoints (RTMPose-X, top-down) per camera; emits COCO-17 **and** Halpe-26 | [`src/core/inference/run_phase1_rtmpose_inference.py`](src/core/inference/run_phase1_rtmpose_inference.py) |
+| **01** stabilization | Temporal One-Euro smoothing of 2D keypoints before tracking | [`src/identity/p1_stabilization/run_stabilization.py`](src/identity/p1_stabilization/run_stabilization.py) |
+| **02** per-camera tracking | Link detections into per-camera tracklets (ByteTrack-style Kalman + pose-cosine) | [`src/identity/p2_tracking/run_per_camera_tracking.py`](src/identity/p2_tracking/run_per_camera_tracking.py) |
+| **03** cross-camera association | Cluster the same physical player across cameras (tracklet-graph LLR on the ground plane) | [`src/identity/p3_association/run_cross_camera_association.py`](src/identity/p3_association/run_cross_camera_association.py) |
+| **04** 3D lift | Multi-view triangulation of the full skeleton (weighted-DLT + RANSAC + occlusion fill); binding-keyed, feeds global identity | [`src/identity/p4_lift/run_triangulation.py`](src/identity/p4_lift/run_triangulation.py) |
+| **05** global identity | Assign persistent global IDs + stitch fragmented tracks (online Singer-KF MOT + min-cost-flow) | [`src/identity/p5_global_id/run_global_id.py`](src/identity/p5_global_id/run_global_id.py) |
+| **06** roles | Batter / bowler / fielder from ground geometry (+ peripheral suppression) | [`src/identity/p6_roles/run_role_assignment.py`](src/identity/p6_roles/run_role_assignment.py) |
+| **Export / render** | Unreal Engine pose packets; the mosaic + bird's-eye videos | [`src/identity/export/export_ue_packets.py`](src/identity/export/export_ue_packets.py), [`src/identity/visualization/render_videos.py`](src/identity/visualization/render_videos.py) |
 
-A batch driver for the identity stages (P3→P4 over all deliveries) lives in
-[`scripts/pipetrack/run_id_pipeline.py`](scripts/pipetrack/run_id_pipeline.py).
+The whole chain is driven by [`src/main.py`](src/main.py) (`python -m main`, phase-select via
+`--from-stage`/`--until-stage`); an identity-only batch driver (association→global_id over all
+deliveries) lives in [`src/identity/id_pipeline.py`](src/identity/id_pipeline.py).
 
 ## Start here
 

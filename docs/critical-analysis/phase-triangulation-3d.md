@@ -14,7 +14,7 @@ and (b) supply the chimera-split signal P3's clustering lacks.
 |---|---|
 | **Input (today)** | P4 run; calibration. **Input (proposed)** | P3 run (correspondences) |
 | **Output** | `pose_3d.keypoints_world_m` written back into each camera stream |
-| **Core** | `scripts/export/triangulate_predictions.py`; `pose_estimation/triangulation.py` |
+| **Core** | `src/identity/p4_lift/run_triangulation.py`; `src/identity/common/triangulation.py` |
 | **Knobs** | `--reprojection-threshold-px 10`, `--min-views 2`, `--ema-alpha 0.65` |
 
 ## Flowchart
@@ -32,7 +32,7 @@ flowchart TD
 
 ## Methods walkthrough
 
-**Weighted DLT — `triangulate_point_dlt` ([triangulation.py:31](../../pose_estimation/triangulation.py#L31)).**
+**Weighted DLT — `triangulate_point_dlt` ([triangulation.py:31](../../src/identity/common/triangulation.py#L31)).**
 The classic linear triangulation: for each view stack the two rows `x·P₃−P₁`, `y·P₃−P₂`, weight
 each by `√conf`, and solve `A X = 0` by SVD (the 3D point is the smallest right singular vector,
 dehomogenised). Confidence weighting is the differentiable-triangulation idea from **Iskakov et al.,

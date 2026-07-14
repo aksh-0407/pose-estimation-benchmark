@@ -116,7 +116,7 @@ Key intermediate findings (each caught by an A/B, with root cause):
   for colleague use in `docs/shared-data.md`.
 - **Accepted default `configs/v7/`** (rc2 stack: full chain incl. P1.5, P3.5, native-26 3D,
   live stitcher) — `run_full_pipeline.py` defaults to it; run trees `pipetrack_v7-rc{1,2,3}`
-  in `benchmarks/runs/`; rc1-era mosaics for `_1`, `_2`, `_7`, `M2` in
+  in `data/derived/runs/`; rc1-era mosaics for `_1`, `_2`, `_7`, `M2` in
   `artifacts/pipetrack_v7-rc1/mosaics/`.
 - Complete audit trail: `fixes-log.md` (every fix: mechanism, panel, verdict, grand-analysis
   conclusion), `review-triage.md` (external review: verified/fixed/deferred), `to-do.md`

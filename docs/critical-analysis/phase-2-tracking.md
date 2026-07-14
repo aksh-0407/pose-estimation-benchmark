@@ -12,9 +12,9 @@ job is to produce clean, un-fragmented, un-swapped per-camera tracks.
 
 | | |
 |---|---|
-| **Input** | P1 (or P1.5) run; calibration; `configs/p2_tracking.yaml` |
+| **Input** | P1 (or P1.5) run; calibration; `configs/02_tracking.yaml` |
 | **Output** | `predictions/*` with `local_track_id`; per-camera tracking diagnostics + `tracking_metrics.json` |
-| **Core modules** | `scripts/tracking/{tracker,kalman,track,pose_vector,jsonl_io}.py` |
+| **Core modules** | `src/identity/p2_tracking/{tracker,kalman,track,pose_vector,jsonl_io}.py` |
 
 ## Flowchart
 
@@ -32,13 +32,13 @@ flowchart TD
 
 ## Methods walkthrough
 
-**Motion model — `KalmanBoxTracker` ([kalman.py:16](../../scripts/tracking/kalman.py#L16)).**
+**Motion model — `KalmanBoxTracker` ([kalman.py:16](../../src/identity/p2_tracking/kalman.py#L16)).**
 A **constant-velocity (CV)** Kalman filter on the box state `[cx, cy, w, h, vx, vy, vw, vh]`,
 measuring `[cx, cy, w, h]`, with a Joseph-form covariance update for numerical stability.
 `gating_distance_sq` is the Mahalanobis distance of the box centre; process noise is inflated
 while a track is dormant and the filter is `reseed`-ed (keeping velocity) on re-ID.
 
-**Association — `CameraTracker.update` ([tracker.py:180](../../scripts/tracking/tracker.py#L180)).**
+**Association — `CameraTracker.update` ([tracker.py:180](../../src/identity/p2_tracking/tracker.py#L180)).**
 A two-stage, **ByteTrack-style** ([Zhang et al. 2022, arXiv 2110.06864](https://arxiv.org/abs/2110.06864))
 match: Stage 1 matches high-confidence detections (`>0.5`) to active tracks with a cost that
 blends **IoU** and a **masked weighted-cosine pose distance** (`iou_alpha=0.6`, `pose_beta=0.4`),

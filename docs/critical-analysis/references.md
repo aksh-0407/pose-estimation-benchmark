@@ -12,16 +12,16 @@ logs.
 - `wip/methods_log.md` — accept/reject lab notebook (M0…M11; z0_reproj win, calibration audit).
 - `wip/3d_location_redesign.md` — SOTA-mapped redesign + the empirical A/B pivot.
 - `implementation_plan.md`, `changes_tbd.md`, `CHANGELOG.md` — plan, deferred work, round-by-round history.
-- Committed metrics: `benchmarks/runs/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
+- Committed metrics: `data/derived/runs/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
 
 **Key code locations:**
-- P1: `scripts/inference/run_phase1_rtmpose_inference.py` (`boxes_from_det_result:485`, `inference_topdown_batch:528`, `player_records:619`).
-- P1.5: `scripts/stabilization/{smoothing,linker,runner}.py`.
-- P2: `scripts/tracking/{tracker.py:180, kalman.py:16}`.
-- P3: `scripts/association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `pose_estimation/cricket/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
-- 3D lift: `pose_estimation/triangulation.py` (`triangulate_point_dlt:31`, `triangulate_skeleton_ransac:162`); `scripts/export/triangulate_predictions.py`.
-- P4: `scripts/global_id/{track_manager.py:322, stitching.py}`; `pose_estimation/cricket/ground_kalman.py:39` (Singer/Van Loan).
-- Render: `scripts/visualization/{render_phase1_videos.py, mosaic_layout.py, identity_colors.py}`.
+- P1: `src/core/inference/run_phase1_rtmpose_inference.py` (`boxes_from_det_result:485`, `inference_topdown_batch:528`, `player_records:619`).
+- P1.5: `src/identity/p1_stabilization/{smoothing,linker,runner}.py`.
+- P2: `src/identity/p2_tracking/{tracker.py:180, kalman.py:16}`.
+- P3: `src/identity/p3_association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `src/identity/common/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
+- 3D lift: `src/identity/common/triangulation.py` (`triangulate_point_dlt:31`, `triangulate_skeleton_ransac:162`); `src/identity/p4_lift/run_triangulation.py`.
+- P4: `src/identity/p5_global_id/{track_manager.py:322, stitching.py}`; `src/identity/p5_global_id/ground_kalman.py:39` (Singer/Van Loan).
+- Render: `src/identity/visualization/{render_phase1_videos.py, mosaic_layout.py, identity_colors.py}`.
 
 ## External sources
 
