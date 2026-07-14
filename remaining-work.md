@@ -40,7 +40,9 @@ a hand-labelled JSONL. Needed: a few hundred labelled frames on 2–3 deliveries
 commit by 1000+ lines). His `roles/` contribution was evaluated, de-bugged (uniqueness latch,
 standing-back keeper, crease anchors, 2 umpire slots) and merged as roles v1/v1.2. The
 global_id rewrite must NOT displace the validated stack without: his changelog, per-change
-flag-gating, and the standard 8-delivery A/B. `vedant2/` kept in-tree for reference.
+flag-gating, and the standard 8-delivery A/B. `vedant2/` was removed from the tree in the
+2026-07 restructure (roles contribution already merged; global_id rewrite recoverable from
+git history / his own branch if revived).
 
 ### 1.4 User mosaic sign-off of v8.1
 Human review is the final judge. Delivered so far: `artifacts/pipetrack_v8/mosaics/`
