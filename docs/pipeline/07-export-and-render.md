@@ -11,12 +11,12 @@
 (X=forward, Y=right, Z=up) scaled ×100 to centimetres.
 
 ```bash
-python -m identity.export.export_ue_packets --input <3d.jsonl> --output <ue.jsonl> --model-version <v>
+python -m identity.export.export_ue_packets --run-dir <06_roles> --output <ue.jsonl> --model-version <v>
 ```
 
-Not yet run on v8 production data — run per delivery when UE-format packets are needed rather
-than the JSONL 3D ([`../../remaining-work.md`](../../remaining-work.md) §6). Input contract
-unchanged; consumes the terminal 3D lift output.
+Run per delivery when UE-format packets are needed. It reads the `06_roles` terminal predictions
+(26-joint `pose_3d` + `pose_3d_named` + `role`) and emits one packet per identified player per
+frame in UE centimetres.
 
 ## Mosaic / bird's-eye render
 

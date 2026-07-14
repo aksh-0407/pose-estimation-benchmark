@@ -27,7 +27,6 @@ p4,p5,p6_3d}`. 40 deliveries (M1 overs 14/16/17; M2 overs 11/12 + innings-2 over
 | **05a** global ID (online) | Turn per-frame clusters into **persistent IDs** that live the whole clip | **Singer-acceleration ground Kalman** per player + staged assignment (binding → exact tracklet → χ²-gated Hungarian → re-entry); emits the **Kalman posterior** ground position | `global_player_id`, `ground_tracks.jsonl` |
 | **05b** stitch + merge | Join fragments of the same person; merge a player who got two IDs | **min-cost-flow** fragment stitching (temporal + spatial + role + velocity cost; never merges two IDs that share a camera-frame) + **W9 colocated-id merge** (two IDs within 0.75 m in disjoint cameras for ≥25 frames = one person) | `id_switch_report.json` |
 | **06** roles | Label each ID: bowler / striker / non-striker / keeper / 2 umpires / fielder | Role solver v1.2 — 6 Hungarian slots with distinct geometry, latch + uniqueness, **per-delivery bowling-end auto-flip**; peripheral suppression (never suppresses the 4 core roles) | `roles.json`, `suppression.json` |
-| **07** terminal 3D | Final 3D skeleton per identified player in world metres | RANSAC-DLT triangulation of all 26 joints, **cheirality-gated**, occlusion fill, **zero-phase Butterworth** smoothing | `pose_3d.keypoints_world_m` |
 | **R** render | Diagnostic mosaic: 7 cameras + bird's-eye view + roster, coloured by global ID | calibration-derived compositing; colour = global ID (colour flicker = an ID switch) | the mp4 |
 
 **Rig geometry** (for questions): world origin = pitch centre, +Y toward the far end, z=0 =
@@ -65,7 +64,7 @@ all fragment positions** for that ID in a frame (`runner.py:348`); when one ID b
 two observations (concurrent disjoint cameras, or a cross-field stitch), the emitted point
 oscillates between them. **This is a 05 emission bug, fixable.** (`docs/diagnosis/04-...`)
 
-### 2.3 The 3D skeletons (04/07 lift) are smooth but sparse
+### 2.3 The 3D skeletons (04 lift) are smooth but sparse
 The triangulated 3D output — our actual 3D deliverable — is clean (pelvis p95 1.6–3.8 m/s,
 ~0 big jumps) because it only triangulates where ≥2 cameras agree. The price is **coverage
 0.48–0.92 (median 0.80)**: single-camera players get no 3D. So today the **3D skeleton is the

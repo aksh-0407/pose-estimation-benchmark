@@ -14,7 +14,7 @@ left behind. Its hard invariant: two detections in the same camera-frame can nev
 
 | | |
 |---|---|
-| **Input** | 03 run (correspondences + ground points); calibration; `configs/05_global_id.yaml` (+ `_v5`); optional `--ground-truth` |
+| **Input** | 04 lift run (predictions with `pose_3d` + `diagnostics/correspondences.jsonl`, carried forward from 03); calibration; `configs/05_global_id.yaml`; optional `--ground-truth` |
 | **Output** | `predictions/*` with `global_player_id`; `diagnostics/ground_tracks.jsonl`; `id_switch_report.json`; `global_id_metrics.json` |
 | **Core** | `src/identity/p5_global_id/{track_manager,stitching}.py`; `src/identity/p5_global_id/ground_kalman.py` |
 
@@ -85,9 +85,9 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
   bridging the fragments it should; its feasibility gates are too conservative for real gaps.
 - **Re-entry leans on weak cues** — with colour dead and pose-shape slow, a re-entering player is
   matched mostly on kinematics, which fails after long occlusions → a fresh ID.
-- **2D-only tracking** — 05 tracks on the ground plane; although the 04 lift now produces 3D
-  *before* it, 05 does not yet consume that 3D pose, so it lacks the richest disambiguating signal
-  ([changes_tbd](../changes_tbd.md)).
+- **2D-only tracking by default** — 05 now reads 04 and carries its 3D forward, but by default
+  tracks on the ground plane and does not *consume* the 3D pose, so it lacks the richest
+  disambiguating signal until decide-in-3D is enabled ([changes_tbd](../changes_tbd.md)).
 - **Many hand-tuned constants** on a single 12-second tuning delivery — real risk of overfitting.
 
 ## Issues
