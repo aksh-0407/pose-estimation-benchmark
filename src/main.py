@@ -144,7 +144,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
         ]
 
     for stage in plan.stages:
-        if stage == "render":
+        if stage == "08_render":
             continue
         out_dir = plan.output_root / stage
         log = plan.logs / f"{stage}.log"

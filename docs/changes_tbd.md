@@ -143,3 +143,9 @@ algorithm changes. Bugs marked **FIXED** were corrected in the scrub pass; the r
   triangulated 3D into `05_global_id` instead of the z=0 reproj ground point) and dropping the
   redundant terminal `07_lift3d` re-triangulation remain open (see the code-restructure notes); the
   reorder made them *possible* but they need the standard 8-/40-delivery A/B before adoption.
+- **FIXED — orchestrator render-skip token.** The stage renumber renamed the render stage to
+  `08_render` in `STAGE_ORDER` but left the compute-loop skip as `if stage == "render"` in
+  `src/main.py`, so a default `python -m main` run (window ends at `08_render`) would raise
+  `AssertionError("08_render")` before rendering. Now `if stage == "08_render": continue` (render is
+  handled by `run_render`). Uncovered by tests (they exercise `_stage_window`/`DeliveryPlan`, not the
+  subprocess compute loop) — a future `tests/test_main.py` should drive the loop with a stubbed `_run_stage`.
