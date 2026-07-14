@@ -1,18 +1,18 @@
-# P1.5 — 2D temporal stabilization (new)
+# 01 (stabilization) — 2D temporal stabilization (new)
 
-> **Stage 01** (was P1.5) — code `src/identity/p1_stabilization/`, config `configs/01_stabilization.yaml`.
+> **Stage 01** (was 01 (stabilization)) — code `src/identity/p1_stabilization/`, config `configs/01_stabilization.yaml`.
 
 ## Role & intuition
 
 Off-the-shelf 2D keypoints jitter frame-to-frame even when a player is standing still, and that
 noise propagates into tracking (spurious motion), association (noisy ground points), and
-triangulation (noisy rays). P1.5 is a new stage inserted **between P1 and P2** that denoises the
+triangulation (noisy rays). 01 (stabilization) is a new stage inserted **between P1 and P2** that denoises the
 2D keypoint trajectories *once, at the source*, so every downstream stage inherits a cleaner
 signal instead of re-fighting the same jitter. It is the logical answer to "clean the data
 before it helps the next phase."
 
 The central subtlety: smoothing a trajectory needs to know **which detection is the same person
-across frames** — i.e. temporal correspondence. Full identity tracking is P2's job, so P1.5 does
+across frames** — i.e. temporal correspondence. Full identity tracking is P2's job, so 01 (stabilization) does
 the *minimum* correspondence needed for smoothing — short IoU **micro-tracks** — and never spans a
 real occlusion or crosses cameras. A mislink just means two detections are smoothed together for
 a frame or two; it cannot create an identity error.
@@ -107,4 +107,4 @@ proves the stage did something.
 | 1 | **Add a pose-cosine tiebreaker to micro-track linking** (reuse `pose_vector`), so IoU ties in a pack are broken by body pose. | ★★ | Removes the main failure mode (crowd mislinks) cheaply. | Cleaner micro-tracks → better smoothing in packs. | Low | ByteTrack pose/appearance cues [2110.06864] |
 | 2 | **Per-joint / confidence-scaled `min_cutoff`** (feet vs torso). | ★ | Different joints have different noise; one constant is suboptimal. | More jitter removed without added lag. | Low | One-Euro [Casiez 2012] |
 | 3 | **Offer a SmoothNet post-pass** for offline runs to fix long occlusion-burst jitter. | ★ | Causal One-Euro cannot fix long bursts; SmoothNet is the SOTA plug-in for exactly this. | Lower jitter on hard occluded clips. | Medium | SmoothNet [2112.13715] |
-| 4 | **Wire P1.5 into the default delivery flow** (batch driver runs it before P2, behind the enable flag) and add its jitter metric to the joint panel. | ★★ | A validated win that is not yet on by default delivers nothing until wired. | Realises the −32% jitter gain end-to-end. | Low | — |
+| 4 | **Wire 01 (stabilization) into the default delivery flow** (batch driver runs it before P2, behind the enable flag) and add its jitter metric to the joint panel. | ★★ | A validated win that is not yet on by default delivers nothing until wired. | Realises the −32% jitter gain end-to-end. | Low | — |

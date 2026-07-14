@@ -79,9 +79,9 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 - **Total dependence on the detector.** A missed person = no pose. The `bbox_thr=0.3` gate plus
   RTMDet-m's recall on **dark/distant umpires** is the root cause of a chain of downstream
   work-arounds (synthetic tracklets, feet-approximation, bbox-top-as-head — see
-  [phase-3-association.md](phase-3-association.md)).
+  [03-association.md](03-association.md)).
 - **No temporal information.** Each frame is independent, so keypoints jitter frame-to-frame;
-  P1 has no mechanism to damp it (that is why P1.5 exists).
+  P1 has no mechanism to damp it (that is why 01 (stabilization) exists).
 - **Runtime scales with people** (top-down) — ~35 crops/frame × 7 cameras is the throughput
   bottleneck; the render, not pose, is usually the wall-clock limiter here.
 - **Single global image size assumption in places** — camera 07 is ~3775×960, not 2560×1440;
@@ -93,12 +93,12 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 - **P1-1 (★★★) Detector-recall bound.** RTMDet-m @0.3 misses dark/distant/occluded subjects.
   Evidence: the association layer contains dedicated machinery precisely for players the
   detector/pose never tracks — `synthetic tracklets` and `apply_feet_approximation`
-  (`src/identity/p3_association/tracklet_graph.py`), and `wip/id_issues.md` ID-2 attributes fragmentation
+  (`src/identity/p3_association/tracklet_graph.py`), and `../diagnosis/09-per-phase-issue-register.md` ID-2 attributes fragmentation
   partly to weak detection of the "dark umpire". This is the single highest-leverage P1 issue
   because recall lost here is unrecoverable downstream.
 - **P1-2 (★★) No 2D temporal stabilization at source.** Off-the-shelf keypoints jitter; measured
   mean 2D jitter ~1.6 px on real frames (`stabilization_metrics.json` on the `rtmpose-x` run).
-  Addressed by the new P1.5 stage — see [phase-1b-2d-stabilization.md](phase-1b-2d-stabilization.md).
+  Addressed by the new 01 (stabilization) stage — see [01-stabilization.md](01-stabilization.md).
 - **P1-3 (★★) Detector choice is unbenchmarked for this domain.** RTMDet-m was chosen for speed;
   there is no cricket-specific recall/precision measurement justifying it over stronger detectors.
 - **P1-4 (★) `bbox_thr=0.3` is a single global threshold.** It trades recall (dark umpires) against
@@ -116,6 +116,6 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 | 3 | **Confidence-recalibration + per-camera / adaptive `bbox_thr`** (lower where a camera is dark, with stronger NMS to control FPs); optionally test-time augmentation (multi-scale) for distant people. | ★★ | Cheap recall gains on exactly the hard subjects, without a model swap. | +recall on umpires/deep fielders. | Low; CLI/config only. | standard TTA; RTMDet |
 | 4 | **Use the Halpe-26 feet** as the primary ground-contact keypoint everywhere (not just `pose_2d_native`), replacing the bbox-bottom fallback. | ★★ | Feet are already computed; using them tightens the z0 ground solve at no inference cost. | Lower ground error on visible-foot players. | Low-Medium; `geometry.py` foot selection. | Pose2Sim foot handling |
 | 5 | **Domain-fine-tune the detector** (and optionally the pose model) on a few hundred labelled cricket frames incl. umpires/keepers in pads. | ★ | The kit/pose distribution differs from COCO; fine-tuning is the durable recall fix. | Best long-run recall + fewer pose outliers. | High; labelling + training. | standard transfer learning |
-| 6 | **Learned temporal 2D refinement (SmoothNet)** as an alternative/complement to P1.5's One-Euro filter for the long-tail jitter under occlusion. | ★ | One-Euro is causal and local; SmoothNet fixes long-range jitter bursts P1.5 cannot. | Lower jitter on hard occluded segments. | Medium; offline model. | SmoothNet [2112.13715], ECCV 2022 |
+| 6 | **Learned temporal 2D refinement (SmoothNet)** as an alternative/complement to 01 (stabilization)'s One-Euro filter for the long-tail jitter under occlusion. | ★ | One-Euro is causal and local; SmoothNet fixes long-range jitter bursts 01 (stabilization) cannot. | Lower jitter on hard occluded segments. | Medium; offline model. | SmoothNet [2112.13715], ECCV 2022 |
 
-See the cross-phase priorities in [fixes-roadmap.md](fixes-roadmap.md).
+See the cross-phase priorities in [fixes-roadmap.md](../changes_tbd.md).

@@ -40,7 +40,7 @@ ground, state `[x, y, vx, vy, ax, ay]`: continuous dynamics `Fc` with `−α` on
 **Van Loan method** (`_singer_dynamics:39`). Updates are Joseph-form; role-aware `RoleParams`
 (α, σ_a, measurement noise) make a bowler agile (α=2, σ_a=3) and an umpire near-static. It emits
 the **Kalman posterior** (not the raw foot), so a single bad frame can't teleport the reported
-track (`wip/3d_location_issues_v2.md` R2).
+track (`../diagnosis/README.md` R2).
 
 **Online assignment — `TrackManager.update` ([track_manager.py:322](../../src/identity/p5_global_id/track_manager.py#L322)).**
 Staged, injective-by-construction (so same-camera collisions are impossible): Stage 0 honours a
@@ -92,11 +92,11 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
 ## Issues
 
 - **ID-2 (★★★) Fragmentation / over-segmentation.** 18–25 distinct IDs vs a ~13 roster;
-  `stitched_id_switch_proxy=0` ⇒ P4b under-merges (`wip/id_issues.md` ID-2).
+  `stitched_id_switch_proxy=0` ⇒ P4b under-merges (`../diagnosis/09-per-phase-issue-register.md` ID-2).
 - **ID-3 (★★) Teleports.** 7–155/clip (M2 155): the χ²-gated assignment admits a wrong nearby
-  cluster when the true one is missing a frame (`wip/id_issues.md` ID-3).
+  cluster when the true one is missing a frame (`../diagnosis/09-per-phase-issue-register.md` ID-3).
 - **ISSUE-4 (★★) Fixed distance-blind Kalman R** (`ground_kalman.py`, ~0.3–0.4 m): the biggest
-  un-pulled anti-teleport lever (`wip/3d_location_issues.md` ISSUE-4).
+  un-pulled anti-teleport lever (`../diagnosis/README.md` ISSUE-4).
 - **ID-2b (★) Conservative P4b gates** — temporal 120 / kinematic / occupancy too tight to bridge
   real occlusion gaps.
 - **P4-1 (★) Overfitting risk** — constants tuned on one short delivery.
@@ -105,13 +105,13 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
 
 | # | Fix | Priority | Reasoning | Expected effect | Effort | Source |
 |---|---|---|---|---|---|---|
-| 1 | **Feed a distance/uncertainty-dependent R** into the Singer Kalman (from the P3.5 triangulation covariance or a homography-Jacobian model) instead of a fixed R. | ★★★ | Distance-blind R is the root enabler of teleports; distance-dependent R is standard in multi-camera sports tracking. | Fewer teleports; correct trust of far/grazing feet. | Medium | ground-plane sports fusion; Lee & Civera [2008.01258] |
+| 1 | **Feed a distance/uncertainty-dependent R** into the Singer Kalman (from the 04 (binding lift) triangulation covariance or a homography-Jacobian model) instead of a fixed R. | ★★★ | Distance-blind R is the root enabler of teleports; distance-dependent R is standard in multi-camera sports tracking. | Fewer teleports; correct trust of far/grazing feet. | Medium | ground-plane sports fusion; Lee & Civera [2008.01258] |
 | 2 | **Adaptive lost-window + stronger re-ID at re-entry** (mature pose-shape / learned ReID + kinematic prediction), scaled by track maturity and local density. | ★★★ | Fragmentation (ID-2) is re-entry failing; a longer window for established players + a real re-ID key fixes it. | ID count collapses toward the ~13 roster. | Medium | Deep OC-SORT [2302.11813]; GTA sports tracklet association [2411.08216] |
-| 3 | **Track in 3D** — once triangulation is P3.5, run the global tracker on the 3D pose/position (3D Singer KF + 3D pose-shape re-ID) rather than the 2D ground only. | ★★ | The 3D skeleton is the richest disambiguator; using it removes many crowd mis-assignments. | Fewer teleports + chimeras; better re-ID. | Medium-High (depends on triangulation fix 1) | VoxelPose "operate in 3D" [2207.10955] |
+| 3 | **Track in 3D** — once triangulation is 04 (binding lift), run the global tracker on the 3D pose/position (3D Singer KF + 3D pose-shape re-ID) rather than the 2D ground only. | ★★ | The 3D skeleton is the richest disambiguator; using it removes many crowd mis-assignments. | Fewer teleports + chimeras; better re-ID. | Medium-High (depends on triangulation fix 1) | VoxelPose "operate in 3D" [2207.10955] |
 | 4 | **Loosen P4b bridging where occupancy proves two segments cannot be simultaneous**, and add a descriptor (pose-shape/ReID) to the stitch cost. | ★★ | P4b under-merges; occupancy + a real descriptor safely bridges more gaps. | More fragments stitched → fewer IDs. | Medium | min-cost-flow assoc [Zhang 2008] |
 | 5 | **Cricket roster prior as a hard-ish cap** — penalise minting a new ID when the roster is full and an existing track just went missing nearby; seed from the team sheet. | ★ | Encodes the true ~15-person structure to resist over-segmentation. | Fewer spurious IDs. | Low-Medium | roster/game-state priors [SoccerNet GSR 2404.11335] |
 | 6 | **Pose-shape veto *inside* the assignment gate + hysteresis** — don't hand a track to a new tracklet on a single frame; require a body-shape match. | ★ | Tightens exactly the χ²-gate admission that causes teleports. | Fewer single-frame teleports. | Low | — |
 | 7 | **Get identity ground truth** (hand-label a few hundred frames on 2–3 deliveries incl. _7/M2) to report real **MOTA/IDF1/HOTA** instead of proxies. | ★★ | Every identity number today is a proxy; without labels, tuning is guesswork. | Measurable identity work; catches overfitting. | Medium (labelling) | CLEAR-MOT / IDF1 / HOTA [Luiten 2009.07736] |
 
 Cross-phase: ID-2/ID-3 sit just under P3's ID-1/ID-5 in the roadmap; several fixes here depend on
-the triangulation re-placement — see [fixes-roadmap.md](fixes-roadmap.md).
+the triangulation re-placement — see [fixes-roadmap.md](../changes_tbd.md).

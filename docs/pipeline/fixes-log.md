@@ -1,14 +1,16 @@
-# Critical-Analysis Fixes: Methods Log
+# Fixes log — A/B campaign ledger (historical record)
 
-This log records the implementation and A/B evaluation of the fixes catalogued in
-[fixes-roadmap.md](fixes-roadmap.md), executed per the plan in [to-do.md](to-do.md). For every
-fix it states the purpose, the implementation (files and flags), the measured result against the
+> **Historical record — paths and version names are accurate as of each dated entry** (the v6 → v8.1
+> campaign, pre-restructure). Not rewritten to the current `src/` layout; that would falsify the record.
+> Current open work: [`../../remaining-work.md`](../../remaining-work.md) and
+> [`../changes_tbd.md`](../changes_tbd.md). Current pipeline docs: [`README.md`](README.md).
+
+This log records the implementation and A/B evaluation of every fix in the campaign. For each fix
+it states the purpose, the implementation (files and flags), the measured result against the
 frozen baseline across the 8-delivery evaluation set (`CCPL080626...`), and the verdict. It
-follows the conventions of `wip/methods_log.md`.
+follows the conventions of `../../wip/methods_log.md`.
 
 ## Executive Summary
-
-(Meeting-ready snapshot: see also [status-report.md](status-report.md).)
 
 - **Baseline established and frozen** (`pipetrack_v6.0`): full chain from the 8-delivery
   RTMPose-X data; IDs 10–18 vs ~13–15 roster, agreement 0.60–0.92, 3D reprojection
@@ -264,7 +266,7 @@ Conclusion:
 
 ### FR - External Review Fixes
 
-An external full-codebase review was triaged ([review-triage.md](review-triage.md)); every
+An external full-codebase review was triaged (the external review (closed)); every
 confirmed item is fixed with guardrail tests (192 total passing): C1 dead zero-IoU gate (the
 sprinting-bowler fragmentation producer), C2 process-noise never resetting after
 re-acquisition (verified 57.7x residual inflation), C3 unreachable Lyapunov branch (explicit
@@ -725,7 +727,7 @@ Open work consolidated in `/remaining-work.md`.
 
 - A/B verdicts for F1 and the Wave-1 batch (runs in flight), then Wave-2/3/4 A/Bs.
 - Decision-gated Wave 5 (pretrained ReID only with sign-off, 3D P4 costs, PnP lift,
-  OC-SORT, detector/RTMO block) per [to-do.md](to-do.md).
+  OC-SORT, detector/RTMO block) per [to-do.md](../../remaining-work.md).
 
 Literature check (July 2026, web research; reshapes the Wave-5 detector block):
 

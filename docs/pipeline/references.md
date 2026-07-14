@@ -7,16 +7,16 @@ logs.
 ## Repo evidence anchors
 
 **Measured results / issue logs (the source of every metric quoted):**
-- `wip/id_issues.md` — identity failure modes ID-1…ID-6 with per-delivery evidence.
-- `wip/3d_location_issues.md`, `wip/3d_location_issues_v2.md` — 3D-location issues (12 → resolved/open).
-- `wip/methods_log.md` — accept/reject lab notebook (M0…M11; z0_reproj win, calibration audit).
-- `wip/3d_location_redesign.md` — SOTA-mapped redesign + the empirical A/B pivot.
+- `../diagnosis/09-per-phase-issue-register.md` — identity failure modes ID-1…ID-6 with per-delivery evidence.
+- `../diagnosis/README.md`, `../diagnosis/README.md` — 3D-location issues (12 → resolved/open).
+- `../../wip/methods_log.md` — accept/reject lab notebook (M0…M11; z0_reproj win, calibration audit).
+- `../diagnosis/README.md` — SOTA-mapped redesign + the empirical A/B pivot.
 - `implementation_plan.md`, `changes_tbd.md`, `CHANGELOG.md` — plan, deferred work, round-by-round history.
 - Committed metrics: `data/derived/runs/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
 
 **Key code locations:**
 - P1: `src/core/inference/run_phase1_rtmpose_inference.py` (`boxes_from_det_result:485`, `inference_topdown_batch:528`, `player_records:619`).
-- P1.5: `src/identity/p1_stabilization/{smoothing,linker,runner}.py`.
+- 01 (stabilization): `src/identity/p1_stabilization/{smoothing,linker,runner}.py`.
 - P2: `src/identity/p2_tracking/{tracker.py:180, kalman.py:16}`.
 - P3: `src/identity/p3_association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `src/identity/common/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
 - 3D lift: `src/identity/common/triangulation.py` (`triangulate_point_dlt:31`, `triangulate_skeleton_ransac:162`); `src/identity/p4_lift/run_triangulation.py`.

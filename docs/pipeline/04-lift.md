@@ -7,7 +7,7 @@
 This stage turns the multi-view 2D keypoints of one identified player into a single **3D world
 skeleton**. Today it runs **last (P6)**, purely to emit poses for Unreal Engine; it does not feed
 identity or tracking. This doc analyses the method and argues — professionally — that its optimal
-home is **P3.5: immediately after association, before global ID**, so it can (a) let P4 track in 3D
+home is **04 (binding lift): immediately after association, before global ID**, so it can (a) let P4 track in 3D
 and (b) supply the chimera-split signal P3's clustering lacks.
 
 ## I/O & config
@@ -51,7 +51,7 @@ view — the practical robustification recommended by **Lee & Civera 2020**
 joints within a 25-frame gap; `fill_from_skeletal_prior:259` places a never-seen joint from its
 parent + a bone vector scaled to the identity's median bone length; `confidence_ema_smooth:296`
 applies confidence-weighted temporal EMA (α=0.65). Together these take multi-camera completeness to
-100% of ≥2-view frames (per-joint reprojection 2–4 px; `wip/3d_location_issues_v2.md` R4).
+100% of ≥2-view frames (per-joint reprojection 2–4 px; `../diagnosis/README.md` R4).
 
 ## Pros
 
@@ -78,7 +78,7 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
 
 ## Issues
 
-- **V2-L1 (★★) Single-camera → no 3D pose.** ~39% of player-frames (`wip/3d_location_issues_v2.md`
+- **V2-L1 (★★) Single-camera → no 3D pose.** ~39% of player-frames (`../diagnosis/README.md`
   V2-L1). No triangulation possible with one ray.
 - **V2-L3 (★) Flat z=0 airborne error.** Triangulated ankle z p95 0.56 m; the ground point forced
   to z=0 lands beyond the true position at grazing angle.
@@ -90,7 +90,7 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
 
 | # | Fix | Priority | Reasoning | Expected effect | Effort | Source |
 |---|---|---|---|---|---|---|
-| 1 | **Move triangulation to P3.5** (after association, before P4) and feed its per-cluster reprojection / cycle-consistency back as a **chimera-split signal** and as P4's 3D observation. | ★★★ | Correspondences exist by P3; running the lift here makes the richest geometric signal available *before* identity is finalised and *before* tracking — the single change that unlocks both 3D-aware tracking and splittable clustering (ID-5). | Fewer chimeras; 3D-aware P4; no extra model. | Medium (re-sequencing + wiring) | VoxelPose "decide in 3D" [Faster VoxelPose 2207.10955]; Iskakov [1905.05754] |
+| 1 | **Move triangulation to 04 (binding lift)** (after association, before P4) and feed its per-cluster reprojection / cycle-consistency back as a **chimera-split signal** and as P4's 3D observation. | ★★★ | Correspondences exist by P3; running the lift here makes the richest geometric signal available *before* identity is finalised and *before* tracking — the single change that unlocks both 3D-aware tracking and splittable clustering (ID-5). | Fewer chimeras; 3D-aware P4; no extra model. | Medium (re-sequencing + wiring) | VoxelPose "decide in 3D" [Faster VoxelPose 2207.10955]; Iskakov [1905.05754] |
 | 2 | **Single-view → canonical-skeleton lift (PnP)** for the ~39% single-camera frames: fit the identity's canonical 3D skeleton (learned from its multi-view frames) to the lone 2D view at its z0 ground position. | ★★ | Half of coverage is single-camera; a PnP/optimisation lift gives a plausible full 3D pose where triangulation can't. | 3D pose on single-camera frames → far higher completeness. | Medium-High | monocular lift / SMPLify-style fitting; UPose3D [2404.14634] |
 | 3 | **Uncertainty-aware triangulation** — propagate 2D keypoint covariance into the DLT weights and emit a per-joint 3D covariance to carry downstream (into P4's Kalman R). | ★★ | Weighting by real uncertainty (not just √conf) is the modern robust-triangulation recipe and gives P4 a principled measurement noise. | Better fusion + anti-teleport R. | Medium | LOSTU [2311.11171]; UPose3D [2404.14634]; Lee & Civera [2008.01258] |
 | 4 | **Airborne handling** — take the ground position from the triangulated **pelvis vertical projection** (robust to a raised foot), flag airborne frames (ankle z≫0) and inflate their covariance. | ★ | Removes the z=0 grazing-angle error on jumps/strides. | Correct location for airborne feet. | Low-Medium | Pose2Sim [PMC9002957] |
@@ -98,4 +98,4 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
 | 6 | **Gate skeletal-prior fill** — cap how long a joint may be prior-filled and down-weight/flag it, or prefer the single-view PnP lift (fix 2) over pure priors. | ★ | Avoids emitting fabricated limbs on long single-view stretches. | Fewer wrong emitted joints. | Low | — |
 
 Cross-phase: fix 1 here is the enabler for P3 fix 2 (splittable clustering) and P4 3D tracking —
-see [fixes-roadmap.md](fixes-roadmap.md).
+see [fixes-roadmap.md](../changes_tbd.md).

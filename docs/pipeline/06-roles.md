@@ -1,84 +1,73 @@
-# P5 roles, UE export, and the mosaic render
+# 06 — roles
 
-> **Stage 06** roles (was P5) + terminal export/render. Code: `src/identity/p6_roles/`, `src/identity/export/`, `src/identity/visualization/`.
+> **Stage 06** (was P5) — code `src/identity/p6_roles/`, config `configs/06_roles.yaml`.
+> Consumes stage 05's fused ground tracks; export + render are [07](07-export-and-render.md).
 
-Three consumer stages that turn identified 3D poses into deliverables: **roles** (P5), the
-**Unreal Engine** pose packets (a parallel production branch), and the **mosaic / bird's-eye
-render** (the diagnostic video that is the visible end product).
+## Role & intuition
 
-## P5 — role assignment
+Assign each persistent `global_player_id` a cricket **role** (bowler / striker / non_striker /
+wicketkeeper / umpire / fielder / unknown) from its ground trajectory and the pitch geometry,
+then apply role-aware **peripheral suppression** (P5b, Wave-6) to drop clearly low-quality
+peripheral detections before the terminal 3D lift and render. Roles are consumed only by the
+roster panel in the mosaic and by downstream groups — they never change identity or geometry.
 
-**Role & intuition.** Classify each global player as bowler / striker / non-striker / keeper /
-umpire / fielder from ground geometry relative to the pitch axis and bowling direction. The
-mosaic roster reads roles only from `p5/roles.json`.
+## Inputs → outputs
 
-**Method — `src/identity/p6_roles/{assigner,run_role_assignment}.py`.** Uses `load_pitch_axis` /
-`infer_bowling_direction` (from `mosaic_layout`) and each player's ground track to assign a role
-by position/motion relative to the pitch. Runs **after** P4.
+| | |
+|---|---|
+| **Input** | 05 run dir (`diagnostics/ground_tracks.jsonl`) + pitch calibration |
+| **Output** | `roles.json` (`{roles:{Pxxx:{role,confidence,source}}, bowling_direction_xy, bowling_direction_source}`) and `suppression.json` |
+| **Core** | `src/identity/p6_roles/{assigner.py, run_role_assignment.py, suppress_peripherals.py}` |
 
-**Pros.** Simple, calibration-grounded, decoupled (the render depends only on the JSON artifact).
+## Method as implemented now
 
-**Cons / issues.**
-- **P5-1 (★) Roles are computed after P4 and never fed back.** The Singer Kalman supports
-  role-aware dynamics (a bowler is agile, an umpire static), but because P5 runs last, P4 tracks
-  every player as `unknown` (`wip/3d_location_issues.md` ISSUE-11). The role information that would
-  improve tracking is produced too late to be used.
-- **P5-2 (★) Geometry-only roles** are brittle at role transitions (a fielder walking through the
-  pitch region) with no temporal smoothing or team-sheet prior.
+- **Bowling direction** is derived from the fastest plausible early run along the pitch axis
+  (`mosaic_layout.infer_bowling_direction`, band ≤ 9.5 m/s; pitch axis from `load_pitch_axis`).
+- **v1 epoch solver** (`assigner.assign_roles_epoched`): per 40-frame epoch, a Hungarian
+  assignment over six roster slots — bowler, striker, non_striker, wicketkeeper, and two umpires
+  (bowler's-end + square-leg) — with a geometric slot cost (creases ±8.84 m, stumps ±10.06 m),
+  a latch-count debounce (`role_epoch_latch_count`), and a final greedy uniqueness pass.
+- **v1.2 bowling-end auto-flip** (`run_role_assignment.py`): solve both axis signs and keep the
+  sign whose roster fits best on the pre-shot window; run detection breaks ties
+  (`bowling_direction_source` is recorded per delivery). Overs do not share a bowling end, so
+  each delivery decides independently.
+- **P5b peripheral suppression** (`suppress_peripherals.decide`): core roles are **never**
+  suppressed; only peripherals (umpire/fielder/unknown) are dropped, and only when clearly
+  low-quality (low keypoint confidence / completeness / single-camera detection confidence).
 
-**Fixes (priority-ordered).**
+## Config knobs (`configs/06_roles.yaml`)
 
-| # | Fix | Priority | Reasoning | Effect | Source |
-|---|---|---|---|---|---|
-| 1 | **Feed a role (or an online velocity-based role proxy) into P4a's `switch_role`** so the Kalman uses role-aware manoeuvrability during tracking. | ★★ | The dynamics support it; only the sequencing withholds it. Bowler/umpire dynamics differ hugely. | Better prediction → fewer teleports/fragments. | multi-task role+ReID [2401.09942] |
-| 2 | **Temporal smoothing + team-sheet prior** on role labels. | ★ | Stabilises transitions; cricket rosters are known. | Fewer role flips in the roster panel. | game-state priors [2404.11335] |
+`role_assignment_version: v1`, `min_track_frames: 60`, `epoch_frames: 40`,
+`role_epoch_latch_count: 3`, `role_assignment_max_cost: 8.0`; suppression:
+`suppression_enabled: true`, `suppress_min_kp_conf: 0.35`, `suppress_min_completeness: 0.25`,
+`suppress_single_cam_det_conf: 0.40`, `suppress_protect_umpires: false`. v1 requires the 05 run
+to have `online_role_proxy: true`.
 
-## Mosaic / bird's-eye render
+## What's been tried
 
-**Role & intuition.** Composite the seven calibration-ordered camera tiles + a **bird's-eye ground
-monitor** + a **team roster** into one video, overlaying skeletons coloured by stable global ID,
-the ball trail, roles, and occlusion "ghost" markers. This is where identity errors become
-visible — a swapping colour is an ID switch.
+- **v1 epoch solver — accepted** (fixes-log W5-ROLES): core-role coverage 24/32 → 29/32, both
+  umpires resolved on 6/8 deliveries, ≥ v0 everywhere. Colleague-contributed defects fixed
+  (uniqueness latch, standing-back keeper zero-cost band, crease anchors, two-umpire roster).
+- **v1.2 auto-flip — added** (W8): removes the hardcoded bowling-end assumption.
+- **W6 suppression — accepted, conservative**: 0–3 IDs/clip suppressed, zero core-role suppression.
+- A parallel `global_id/` rewrite (contributed alongside the roles work) is **parked** pending its
+  own changelog + 8-delivery A/B ([`../../remaining-work.md`](../../remaining-work.md) §1.3).
 
-**Method — `src/identity/visualization/render_videos.py` (+ `mosaic_layout.py`,
-`identity_colors.py`).** The tile layout is **derived from calibration** (no hardcoded camera IDs):
-`derive_mosaic_layout` places columns/rows and mirrors by camera look-direction, with bottom-row
-monitor + roster slots. It reads P4 `predictions` (poses + IDs), P3 `correspondences.jsonl`
-(cluster badges), P4 `ground_tracks.jsonl` (the BEV monitor + occlusion ghosts), `p5/roles.json`,
-raw frames, calibration (for ghost foot-projection), and ball events. Stable ID colours come from
-`color_for_global_id`. Encoding is `h264_nvenc` with an `mp4v` fallback.
+## Current issues & measured state
 
-**Pros.**
-- **Calibration-derived layout** — robust to camera changes, no magic per-rig constants.
-- **Stable per-ID colour** makes identity errors immediately legible (the whole point of a
-  diagnostic render).
-- **Rich overlay** — BEV monitor, ghosts for occluded players, ball trail, roster — a genuinely
-  useful debugging surface.
-- **Decoupled inputs** — reads artifacts, so any stage can be swapped and re-rendered.
+No teleport or identity contribution (`../diagnosis/09-per-phase-issue-register.md`, P5). The
+open items are **visual arbitration only** — bowling-end orientation (visually confirmed on `_2`;
+spot-check more) and the keeper pick — and need mosaic sign-off, not code changes
+([`../../remaining-work.md`](../../remaining-work.md) §1.4).
 
-**Cons / issues.**
-- **R-1 (★) Camera-07 aspect** — the heterogeneous ~3775×960 tile can distort in a grid built for
-  2560×1440; verify the layout scales per-camera size.
-- **R-2 (★) Render is the wall-clock bottleneck** (~7–8 fps, render-bound not pose-bound), which
-  slows the iterate-measure loop.
-- **R-3 (★) Ghost-marker correctness** depends on the calibration foot-projection; a wrong ghost
-  can mislead debugging.
+## Entry-point commands
 
-**Fixes (priority-ordered).**
+```bash
+python -m identity.p6_roles.run_role_assignment \
+  --input-run-dir <05_global_id> --output-run-dir <06_roles> \
+  --drive-root drive --delivery-id <D> --config configs/06_roles.yaml
 
-| # | Fix | Priority | Reasoning | Effect | Source |
-|---|---|---|---|---|---|
-| 1 | **Per-camera aspect-correct tiles** (use the native size for C07). | ★ | Avoids a distorted/ misleading tile for the one heterogeneous camera. | Correct C07 overlay. | — |
-| 2 | **Speed the render** (batch NVENC, lower preview resolution for the iterate loop). | ★ | The render bounds the measure loop; faster renders = faster iteration. | Faster A/B cycles. | — |
-| 3 | **A minimap "game-state" view** (players + roles + ball on a top-down pitch, à la SoccerNet GSR) as the primary QA surface. | ★ | A clean minimap surfaces identity/location errors better than seven tiles. | Faster error triage. | SoccerNet GSR [2404.11335] |
-
-## UE export
-
-**Method — `src/identity/export/export_ue_packets.py`** converts triangulated 3D JSONL into Unreal
-Engine pose packets tagged with a model version. It is a parallel production branch (it does not
-feed the mosaic).
-
-**Pros.** Clean, versioned hand-off; decoupled from the render.
-**Cons / issues.** **UE-1 (★)** it consumes the terminal P6 triangulation; if triangulation moves
-to P3.5 (recommended), the export should read the P3.5/P4 3D poses instead — a one-line input
-change to keep the production branch on the improved 3D.
+python -m identity.p6_roles.suppress_peripherals \
+  --input-run-dir <05_global_id> --roles-path <06_roles>/roles.json \
+  --output-path <06_roles>/suppression.json --config configs/06_roles.yaml
+```

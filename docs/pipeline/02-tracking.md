@@ -14,7 +14,7 @@ job is to produce clean, un-fragmented, un-swapped per-camera tracks.
 
 | | |
 |---|---|
-| **Input** | P1 (or P1.5) run; calibration; `configs/02_tracking.yaml` |
+| **Input** | P1 (or 01 (stabilization)) run; calibration; `configs/02_tracking.yaml` |
 | **Output** | `predictions/*` with `local_track_id`; per-camera tracking diagnostics + `tracking_metrics.json` |
 | **Core modules** | `src/identity/p2_tracking/{tracker,kalman,track,pose_vector,jsonl_io}.py` |
 
@@ -84,8 +84,8 @@ medoid representative) supplies the cosine cue and the dormant re-ID key. This i
 
 - **P2-1 (★★★) CV motion model under manoeuvre.** Non-linear player motion breaks CV gating,
   causing fragmentation that P4 must later stitch. Evidence: fragmentation proxy 5–19 and
-  distinct-ID inflation in `wip/id_issues.md` ID-2, which begins as per-camera track breaks.
-- **P2-2 (★★) Pose-cosine re-ID matures slowly.** With colour dead (`wip/id_issues.md` ID-4), the
+  distinct-ID inflation in `../diagnosis/09-per-phase-issue-register.md` ID-2, which begins as per-camera track breaks.
+- **P2-2 (★★) Pose-cosine re-ID matures slowly.** With colour dead (`../diagnosis/09-per-phase-issue-register.md` ID-4), the
   only re-acquisition cue is the pose gallery, which needs many frames to become discriminative;
   short-gap re-entries fail and mint fragments.
 - **P2-3 (★★) No camera-motion compensation.** Any non-static camera degrades IoU/Kalman gating.
@@ -105,4 +105,4 @@ medoid representative) supplies the cosine cue and the dormant re-ID key. This i
 | 5 | **Adaptive gates + adaptive dormant window** scaled by track maturity and local detection density. | ★ | One global constant can't fit all cameras/densities; keep established players alive longer. | Fewer needless deletions/re-births. | Low-Medium | UCMCTrack [2312.08952] |
 
 Cross-phase context: P2 fragmentation is the upstream half of the fragmentation problem P4 tries
-to stitch — see [phase-4-global-id.md](phase-4-global-id.md) and [fixes-roadmap.md](fixes-roadmap.md).
+to stitch — see [05-global-id.md](05-global-id.md) and [fixes-roadmap.md](../changes_tbd.md).
