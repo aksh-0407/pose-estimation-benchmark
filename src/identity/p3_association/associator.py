@@ -836,7 +836,7 @@ def _airborne_2d_proxy(detection: Detection3, config) -> bool:
     """Cheap causal airborne flag (F9a): both confident ankles well above the bbox
     bottom means the feet are off the ground and the z=0 projection lands long —
     inflate the emitted covariance rather than trusting the grazing-angle point.
-    (Replaced by the 3D-lift ankle-height flag once P3.5 runs.)"""
+    (Replaced by the 3D-lift ankle-height flag once 04 (binding lift) runs.)"""
 
     bbox = detection.bbox_xywh_px
     if not bbox or bbox[3] <= 0:

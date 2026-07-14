@@ -4,16 +4,16 @@
 RTMPose is a top-down model: a person detector (RTMDet) produces boxes, then
 RTMPose predicts keypoints per box. This script walks ``drive/dataset/<group>/
 <delivery>/camera<NN>/`` frame folders, runs detection + pose, and writes one
-JSONL prediction file per camera under ``benchmarks/runs/<run-id>/predictions/``.
+JSONL prediction file per camera under ``data/derived/runs/<run-id>/predictions/``.
 
 Everything is filterable from the CLI so you can run the whole dataset, a single
 capture group, one delivery, one camera, or a short frame slice -- see --help.
 
 Run inside the model's Conda env, e.g.:
 
-    conda activate cricket-rtmpose-l-wholebody
-    python scripts/inference/run_phase1_rtmpose_inference.py --list
-    python scripts/inference/run_phase1_rtmpose_inference.py \
+    conda activate pose-lab
+    python src/core/inference/run_phase1_rtmpose_inference.py --list
+    python src/core/inference/run_phase1_rtmpose_inference.py \
         --groups bt_01 --deliveries CCPL080626M1_1_14_1 --cameras camera01 \
         --frame-limit 50 --overlay
 """
@@ -104,7 +104,7 @@ def parse_args() -> argparse.Namespace:
     rt.add_argument("--device", default="cuda:0", help="cuda:0 / cpu (default: cuda:0)")
     rt.add_argument("--allow-cpu", action="store_true", help="Permit CPU when CUDA is unavailable")
     rt.add_argument("--run-id", default=None, help="Run identifier (default: auto timestamp)")
-    rt.add_argument("--run-dir", default=None, help="Output dir (default: benchmarks/runs/<run-id>)")
+    rt.add_argument("--run-dir", default=None, help="Output dir (default: data/derived/runs/<run-id>)")
     rt.add_argument("--no-resume", dest="resume", action="store_false",
                     help="Recompute frames already present in the camera JSONL")
     rt.add_argument("--no-progress", dest="show_progress", action="store_false",
@@ -463,7 +463,7 @@ def build_models(args: argparse.Namespace, device: str):
         missing = exc.name or "required OpenMMLab package"
         raise SystemExit(
             f"Missing {missing!r} in the active environment. Rebuild/repair this model env with:\n"
-            f"  python3 scripts/setup/setup_model_envs.py --models {args.model_id} --force-install --download-assets\n"
+            f"  python3 tools/setup_model_envs.py --models {args.model_id} --force-install --download-assets\n"
             f"Then activate the configured Conda env and rerun this script."
         ) from exc
 

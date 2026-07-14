@@ -1,6 +1,6 @@
-"""Cluster-level 3D lift + purity signals (F9b/F9c — the P3.5 core).
+"""Cluster-level 3D lift + purity signals (F9b/F9c — the 04 (binding lift) core).
 
-Shared by the standalone P3.5 stage (``triangulate_predictions --id-source binding``)
+Shared by the standalone 04 (binding lift) stage (``triangulate_predictions --id-source binding``)
 and the in-runner feedback hook (``graph_lift_feedback``). Given per-frame member
 keypoints for one identity key (a P3 ``binding_id`` or a provisional cluster), it:
 

@@ -1,4 +1,4 @@
-"""Run the P1.5 2D stabilization stage over a canonical run directory.
+"""Run the 01 (stabilization) 2D stabilization stage over a canonical run directory.
 
 Reads a P1 run dir (``predictions/<capture_group>__<delivery>__cam_NN.jsonl``), smooths
 each camera's per-keypoint pixel trajectories, and writes a new run dir in the same

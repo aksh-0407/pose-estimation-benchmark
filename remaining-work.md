@@ -5,10 +5,11 @@ campaign and the 40-delivery production run. Each item carries its full context 
 picked up cold. Authoritative history: `docs/critical-analysis/fixes-log.md` (every A/B,
 verdict and incident); archived run data: `docs/runs/`.
 
-Current state for orientation: default stack = **v8.1** (`configs/v8/`): tiled RTMDet-m +
-NMS 0.55 + fp16 fast path → RTMPose-X Halpe-26 → P1.5 One-Euro → P2 (no-spawn) → P3 tracklet
-graph + union-lift merge → P3.5 binding lift → P4 Singer-KF + stitching + colocated merge →
-P5 roles v1.2 + peripheral suppression → P6 26-joint 3D (Butterworth, cheirality).
+Current state for orientation: default stack = **v8.1** (the numbered `configs/0N_*.yaml` set):
+P1 tiled RTMDet-m + NMS 0.55 + fp16 fast path → RTMPose-X Halpe-26 → **01** stabilization (One-Euro)
+→ **02** tracking (no-spawn) → **03** association (tracklet graph + union-lift) → **04** binding-keyed
+3D lift → **05** global_id (Singer-KF + stitching + colocated merge) → **06** roles v1.2 + peripheral
+suppression → terminal 3D lift (Butterworth, cheirality, 26-joint).
 Production dataset: `/home/ubuntu/pipetrack_v8/` on the L40S (40 deliveries, all stages,
 README inside). Panel: mean agreement 0.862 across 40, reproj 3.07–3.56 px, coloc 0 on 38/40.
 
@@ -36,13 +37,13 @@ a hand-labelled JSONL. Needed: a few hundred labelled frames on 2–3 deliveries
 `wip/` and the campaign docs since v5.
 
 ### 1.3 Vedant's `global_id/` rewrite — parked for his changelog
-`vedant2/src/identity/p5_global_id/*` is a parallel rebuild lineage (track_manager differs from every
+Vedant's `global_id/` + `roles/` rebuild is a parallel lineage (track_manager differs from every
 commit by 1000+ lines). His `roles/` contribution was evaluated, de-bugged (uniqueness latch,
 standing-back keeper, crease anchors, 2 umpire slots) and merged as roles v1/v1.2. The
 global_id rewrite must NOT displace the validated stack without: his changelog, per-change
-flag-gating, and the standard 8-delivery A/B. `vedant2/` was removed from the tree in the
-2026-07 restructure (roles contribution already merged; global_id rewrite recoverable from
-git history / his own branch if revived).
+flag-gating, and the standard 8-delivery A/B. His in-tree copy was removed in the 2026-07
+restructure (roles contribution already merged; the global_id rewrite is recoverable from git
+history / his own branch if revived).
 
 ### 1.4 User mosaic sign-off of v8.1
 Human review is the final judge. Delivered so far: `artifacts/pipetrack_v8/mosaics/`
@@ -105,8 +106,8 @@ detectors through the same bake-off harness (`tools/detector_bakeoff/detector_ba
 P1 time ever matters more than recall.
 
 ### 3.4 F15 3D-informed P4 costs / F17 OC-SORT P2 modules
-F15: pelvis-height continuity + 3D shape distance in P4 Stage-2/re-entry (P3.5 lift3d is
-already emitted per binding). F17: OC-SORT observation-centric re-update in P2 — only if
+F15: pelvis-height continuity + 3D shape distance in 05 global_id Stage-2/re-entry (the 04
+binding-keyed lift3d is already emitted per binding). F17: OC-SORT observation-centric re-update in P2 — only if
 per-camera fragmentation resurfaces as dominant.
 
 ### 3.5 Skeleton-gait embedding cue (needs explicit sign-off)

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def file_sha256(path: str | Path) -> str:
-    """Streaming SHA-256 of a file (was pose_estimation.results_io.file_sha256)."""
+    """Streaming SHA-256 of a file (inlined; was results_io.file_sha256)."""
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):

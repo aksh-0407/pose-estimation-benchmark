@@ -23,7 +23,7 @@ if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 fi
 
-"${PYTHON_BIN}" scripts/inference/run_phase1_rtmpose_inference.py \
+"${PYTHON_BIN}" src/core/inference/run_phase1_rtmpose_inference.py \
   --drive-root "${DRIVE_ROOT}" \
   --model-id "${MODEL_ID}" \
   --device "${DEVICE}" \

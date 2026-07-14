@@ -26,7 +26,7 @@ CAPTURE_GROUPS="${CAPTURE_GROUPS:-bt_01}"
 MODEL_ID="${MODEL_ID:-yolo26x_pose}"
 DEVICE="${DEVICE:-cuda:0}"
 RUN_ID="${RUN_ID:-yolo26x-pose-full-db8}"
-RUN_DIR="${RUN_DIR:-benchmarks/runs/${RUN_ID}}"
+RUN_DIR="${RUN_DIR:-data/derived/runs/${RUN_ID}}"
 BATCH_SIZE="${BATCH_SIZE:-8}"
 IMGSZ="${IMGSZ:-640}"
 CONF="${CONF:-0.25}"
@@ -125,7 +125,7 @@ fi
 
 for delivery_id in "${delivery_ids[@]}"; do
   command=(
-    "${PYTHON_BIN}" scripts/inference/run_phase1_yolo_inference.py
+    "${PYTHON_BIN}" src/core/inference/run_phase1_yolo.py
     --drive-root "${DRIVE_ROOT}"
     --delivery-id "${delivery_id}"
     --model-id "${MODEL_ID}"
@@ -163,7 +163,7 @@ done
 
 if [[ "${YOLO_VISUALIZE}" == "1" ]]; then
   overlay_command=(
-    "${PYTHON_BIN}" scripts/visualization/render_phase1_overlays.py
+    "${PYTHON_BIN}" src/identity/visualization/render_phase1_overlays.py
     --drive-root "${DRIVE_ROOT}"
     --run-dir "${RUN_DIR}"
     --artifact-dir "${RUN_DIR}/visualizations"

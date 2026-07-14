@@ -1,6 +1,6 @@
-"""Configuration for the P1.5 2D stabilization stage.
+"""Configuration for the 01 (stabilization) 2D stabilization stage.
 
-A small, validated dataclass loaded from ``configs/p1b_stabilization.yaml``. Unknown
+A small, validated dataclass loaded from ``configs/01_stabilization.yaml``. Unknown
 keys are rejected so a typo cannot silently disable a knob (the same contract the P2/P3/P4
 config loaders follow).
 """

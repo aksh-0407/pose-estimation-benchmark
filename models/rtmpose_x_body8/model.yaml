@@ -30,7 +30,7 @@ model:
   - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose
   - https://arxiv.org/abs/2303.07399
 environment:
-  env_name: cricket-rtmpose-l
+  env_name: pose-lab
   profile: mmpose_v1
   smoke_profile: mmpose
   benchmark_runner: mmpose_topdown

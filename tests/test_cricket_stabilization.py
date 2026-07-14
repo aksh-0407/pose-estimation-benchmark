@@ -1,4 +1,4 @@
-"""Tests for the P1.5 2D stabilization stage."""
+"""Tests for the 01 (stabilization) 2D stabilization stage."""
 
 from __future__ import annotations
 

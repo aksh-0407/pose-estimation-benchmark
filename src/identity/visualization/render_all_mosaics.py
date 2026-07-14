@@ -112,8 +112,8 @@ def parse_args() -> argparse.Namespace:
                    help="Directory holding one subdir per delivery (e.g. ~/pipetrack_v8/deliveries).")
     p.add_argument("--drive-root", required=True,
                    help="Drive-layout root the renderer reads frames/calibration from (e.g. ~/render_drive).")
-    p.add_argument("--run-subdir", default="p4",
-                   help="Per-delivery run dir holding predictions/ (default: p4).")
+    p.add_argument("--run-subdir", default="05_global_id",
+                   help="Per-delivery run dir holding predictions/ (default: 05_global_id).")
     p.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1),
                    help="Parallel deliveries (default: nproc-1; ~6-7 is the L40S plateau).")
     p.add_argument("--show", default="p4", choices=["p2", "p3", "p4"])

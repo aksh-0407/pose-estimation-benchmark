@@ -91,10 +91,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="G3: try high-parallax RANSAC seed pairs first (flag-gated A/B)")
     parser.add_argument("--suppression-path", default=None,
                         help="P5b suppression.json; suppressed global ids are not lifted "
-                             "(default: probes <input>/../p5/suppression.json; Wave-6)")
+                             "(default: probes <input>/../06_roles/suppression.json; Wave-6)")
     parser.add_argument("--id-source", choices=["global", "binding"], default="global",
                         help="Group observations by P4 global_player_id (terminal lift, legacy) "
-                             "or by P3 binding_id (the P3.5 re-sequenced lift, fix F9b).")
+                             "or by P3 binding_id (the 04 (binding lift) re-sequenced lift, fix F9b).")
     parser.add_argument("--chimera-torso-residual-px", type=float, default=20.0)
     parser.add_argument("--chimera-frame-fraction", type=float, default=0.3)
     parser.add_argument("--airborne-ankle-z-m", type=float, default=0.25)
@@ -159,7 +159,7 @@ def triangulate_canonical_run(
     # Wave-6 (P5b): suppressed peripheral ids are excluded from the lift entirely.
     suppressed_ids: set[str] = set()
     sup_path = Path(suppression_path) if suppression_path else (
-        input_run_dir.parent / "p5" / "suppression.json"
+        input_run_dir.parent / "06_roles" / "suppression.json"
     )
     if sup_path.is_file():
         try:
@@ -245,7 +245,7 @@ def triangulate_canonical_run(
             continue
         if id_source == "binding":
             # The lift core also derives per-camera torso residuals (the chimera
-            # signature) and per-joint covariance — the P3.5 feedback payload.
+            # signature) and per-joint covariance — the 04 (binding lift) feedback payload.
             member_keypoints = _member_keypoints(views)
             lift = lift_frame(
                 member_keypoints,

@@ -1907,14 +1907,14 @@ def main() -> int:
         if args.roles_path:
             roles = load_roles(Path(args.roles_path))
         else:
-            roles = load_roles(run_dir.parent / "p5" / "roles.json") or load_roles(
-                run_dir / "p5" / "roles.json"
+            roles = load_roles(run_dir.parent / "06_roles" / "roles.json") or load_roles(
+                run_dir / "06_roles" / "roles.json"
             )
         if roles:
             print("roles loaded: " + ", ".join(f"{pid}={role}" for pid, role in sorted(roles.items())))
-        # Wave-6: role-aware peripheral suppression (P5b); absent/disabled => empty set
-        suppressed = load_suppression(run_dir.parent / "p5" / "suppression.json") | load_suppression(
-            run_dir / "p5" / "suppression.json"
+        # Wave-6: role-aware peripheral suppression (06 roles); absent/disabled => empty set
+        suppressed = load_suppression(run_dir.parent / "06_roles" / "suppression.json") | load_suppression(
+            run_dir / "06_roles" / "suppression.json"
         )
         if suppressed:
             print("suppressed ids (P5b): " + ", ".join(sorted(suppressed)))

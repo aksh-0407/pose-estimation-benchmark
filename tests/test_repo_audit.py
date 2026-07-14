@@ -3,28 +3,26 @@ from tools.audit_repo import violations
 
 def test_repo_audit_allows_placeholders_and_flags_artifacts():
     paths = [
-        "models/rtmw_l/weights/.gitkeep",
-        "models/rtmw_l/weights/model.pth",
-        "models/rtmw_l/checksums/sha256.json",
+        "models/rtmpose_l/weights/.gitkeep",
+        "models/rtmpose_l/weights/model.pth",
+        "models/rtmpose_l/checksums/sha256.json",
+        "data/raw/.gitkeep",
+        "data/raw/coco/val2017/000000.jpg",
+        "data/derived/.gitkeep",
+        "data/derived/runs/run_001/deliveries/D/05_global_id/predictions/cam_01.jsonl",
+        "data/derived/mosaics/run_001/D/D__all_cameras.mp4",
         "drive/dataset/bt_01/clip/camera01/frame_camera01_000001.jpg",
-        "benchmarks/runs/run_001/run_manifest.json",
-        "benchmarks/reports/.gitkeep",
-        "benchmarks/reports/report_001/index.html",
-        "benchmarks/artifacts/run_001/predictions/model__dataset.jsonl",
-        "benchmarks/runs/run_001/logs/model__dataset.latency.jsonl",
-        "results/README.md",
-        "results/aggregate_metrics.csv",
-        "results/smoke_results.csv",
+        "src/main.py",
+        "configs/03_association.yaml",
     ]
-    # Run manifests and placeholders/READMEs are tracked; weights, checksums, raw
-    # artifacts, and DERIVED results/reports are not (CI regenerates the latter).
+    # Placeholders (.gitkeep) and tracked source/config are fine; model weights/checksums,
+    # local raw inputs, all pipeline outputs under data/derived/, mosaic .mp4, and raw
+    # footage are not.
     assert violations(paths) == [
-        "benchmarks/artifacts/run_001/predictions/model__dataset.jsonl",
-        "benchmarks/reports/report_001/index.html",
-        "benchmarks/runs/run_001/logs/model__dataset.latency.jsonl",
+        "data/derived/mosaics/run_001/D/D__all_cameras.mp4",
+        "data/derived/runs/run_001/deliveries/D/05_global_id/predictions/cam_01.jsonl",
+        "data/raw/coco/val2017/000000.jpg",
         "drive/dataset/bt_01/clip/camera01/frame_camera01_000001.jpg",
-        "models/rtmw_l/checksums/sha256.json",
-        "models/rtmw_l/weights/model.pth",
-        "results/aggregate_metrics.csv",
-        "results/smoke_results.csv",
+        "models/rtmpose_l/checksums/sha256.json",
+        "models/rtmpose_l/weights/model.pth",
     ]

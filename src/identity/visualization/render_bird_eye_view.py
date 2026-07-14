@@ -14,9 +14,9 @@ Reads a canonical P4 run dir:
 Outputs an mp4 (cv2 VideoWriter, no ffmpeg needed) and a sampled-frame montage PNG.
 
 Example:
-  conda activate cricket-rtmpose-l
-  python scripts/visualization/render_bird_eye_view.py \
-      --p4-dir benchmarks/runs/pipetrack_v3/deliveries/CCPL080626M1_1_14_1/p4 \
+  conda activate pose-lab
+  python src/identity/visualization/render_bird_eye_view.py \
+      --p4-dir data/derived/runs/pipetrack_v3/deliveries/CCPL080626M1_1_14_1/p4 \
       --drive-root drive --match-id CCPL080626 --out-dir /tmp/bev
 """
 from __future__ import annotations

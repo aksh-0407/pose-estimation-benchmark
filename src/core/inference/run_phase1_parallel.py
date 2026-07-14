@@ -22,7 +22,7 @@ shards for even load. Everything else (model, tiled-det, nms, batch sizes) is
 forwarded verbatim to ``run_phase1_l40s.py``.
 
 Example (production, 3-wide):
-    python scripts/inference/run_phase1_parallel.py --shards 3 \
+    python src/core/inference/run_phase1_parallel.py --shards 3 \
         --pose-data ~/pose_data --output-dir ~/pipetrack_v8/p1_rtmpose-x-tiled \
         -- --tiled-det --nms-thr 0.55 --det-batch-size 8 --pose-batch-size 512 \
            --io-workers 4

@@ -1,4 +1,4 @@
-# v7 P5 role assignment - vedant2 v1 epoch solver (merged 2026-07-13).
+# P5 (06) role assignment - v1 epoch solver (merged 2026-07-13).
 # v1: per-epoch Hungarian assignment over {bowler, striker, non_striker,
 # wicketkeeper, umpire} with latch-count debounce; requires P4 online_role_proxy.
 # Omit --config (or set role_assignment_version: v0) for the legacy heuristic.

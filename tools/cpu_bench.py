@@ -3,7 +3,7 @@
 
 Workloads mirror the CPU-bound stages:
   kalman  - many tiny 4x4/2x2 matrix ops (P2/P4 Kalman predict-update loops)
-  lstsq   - robust lstsq on stacked 2-view systems (P3 ground solve / P3.5 DLT lift)
+  lstsq   - robust lstsq on stacked 2-view systems (P3 ground solve / 04 (binding lift) DLT lift)
   json    - parse+serialize realistic P1 player records (jsonl I/O everywhere)
 Modes: single-thread score, then all-cores aggregate via multiprocessing
 (matches our BLAS-capped one-thread-per-process fan-out across deliveries).

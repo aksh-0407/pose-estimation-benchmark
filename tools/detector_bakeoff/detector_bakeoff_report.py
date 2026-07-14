@@ -7,7 +7,7 @@ For each candidate vs the baseline candidate (default m640), reports per camera:
   lost-box rate (baseline boxes the candidate no longer finds).
 New boxes are recall gains if real; the overlay jpgs are the precision check.
 
-Usage: python scripts/inference/detector_bakeoff_report.py --dir <out> [--baseline m640]
+Usage: python tools/detector_bakeoff/detector_bakeoff_report.py --dir <out> [--baseline m640]
 """
 from __future__ import annotations
 

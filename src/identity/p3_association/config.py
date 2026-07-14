@@ -1,7 +1,7 @@
 """Cross-camera association (P3) configuration.
 
 Same frozen-dataclass + validated-YAML-loader pattern as
-scripts/tracking/config.py. Every magic number Vedant hard-coded is exposed
+src/identity/p2_tracking/config.py. Every magic number Vedant hard-coded is exposed
 here so the run manifest records exactly what produced a result.
 """
 

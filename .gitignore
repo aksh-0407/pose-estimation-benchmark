@@ -1,9 +1,9 @@
 # =============================================================================
 # What goes to Git, in one rule:
-#   Commit SOURCE (code, configs, docs) and compact EVIDENCE
-#   (benchmarks/runs/<id>/). Keep ASSETS (weights, datasets, clones), RAW
-#   artifacts, and DERIVED aggregates local. Full policy: docs/collaboration.md
-# Anything ignored below is enforced by: python3 scripts/setup/audit_repo.py --fail
+#   Commit SOURCE (code under src/, configs, docs) only. Keep ASSETS (weights,
+#   datasets, upstream clones) and all pipeline OUTPUTS (data/derived/) local.
+#   Full policy: docs/shared-data.md
+# Anything ignored below is enforced by: python3 tools/audit_repo.py --fail
 # =============================================================================
 
 # --- Python / cache artifacts ---
@@ -71,7 +71,6 @@ Papers/
 # --- Local-only presentation handout (generated from the .md script; hidden in VS Code) ---
 presentables/00_presentation_script.pdf
 
-# --- Local-only colleague's work (Vedant) & Midsem Report---
+# --- Local-only colleague dropzones & personal reports (never synced) ---
 vedant*/
 report/*
-vedant2/*

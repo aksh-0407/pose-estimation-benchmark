@@ -5,7 +5,7 @@ This is a self-contained runner for the *new* capture machine whose dataset live
 ``/home/ubuntu/pose_data/{bt1,bt2,bt3}/<delivery>/camera<NN>/frame_camera<NN>_*.jpg``
 (134,400 frames = 3 groups x 32 deliveries x {2,3,2} cameras x 600). The stock runner
 (``run_phase1_rtmpose_inference.py``) hard-requires ``bt_01/bt_02/bt_03`` under
-``<drive-root>/dataset/`` and writes under ``benchmarks/runs/``; this file discovers the
+``<drive-root>/dataset/`` and writes under ``data/derived/runs/``; this file discovers the
 ``bt1/bt2/bt3`` layout natively, is tuned for the L40S (46 GB, Ada), and writes to a caller
 chosen output dir. It does NOT copy/symlink data and changes no existing file.
 
@@ -17,16 +17,16 @@ Key fact this design leans on: top-down RTMDet + RTMPose are batch-invariant in 
 size changes *speed only, never output*. So the ``--sweep`` mode writes nothing, and the full
 run touches every frame exactly once (``--resume`` makes restarts free).
 
-Typical usage on the L40S box (inside the ``cricket-rtmpose-l`` conda env):
+Typical usage on the L40S box (inside the ``pose-lab`` conda env):
 
     # 0) what would run + preflight
-    python scripts/inference/run_phase1_l40s.py --list
+    python src/core/inference/run_phase1_l40s.py --list
 
     # 1) fine in-process batch sweep (~1-2 min, writes nothing) -> best.json
-    python scripts/inference/run_phase1_l40s.py --sweep
+    python src/core/inference/run_phase1_l40s.py --sweep
 
     # 2) full resumable run at the winning config
-    python scripts/inference/run_phase1_l40s.py \
+    python src/core/inference/run_phase1_l40s.py \
         --det-batch-size <B> --pose-batch-size <P> --io-workers <W>
 """
 from __future__ import annotations
@@ -268,7 +268,7 @@ def preflight(args: argparse.Namespace, device: str) -> None:
             raise SystemExit(
                 f"missing {label}: {path}\n"
                 f"Fetch assets with:\n"
-                f"  python3 scripts/setup/setup_model_envs.py --models {args.model_id} "
+                f"  python3 tools/setup_model_envs.py --models {args.model_id} "
                 f"--force-install --download-assets"
             )
 
@@ -279,7 +279,7 @@ def preflight(args: argparse.Namespace, device: str) -> None:
         except ModuleNotFoundError as exc:
             raise SystemExit(
                 "torch is not importable -- activate the model env "
-                "(e.g. `conda activate cricket-rtmpose-l`)."
+                "(e.g. `conda activate pose-lab`)."
             ) from exc
         if not torch.cuda.is_available():
             raise SystemExit(
@@ -600,7 +600,7 @@ def _grid_sweep(args, loaded, n, best_workers, best_decode_fps, best_decode_pf,
     print(f"wrote {out_dir / 'best.json'}")
     print("=" * 60)
     print("\nRun the full job with:")
-    print(f"  python scripts/inference/run_phase1_l40s.py "
+    print(f"  python src/core/inference/run_phase1_l40s.py "
           f"--det-batch-size {win['det_batch']} --pose-batch-size {win['pose_batch']} "
           f"--io-workers {best_workers}")
     return 0
@@ -755,7 +755,7 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
     print(f"wrote {best_path}")
     print("=" * 60)
     print("\nRun the full job with:")
-    print(f"  python scripts/inference/run_phase1_l40s.py "
+    print(f"  python src/core/inference/run_phase1_l40s.py "
           f"--det-batch-size {best_det} --pose-batch-size {best_pose} "
           f"--io-workers {best_workers}")
     return 0

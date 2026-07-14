@@ -1,10 +1,10 @@
-"""CLI entry point for P1.5 — 2D keypoint temporal stabilization.
+"""CLI entry point for 01 (stabilization) — 2D keypoint temporal stabilization.
 
 Sits between P1 (2D inference) and P2 (per-camera tracking):
 
     python -m identity.p1_stabilization.run_stabilization \
         --input-run-dir <p1-run> --output-run-dir <p1b-run> \
-        --delivery-id CCPL080626M1_1_14_1 --config configs/p1b_stabilization.yaml
+        --delivery-id CCPL080626M1_1_14_1 --config configs/01_stabilization.yaml
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ from identity.p1_stabilization.runner import run_stabilization  # noqa: E402
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="P1.5 2D keypoint temporal stabilization")
+    parser = argparse.ArgumentParser(description="01 (stabilization) 2D keypoint temporal stabilization")
     parser.add_argument("--input-run-dir", required=True, help="P1 run dir containing predictions/*.jsonl")
     parser.add_argument("--output-run-dir", required=True, help="stabilized run dir to write")
     parser.add_argument("--delivery-id", required=True)
-    parser.add_argument("--config", default=None, help="optional stabilization YAML (default: configs/p1b_stabilization.yaml)")
+    parser.add_argument("--config", default=None, help="optional stabilization YAML (default: configs/01_stabilization.yaml)")
     parser.add_argument("--camera", action="append", default=None, help="restrict to camera id(s), e.g. cam_01")
     # --drive-root/--expected-frames accepted for a uniform stage CLI; unused here.
     parser.add_argument("--drive-root", default=None, help="(accepted for CLI uniformity; unused)")

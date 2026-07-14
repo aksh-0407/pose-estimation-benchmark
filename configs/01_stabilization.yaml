@@ -9,9 +9,9 @@
 # All behaviour is flag-gated; `enabled: false` makes the stage a byte-identical
 # pass-through so it can be A/B-compared against the raw P1 stream.
 #
-# EXPERIMENT F1 (wire P1.5 into the default flow): identical to
-# configs/v6/p1b_stabilization.yaml except `enabled: true`.
-# A/B: run_full_pipeline --enable-stabilization --p1b-config <this file>
+# EXPERIMENT F1 (wire 01 (stabilization) into the default flow): identical to
+# the frozen v6 baseline stabilization config except `enabled: true`.
+# A/B: python -m main --enable-stabilization --p1b-config <this file>
 # vs the frozen pipetrack_v6.0 baseline, all 8 deliveries.
 
 enabled: true

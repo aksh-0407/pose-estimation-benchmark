@@ -15,13 +15,13 @@ set -euo pipefail
 #
 # Runs are resumable: re-running continues from the last finished frame. Extra args
 # pass through to run_phase1_rtmpose_inference.py, e.g.
-#   bash scripts/inference/run_rtmpose_x_final.sh --groups bt_02 --frame-limit 100
+#   bash src/core/inference/run_rtmpose_x_final.sh --groups bt_02 --frame-limit 100
 
 DRIVE_ROOT="${DRIVE_ROOT:-drive}"
 MODEL_ID="${MODEL_ID:-rtmpose_x_body8}"
 DEVICE="${DEVICE:-cuda:0}"
 RUN_ID="${RUN_ID:-rtmpose-x}"
-RUN_DIR="${RUN_DIR:-benchmarks/runs/rtmpose-x}"
+RUN_DIR="${RUN_DIR:-data/derived/runs/rtmpose-x}"
 DET_BATCH_SIZE="${DET_BATCH_SIZE:-32}"
 POSE_BATCH_SIZE="${POSE_BATCH_SIZE:-96}"
 IO_WORKERS="${IO_WORKERS:-16}"
@@ -39,7 +39,7 @@ export OMP_NUM_THREADS="${OMP_NUM_THREADS:-2}"
 export MKL_NUM_THREADS="${MKL_NUM_THREADS:-2}"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-2}"
 
-"${PYTHON_BIN}" scripts/inference/run_phase1_rtmpose_inference.py \
+"${PYTHON_BIN}" src/core/inference/run_phase1_rtmpose_inference.py \
   --drive-root "${DRIVE_ROOT}" \
   --model-id "${MODEL_ID}" \
   --device "${DEVICE}" \

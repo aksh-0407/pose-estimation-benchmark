@@ -126,7 +126,7 @@ class DeliveryPlan:
         return reused
 
     def p2_input(self) -> Path:
-        """P2 reads stabilized predictions when P1.5 is enabled, else the raw P1 run."""
+        """P2 reads stabilized predictions when 01 (stabilization) is enabled, else the raw P1 run."""
         if self.args.enable_stabilization:
             return self.stage_dir("01_stabilization")
         return Path(self.args.input_tree).resolve()
@@ -364,10 +364,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
                         help="Shorthand for --until-stage p6_3d.")
     parser.add_argument("--enable-stabilization", action=argparse.BooleanOptionalAction,
                         default=True,
-                        help="Run P1.5 before P2 (v7 default ON; --no-enable-stabilization for v6-style runs).")
+                        help="Run 01 (stabilization) before P2 (v7 default ON; --no-enable-stabilization for v6-style runs).")
     parser.add_argument("--enable-lift", action=argparse.BooleanOptionalAction,
                         default=True,
-                        help="Run the P3.5 binding-keyed 3D lift after P3 (v7 default ON).")
+                        help="Run the 04 (binding lift) binding-keyed 3D lift after P3 (v7 default ON).")
     parser.add_argument("--p1b-config", default="configs/01_stabilization.yaml")
     parser.add_argument("--p2-config", default="configs/02_tracking.yaml")
     parser.add_argument("--p3-config", default="configs/03_association.yaml")

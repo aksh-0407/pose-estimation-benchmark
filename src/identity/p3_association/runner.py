@@ -85,7 +85,7 @@ def run_association(
     # Calibration is the source of truth for which cameras co-observe. Auto-derive the
     # FACING pairs (anti-parallel optical axes looking at the same ground strip) and
     # override any hand-edited opposite_camera_pairs so a wrong config cannot mislabel
-    # the stricter opposite-pair ground gate. See pose_estimation/cricket/geometry.py.
+    # the stricter opposite-pair ground gate. See src/identity/common/geometry.py.
     derived_facing_pairs = derive_facing_pairs(projections)
     if derived_facing_pairs:
         config = replace(

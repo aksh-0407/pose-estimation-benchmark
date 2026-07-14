@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Archive benchmark run trees as markdown documents before deletion.
 
-For every run under benchmarks/runs/ this emits docs/runs/<run>.md containing the
+For every run under data/derived/runs/ this emits docs/runs/<run>.md containing the
 run's purpose/verdict (curated table below), its pipeline manifest (configs + shas +
 base-tree lineage), and a per-delivery metric panel harvested from the stage metrics
 JSONs. P1 inference runs get their p1_metrics.json summary instead. The goal: the
 full analytical record survives even though the multi-GB predictions/logs are removed.
 
 Usage:
-    python scripts/pipetrack/archive_run_docs.py [--runs-root benchmarks/runs] \
+    python tools/archive_run_docs.py [--runs-root data/derived/runs] \
         [--out docs/runs] [--only run1 run2 ...]
 """
 from __future__ import annotations
@@ -26,14 +26,14 @@ RUN_NOTES = {
     "pipetrack_v5": ("Validated v5 identity stack on RTMPose-L data.", "Superseded", "wip/methods_log.md ID-0..6"),
     "pipetrack_v6.0": ("Frozen ground baseline of the fix campaign (v5 configs, RTMPose-X P1).", "Baseline (superseded by v8.0)", "fixes-log F0"),
     "pipetrack_v6.0.zip": ("Zip archive of pipetrack_v6.0.", "Redundant archive", "fixes-log F0"),
-    "pipetrack_v6.1-f01": ("Wave-0 A/B: P1.5 stabilization wired (F1).", "Accepted into v7 lineage", "fixes-log F1"),
+    "pipetrack_v6.1-f01": ("Wave-0 A/B: 01 stabilization wired (F1).", "Accepted into v7 lineage", "fixes-log F1"),
     "pipetrack_v6.1-wave1": ("Wave-1 correctness batch (F3-F8).", "Accepted into v7 lineage", "fixes-log W1"),
     "pipetrack_v6.2-wave3": ("Wave-3 stack (F9a covariance, F10 R, F11 shape, F12 posture stitch).", "Accepted into v7 lineage", "fixes-log W3"),
     "pipetrack_v6.2-wave3b": ("Wave-3b asymmetric-R refinement.", "Accepted into v7 lineage", "fixes-log W3b/W4"),
     "pipetrack_v6.3-wave4": ("Wave-4 chimera splitting (F13).", "Accepted into v7 lineage", "fixes-log W3b/W4"),
     "pipetrack_v7-rc1": ("First composed v7 release candidate.", "Rejected (H3 binding collapse; root-caused)", "fixes-log v7-rc1"),
     "pipetrack_v7-rc2": ("Re-composed v7 on fixed code; stitcher live first time.", "Accepted as v7 default (superseded by v8.0)", "fixes-log v7-rc2 + GRAND ANALYSIS"),
-    "pipetrack_v7-rc3": ("P1.5 isolation (no stabilization).", "Rejected (worse worst-clip floor)", "fixes-log GRAND ANALYSIS"),
+    "pipetrack_v7-rc3": ("01 (stabilization) isolation (no stabilization).", "Rejected (worse worst-clip floor)", "fixes-log GRAND ANALYSIS"),
     "pipetrack_v7-ablA": ("Wave ablation helper tree.", "Diagnostic only", "fixes-log W3b/W4"),
     "pipetrack_v7-w5b": ("Contested-camera weighting composed A/B.", "No-op proven (P1 NMS 0.3 caps same-cam IoU)", "fixes-log W5B"),
     "pipetrack_v8-probe": ("Phase C: tiled NMS-0.3 P1 through v7 stack (_7+M2).", "Hold verdict; superseded by nms55", "fixes-log W5-C"),
@@ -60,14 +60,14 @@ RUN_NOTES = {
 }
 
 PANEL_FIELDS = [
-    ("agreement", ("p4", "global_id_metrics.json"), "cross_camera_agreement_rate"),
-    ("ids", ("p4", "global_id_metrics.json"), "distinct_global_id_count"),
-    ("teleports", ("p4", "global_id_metrics.json"), "teleport_event_count"),
-    ("id_persist", ("p4", "global_id_metrics.json"), "completeness.confirmed_frame_completeness.mean"),
-    ("frags", ("p4", "global_id_metrics.json"), "excess_id_fragment_count_proxy"),
-    ("stitch_links", ("p4", "global_id_metrics.json"), "selected_stitch_link_count"),
-    ("tri_reproj_px", ("p6_3d", "triangulation_metrics.json"), "mean_reprojection_error_px"),
-    ("tri_cov", ("p6_3d", "triangulation_metrics.json"), "triangulation_coverage"),
+    ("agreement", ("05_global_id", "global_id_metrics.json"), "cross_camera_agreement_rate"),
+    ("ids", ("05_global_id", "global_id_metrics.json"), "distinct_global_id_count"),
+    ("teleports", ("05_global_id", "global_id_metrics.json"), "teleport_event_count"),
+    ("id_persist", ("05_global_id", "global_id_metrics.json"), "completeness.confirmed_frame_completeness.mean"),
+    ("frags", ("05_global_id", "global_id_metrics.json"), "excess_id_fragment_count_proxy"),
+    ("stitch_links", ("05_global_id", "global_id_metrics.json"), "selected_stitch_link_count"),
+    ("tri_reproj_px", ("07_lift3d", "triangulation_metrics.json"), "mean_reprojection_error_px"),
+    ("tri_cov", ("07_lift3d", "triangulation_metrics.json"), "triangulation_coverage"),
 ]
 
 
@@ -168,7 +168,7 @@ def archive_run(tree: Path, out_dir: Path) -> bool:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--runs-root", default="benchmarks/runs")
+    ap.add_argument("--runs-root", default="data/derived/runs")
     ap.add_argument("--out", default="docs/runs")
     ap.add_argument("--only", nargs="+", default=None)
     args = ap.parse_args()

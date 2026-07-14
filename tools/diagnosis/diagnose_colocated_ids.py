@@ -12,8 +12,8 @@ A *swap event* is two global ids whose fused ground positions stay within
                      two people standing close (crossing); NOT mergeable.
 
 Usage:
-    python -m scripts.global_id.diagnose_colocated_ids \
-        --tree benchmarks/runs/pipetrack_v8.0 [--radius 0.75] [--min-frames 25] \
+    python -m tools.diagnosis.diagnose_colocated_ids \
+        --tree data/derived/runs/pipetrack_v8.0 [--radius 0.75] [--min-frames 25] \
         [--dump-frames N --drive-root drive]
 
 Emits a per-delivery table + optional annotated frame crops under

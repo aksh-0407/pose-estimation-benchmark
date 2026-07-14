@@ -13,8 +13,8 @@ member disagreement):
   closer to the geometry-optimal point. This is the fairer accuracy proxy.
 
 Usage:
-    python -m scripts.association.eval_ground_accuracy \
-        --run-dir benchmarks/runs/pipetrack_v3/deliveries/<delivery>/p3 \
+    python -m tools.diagnosis.eval_ground_accuracy \
+        --run-dir data/derived/runs/pipetrack_v3/deliveries/<delivery>/p3 \
         --drive-root drive --match-id CCPL080626
 """
 from __future__ import annotations

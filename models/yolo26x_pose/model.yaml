@@ -28,7 +28,7 @@ model:
   sources:
   - https://docs.ultralytics.com/tasks/pose
 environment:
-  env_name: cricket-yolo26x-pose
+  env_name: pose-lab
   profile: ultralytics_pose
   smoke_profile: ultralytics
   benchmark_runner: yolo

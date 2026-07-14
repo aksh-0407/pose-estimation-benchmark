@@ -29,7 +29,7 @@ Boxes are kept down to score 0.10 so the report can study thresholds; the
 production cut (0.30) is applied only in summary counts.
 
 Typical L40S sweep (2 deliveries, stride 5, all 7 cams):
-  python scripts/inference/detector_bakeoff.py \
+  python tools/detector_bakeoff/detector_bakeoff.py \
       --data-root ~/pose_data --out ~/bakeoff_w5 \
       --deliveries CCPL080626M1_1_14_7 CCPL080626M2_1_11_2 --stride 5
 """

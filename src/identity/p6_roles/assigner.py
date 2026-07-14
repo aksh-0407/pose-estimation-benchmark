@@ -161,7 +161,7 @@ def assign_roles(
     return roles
 
 
-# Epoch-scored v1 role solver (vedant2 merge 2026-07-13, defects fixed same day).
+# Epoch-scored v1 role solver (merged 2026-07-13, defects fixed same day).
 # Slots reflect the real per-delivery roster: 1 bowler, 1 striker, 1 non-striker,
 # 1 wicketkeeper, 2 umpires (bowler's end + square leg) — everyone else fields.
 EPOCH_SLOTS = (

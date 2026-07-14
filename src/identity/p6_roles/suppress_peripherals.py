@@ -135,7 +135,7 @@ def decide(quality: dict[str, dict], roles: dict[str, str], cfg: dict) -> dict[s
 def main() -> None:
     args = parse_args()
     run_dir = Path(args.input_run_dir)
-    roles_path = Path(args.roles_path) if args.roles_path else run_dir.parent / "p5" / "roles.json"
+    roles_path = Path(args.roles_path) if args.roles_path else run_dir.parent / "06_roles" / "roles.json"
     cfg = load_config(args.config)
     roles = {}
     if roles_path.exists():
