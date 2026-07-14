@@ -15,10 +15,11 @@ __pycache__/
 .coverage
 htmlcov/
 
-# --- Local assistant / editor state ---
+# --- Local assistant / editor state (local-only, never synced) ---
 .agents/
 .codex/
 .claude/
+.vscode/
 .github/modernize/
 prompts/
 
