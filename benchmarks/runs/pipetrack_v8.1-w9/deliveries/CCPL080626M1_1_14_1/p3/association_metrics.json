@@ -1,0 +1,159 @@
+{
+  "anchor_switch_count": 0,
+  "anchor_switch_frames": [],
+  "anchor_switch_frequency": 0.0,
+  "appearance_images_missing": 0,
+  "association_mode": "tracklet_graph",
+  "binding_count": 11,
+  "calibration_anchor_pair_count": 6,
+  "calibration_diff_pair_count": 38,
+  "calibration_preflight": {
+    "camera_count": 7,
+    "finite_camera_center_count": 7,
+    "finite_fundamental_matrix_count": 21,
+    "pair_count": 21
+  },
+  "camera_count": 7,
+  "cluster_camera_support": {
+    "count": 5909,
+    "max": 5.0,
+    "mean": 2.316804873921137,
+    "p50": 2.0,
+    "p95": 5.0
+  },
+  "cluster_count": 5909,
+  "created_at": "2026-07-14T04:34:25.694702+00:00",
+  "cue_d_prime": {
+    "appearance": 1.206,
+    "ground_dist_m": 4.243,
+    "ground_maha": 4.893,
+    "posture_z": 1.789
+  },
+  "cycle_consistency_rate": 0.7013888888888888,
+  "degenerate_pair_count": 7,
+  "degenerate_pair_usage_count": 4728,
+  "degenerate_pair_usage_rate": 0.3288128520759441,
+  "degenerate_pairs": [
+    [
+      "cam_01",
+      "cam_04"
+    ],
+    [
+      "cam_02",
+      "cam_03"
+    ],
+    [
+      "cam_02",
+      "cam_05"
+    ],
+    [
+      "cam_02",
+      "cam_06"
+    ],
+    [
+      "cam_03",
+      "cam_05"
+    ],
+    [
+      "cam_03",
+      "cam_06"
+    ],
+    [
+      "cam_05",
+      "cam_06"
+    ]
+  ],
+  "delivery_id": "CCPL080626M1_1_14_1",
+  "expected_frames": 600,
+  "facing_camera_pairs": [
+    [
+      "cam_01",
+      "cam_04"
+    ],
+    [
+      "cam_02",
+      "cam_06"
+    ],
+    [
+      "cam_03",
+      "cam_05"
+    ]
+  ],
+  "frames_per_camera": {
+    "cam_01": 600,
+    "cam_02": 600,
+    "cam_03": 600,
+    "cam_04": 600,
+    "cam_05": 600,
+    "cam_06": 600,
+    "cam_07": 600
+  },
+  "frames_processed": 600,
+  "graph_diagnostics": {
+    "chimera_evictions": 1,
+    "clusters_demoted": 17,
+    "corroboration_merges": 1,
+    "merges_accepted": 15,
+    "merges_blocked": 1,
+    "purity_splits": 9,
+    "refine_moves": 0,
+    "rescued_singletons": 1,
+    "shape_cue_abstained": 1,
+    "shape_merges": 0,
+    "synthetic_tracklets": 11,
+    "union_lift_merges": 2,
+    "union_lift_rejects": {
+      "chimera": 0,
+      "lift_frames": 0,
+      "overlap": 1,
+      "overlap_detail": [
+        {
+          "cam": "cam_01",
+          "frames": 212,
+          "len_a": 600,
+          "len_b": 212
+        }
+      ],
+      "posture": 0,
+      "residual": 0,
+      "veto": 2
+    }
+  },
+  "graph_edge_count": 58,
+  "ground_spread_m": {
+    "count": 3600,
+    "max": 8.036098539984097,
+    "mean": 2.1861630415496607,
+    "p50": 2.129372159802411,
+    "p95": 3.592526535474397
+  },
+  "lift_bindings_evaluated": 6,
+  "lift_chimera_suspect_count": 1,
+  "lift_chimera_suspects": [
+    "B008"
+  ],
+  "match_id": "CCPL080626",
+  "matched_camera_pair_count": 14379,
+  "multi_camera_binding_count": 6,
+  "pair_link_broken_count": 8,
+  "pair_link_churn_rate": 0.0005579967915184488,
+  "pair_link_evaluated_count": 14337,
+  "reprojection_error_px": {
+    "count": 3600,
+    "max": 131.43762894818335,
+    "mean": 15.433432026538089,
+    "p50": 4.951840620924555,
+    "p95": 58.45399265429915
+  },
+  "schema_version": "association_metrics/v1",
+  "single_camera_cluster_count": 2309,
+  "single_camera_rate": 0.39075985784396683,
+  "status": "pass",
+  "track_confidence": {
+    "count": 5909,
+    "max": 0.8246984527975239,
+    "mean": 0.5634141828652398,
+    "p50": 0.55,
+    "p95": 0.8138197780294021
+  }
+}

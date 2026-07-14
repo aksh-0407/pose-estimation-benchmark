@@ -69,6 +69,7 @@ PANEL_COLUMNS = [
      "completeness.confirmed_frame_completeness.mean", "{:.3f}"),
     ("frags", "p4/global_id_metrics.json", "excess_id_fragment_count_proxy", "{:d}"),
     ("collisions", "p4/global_id_metrics.json", "same_camera_identity_collision_frames", "{:d}"),
+    ("coloc", "p4/global_id_metrics.json", "colocated_disjoint_pair_count", "{:d}"),
     ("p2_tracks", "p2/tracking_metrics.json", "@sum_confirmed_tracks", "{:d}"),
     ("single_cam", "p3/association_metrics.json", "single_camera_rate", "{:.3f}"),
     ("churn", "p3/association_metrics.json", "pair_link_churn_rate", "{:.3f}"),

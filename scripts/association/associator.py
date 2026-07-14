@@ -873,6 +873,39 @@ def _finalize_ground_cov(cov, members_detections, config) -> np.ndarray | None:
     return cov
 
 
+_L_HIP, _R_HIP = 11, 12  # COCO-17 hip indices
+
+
+def _triangulated_pelvis_xy(members, dets_per_cam, proj_matrices, config) -> "np.ndarray | None":
+    """Vertical ground projection of the triangulated hip midpoint (V2-L3).
+
+    Used for airborne frames where the z=0 foot ray is biased. Requires two-plus
+    member views with both hips confident; falls back to None otherwise.
+    """
+
+    pixels, projections = [], []
+    for cam_id, idx in members.items():
+        det = dets_per_cam[cam_id][idx]
+        conf = det.keypoint_conf
+        if len(conf) <= _R_HIP:
+            continue
+        if float(conf[_L_HIP]) < config.pose_min_conf or float(conf[_R_HIP]) < config.pose_min_conf:
+            continue
+        mid = 0.5 * (np.asarray(det.keypoints_px[_L_HIP], float)
+                     + np.asarray(det.keypoints_px[_R_HIP], float))
+        pixels.append(mid)
+        projections.append(proj_matrices[cam_id])
+    if len(pixels) < 2:
+        return None
+    point = triangulate_dlt(np.asarray(pixels, float), np.asarray(projections, float))
+    if point is None or not np.isfinite(point).all():
+        return None
+    # a pelvis must be at plausible body height; reject wild triangulations
+    if not (0.3 <= float(point[2]) <= 2.0):
+        return None
+    return np.asarray(point[:2], dtype=float)
+
+
 def _build_correspondence(cluster_id, members, dets_per_cam, proj_matrices, config, camera_centers=None):
     detections = {cam_id: dets_per_cam[cam_id][idx] for cam_id, idx in members.items()}
     if len(members) == 1:
@@ -922,6 +955,20 @@ def _build_correspondence(cluster_id, members, dets_per_cam, proj_matrices, conf
     if ground_xy is None:
         ground_xy = np.full(2, np.nan)
         max_ground_residual = float("inf")
+    elif getattr(config, "airborne_pelvis_emit", False):
+        # V2-L3: an airborne player's feet are off the plane, so the z=0 foot solve
+        # lands PAST the player along every ray. When a majority of member views
+        # flag airborne and two-plus views see confident hips, triangulate the hip
+        # midpoint and emit its vertical ground projection instead. EMIT-ONLY: the
+        # clustering gate still uses the per-detection legacy foot points.
+        airborne_votes = [
+            _airborne_2d_proxy(dets_per_cam[cam][idx], config)
+            for cam, idx in members.items()
+        ]
+        if airborne_votes and sum(airborne_votes) * 2 > len(airborne_votes):
+            pelvis_xy = _triangulated_pelvis_xy(members, dets_per_cam, proj_matrices, config)
+            if pelvis_xy is not None:
+                ground_xy = pelvis_xy
     feet, projections, _confs = _gather_member_arrays(members, dets_per_cam, proj_matrices, config)
     point, _max_reprojection = _multiview_reprojection_consistency(
         members, dets_per_cam, proj_matrices, config

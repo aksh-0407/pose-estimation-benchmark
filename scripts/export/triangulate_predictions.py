@@ -85,6 +85,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--butter-cutoff-hz", type=float, default=6.0)
     parser.add_argument("--capture-fps", type=float, default=50.0,
                         help="Capture frame rate used by the Butterworth smoother.")
+    parser.add_argument("--hartley", action="store_true",
+                        help="G1: row-equilibrated DLT conditioning (flag-gated A/B)")
+    parser.add_argument("--parallax-order", action="store_true",
+                        help="G3: try high-parallax RANSAC seed pairs first (flag-gated A/B)")
     parser.add_argument("--suppression-path", default=None,
                         help="P5b suppression.json; suppressed global ids are not lifted "
                              "(default: probes <input>/../p5/suppression.json; Wave-6)")
@@ -148,6 +152,8 @@ def triangulate_canonical_run(
     native_skeleton: bool = False,
     dense_fill: bool = False,
     suppression_path: str | Path | None = None,
+    hartley: bool = False,
+    parallax_order: bool = False,
 ) -> dict[str, Any]:
     input_run_dir, output_run_dir = Path(input_run_dir), Path(output_run_dir)
     # Wave-6 (P5b): suppressed peripheral ids are excluded from the lift entirely.
@@ -265,6 +271,8 @@ def triangulate_canonical_run(
             reprojection_threshold_px=reprojection_threshold_px,
             min_views=min_views,
             cheirality=cheirality,
+            hartley=hartley,
+            parallax_order=parallax_order,
         )
 
     # Smooth each identity in temporal order, then stamp the same 3D pose into
@@ -568,6 +576,8 @@ def main(argv: list[str] | None = None) -> int:
             native_skeleton=args.native_skeleton,
             dense_fill=args.dense_fill,
             suppression_path=args.suppression_path,
+            hartley=args.hartley,
+            parallax_order=args.parallax_order,
         )
         print(f"P6: triangulated {metrics['fully_valid_identity_frames']} identity-frames")
         return 0

@@ -607,10 +607,114 @@ group, so no over-consensus constraint applies. OPEN: end-orientation (striker v
 non-striker end swap) is visually confirmed correct only on `_2`; the 8 production
 mosaics will arbitrate the rest. 209 tests green.
 
+### W9 - Split-Identity / Ghost-Swap Fix: Union-Lift Merge + Colocated-ID Merge (v8.1, 2026-07-14)
+
+**The user's exhibit, root-caused with visual proof.** Mosaics showed a ghost marker of one
+id under a live player of another, inverted between cameras (`_7`: live P004 + ghost P011 in
+cam_01; live P011 + ghost P004 in cam_02). Extracted frames PROVE one person: cam_02's P011
+and cam_01's P004 are the same striker (shirt 66). Mechanism: P3 minted two clusters for one
+player (a keeper-head fragment contaminated P011's cluster, blocking every pairwise merge);
+P4 binding continuity kept both ids; the renderer projects each id's fused position into all
+cameras -> each camera draws the other id as a ghost on its live player. A new diagnostic
+(`scripts/global_id/diagnose_colocated_ids.py`) found 8 such mergeable events across the 8
+deliveries.
+
+**Fix 1 - P3 union-lift merge** (`graph_union_lift_merge`, tracklet_graph.py): candidate
+cluster pairs co-located on the ground (chunk-level gate 2.6 m — wide because per-camera
+homography feet carry the facing bias; safety comes from the test, not the gate) are
+adjudicated by triangulating the UNION of both clusters' views: one coherent low-residual
+3D skeleton in every view => one person (anti-chimera signature rejects genuine pairs).
+Only hard blocks apply (same-camera overlap, confident cue veto) — the usual sum>=0 evidence
+vote is deliberately waived (facing bias makes exactly these edges sum negative). Per-pair
+rejection diagnostics recorded.
+
+**Fix 2 - P4 colocated-id merge** (`p4b.colocated_merge`, stitching.merge_colocated_ids):
+merges two emitted ids co-located >= 25 frames within 0.75 m whose histories NEVER share a
+camera-frame (sharing one = two real people) and whose billboard statures agree. Extends
+id_switch_report with reason "colocated".
+
+**Tripwire** (`colocated_identity_metrics`): coloc pair count now in metrics, panel (column
+`coloc`) and the quality verdict — this class can never go unnoticed again.
+
+**8-delivery A/B (`pipetrack_v8.1-w9` vs v8.0): accepted with zero regressions.**
+
+| clip | agreement | ids | frags | coloc |
+|---|---|---|---|---|
+| `_7` | 0.811 -> **0.962** | 12 -> 10 | 5 -> 4 | 1 -> **0** |
+| `_6` | 0.477 -> **0.625** | 18 -> 16 | 11 -> 9 | 3 -> **0** |
+| `_5` | 0.627 -> **0.694** | 13 -> 12 | 8 -> 7 | 1 -> **0** |
+| `_2` | 0.802 -> **0.845** | 14 -> 13 | 9 -> 8 | 1 -> **0** |
+| mean (8) | 0.782 -> **0.834** | — | — | **0 everywhere** |
+
+Persistence up on 5 clips, tri coverage up on 6, collisions 0 everywhere, no agreement
+regression on any clip. **Cut as v8.1 into `configs/v8/`.**
+
+**Production incident (same session, fixed):** the 40-delivery P1 run failed on
+cam_07 only (24,000 frames, all deliveries) — the W5-PERF fast tiled path skipped the
+generic pipeline's Pad-to-/32, and cam_07's panoramic full-frame crop (3775x960 ->
+640x163) produced stride-indivisible FPN inputs ("Expected size 22 but got 21").
+Fixed by padding crops bottom/right to /32 in the prefetch loader (+ pad_shape
+metainfo); parity re-verified on cam_01 (identical counts) and cam_07 backfilled via
+--resume. Lesson recorded: fast-path probes must cover the heterogeneous camera.
+
+**Audit companions (same session):** airborne pelvis-emit (V2-L3, `airborne_pelvis_emit`,
+flag-gated); G1 Hartley row-equilibration + G3 parallax-ordered RANSAC seeds
+(`--hartley/--parallax-order`, flag-gated A/B candidates); G6 confirmed already shipped;
+**latent crash bug fixed** in `ground_from_reprojection_ex` (divergence branch returned a
+tuple where callers expect an array — crashed np.isfinite instead of degrading to NaN;
+regression test added). 212 tests; flags-off byte-identity proven vs v8.0 (P3+P4, M2).
+
+### W10-PERF - P2-P6 Optimization Pass (2026-07-14)
+
+**Method.** cProfile misled (per-call overhead on 163M tiny calls); switched to
+wall-clock section timing. True P3 distribution (74 s local, `_7`): emit 33% (pose
+descriptor 25%), graph solve 21%, observe 9%, appearance decode 7% (already
+prefetched), IO/misc ~25%.
+
+**Shipped (every change proven BIT-IDENTICAL on real P3+P6 outputs):**
+1. `reprojection_errors_for_point` vectorized (batched matmul, 556k calls/delivery).
+2. `triangulate_point_dlt` row assembly vectorized.
+3. **Batched skeleton RANSAC** — 2-view case collapses analytically to one stacked
+   SVD across all joints; generic multi-view case batches candidate-pair DLTs,
+   inlier scoring, grouped refits and confidences across joints while replicating
+   the reference loop's candidate order and tie-breaks exactly.
+Result: P3 74 -> 60 s/delivery local (-19%), **P6 terminal lift 10.4 s/delivery**
+(was ~1-2 min on the box); P3.5 shares the same core. Synced to the L40S mid-chain
+(safe: bit-identical), so remaining production deliveries inherit it.
+
+**Honest residual:** P3's remaining time is LLR/solve machinery + JSONL IO + emit
+bookkeeping — flat profiles with no dominant hotspot; further gains need structural
+changes (e.g. orjson, emit-side caching), logged as future work, not pursued under
+diminishing returns. P2 (~1 min) and P4/P5 (seconds) are not bottlenecks.
+
+### PRODUCTION RECORD - 40-Delivery Dataset on the L40S (v8.1, 2026-07-14)
+
+**Deliverable:** `/home/ubuntu/pipetrack_v8/` — the full 40-delivery CCPL080626 dataset
+(M1 overs 14/16/17; M2 overs 11/12 + innings-2 overs 3/4), every stage P1->P6, README +
+`final_panel.md` + production logs inside. P1: 168,000 frames, 0 failures (after the cam_07
+pad-to-/32 backfill), 18-25 fps tiled fp16. Chain: 40/40 `compute ok`, 0 errors.
+
+**Panel (all 40):** agreement mean 0.862 (0.527-0.992); reproj 3.07-3.56 px mean on every
+delivery; collisions 0 everywhere; coloc 0 on 38/40 (residual 1 pair each on `M1_1_14_7`
+and `M2_1_11_3` — see remaining-work.md 5b). Calibration provenance verified empirically
+(frame-md5 identity across machines; flat reproj across all 7 segments incl. innings-2);
+team confirmation of a single calibration session still requested.
+
+**Reconciliation note:** box panels differ slightly from the local v8.1-w9 A/B on the 8
+overlap deliveries (e.g. `_7` 0.819/12 vs 0.962/10) — same code, different P1 binaries
+(production fp16 fast path vs earlier generic path); expected near-parity variance,
+documented so it is not chased as a bug.
+
+**Repository state at close:** default `configs/v8/` = v8.1; 212 tests; kept run trees:
+`pipetrack_v8.1-w9` (local reference), `rtmpose-x-tiled-w5-full` (P1 input),
+`yolo26x-pose-full-db8` (model comparison); all else archived to `docs/runs/` and deleted.
+Open work consolidated in `/remaining-work.md`.
+
 ## Current Default / Recommended State
 
-- **Default: `configs/v8/`** (tiled+NMS0.55 detection, no-spawn P2, v7 identity stack,
-  roles v1.1, W6 suppression ON) — frozen reference `pipetrack_v8.0`. `configs/v7/` and
+- **Default: `configs/v8/` at v8.1** (tiled+NMS0.55 detection, no-spawn P2, v7 identity
+  stack + W9 union-lift & colocated merges, roles v1.2, W6 suppression ON) — references
+  `pipetrack_v8.0` (pre-W9) and `pipetrack_v8.1-w9`. `configs/v7/` and
   `configs/v6/` stay frozen as references; `configs/experiments/` holds every
   intermediate stack for reproduction.
 - Opt-in (measured, not default): `posture_keep_upright_unknown` (H3), F11 shape round

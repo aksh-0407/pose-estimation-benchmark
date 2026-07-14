@@ -198,3 +198,53 @@ def test_normalized_costs_make_long_gap_stitches_selectable():
     ))
     edges = build_link_costs(segments, normalized)
     assert solve_flow(segments, edges, normalized) == {0: 1}  # now selectable
+
+
+# ------------------------------------------------------- W9 colocated merge
+def test_merge_colocated_ids_disjoint_cameras_merges_and_shared_blocks():
+    import numpy as np
+
+    from scripts.global_id.stitching import merge_colocated_ids
+
+    # A and B co-located every frame; A lives in cam_01, B in cam_02 (disjoint)
+    # C and D co-located but BOTH appear in cam_03 (same camera-frame) => block.
+    records = []
+    ground = {}
+    for f in range(40):
+        records.append({"frame_index": f, "camera_id": "cam_01",
+                        "players": [{"global_player_id": "A"}]})
+        records.append({"frame_index": f, "camera_id": "cam_02",
+                        "players": [{"global_player_id": "B"}]})
+        records.append({"frame_index": f, "camera_id": "cam_03",
+                        "players": [{"global_player_id": "C"}, {"global_player_id": "D"}]})
+        ground[("A", f)] = np.array([0.0, 0.0])
+        ground[("B", f)] = np.array([0.3, 0.0])
+        ground[("C", f)] = np.array([10.0, 0.0])
+        ground[("D", f)] = np.array([10.3, 0.0])
+    id_remap: dict = {}
+    report = merge_colocated_ids(records, ground, {}, id_remap,
+                                 radius_m=0.75, min_frames=25)
+    merged = {(e["merged_id"], e["into_id"]) for e in report}
+    assert ("B", "A") in merged           # disjoint-camera co-location merges
+    assert not any("C" in pair or "D" in pair for pair in merged)  # shared camera blocks
+    # records patched
+    ids_cam2 = {p["global_player_id"] for r in records if r["camera_id"] == "cam_02"
+                for p in r["players"]}
+    assert ids_cam2 == {"A"}
+
+
+def test_merge_colocated_ids_needs_min_frames():
+    import numpy as np
+
+    from scripts.global_id.stitching import merge_colocated_ids
+
+    records = []
+    ground = {}
+    for f in range(10):  # only 10 close frames < 25
+        records.append({"frame_index": f, "camera_id": "cam_01",
+                        "players": [{"global_player_id": "A"}]})
+        records.append({"frame_index": f, "camera_id": "cam_02",
+                        "players": [{"global_player_id": "B"}]})
+        ground[("A", f)] = np.array([0.0, 0.0])
+        ground[("B", f)] = np.array([0.3, 0.0])
+    assert merge_colocated_ids(records, ground, {}, {}, radius_m=0.75, min_frames=25) == []

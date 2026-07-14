@@ -163,3 +163,13 @@ single_cam_height_emit: true   # C5: ankle-height emit for lone-camera clusters
 graph_split_enabled: true      # F13 at CONSERVATIVE thresholds (W4 over-split lesson)
 graph_chimera_frame_fraction: 0.6
 graph_chimera_torso_residual_px: 30.0
+
+# --- v8.1 (W9, 2026-07-14): union-lift co-location merge ---------------------
+# Same ground location + one coherent 3D skeleton across all member views => one
+# person. Kills facing-pair split identities (the ghost-under-player swaps).
+graph_union_lift_merge: true
+graph_union_colocate_m: 2.6
+graph_union_min_co_frames: 25
+graph_union_min_lift_frames: 6
+graph_union_torso_p50_px: 20.0
+graph_union_posture_max_z: 3.0

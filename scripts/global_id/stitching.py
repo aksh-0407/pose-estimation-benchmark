@@ -323,3 +323,112 @@ def remap_ids(
             if player_id in remap:
                 player["global_player_id"] = remap[player_id]
     return report
+
+
+def merge_colocated_ids(
+    records: "Iterable[dict[str, Any]]",
+    ground_positions: dict[tuple[str, int], "np.ndarray"],
+    posture_by_id: dict[str, Any],
+    id_remap: dict[str, str],
+    *,
+    radius_m: float = 0.75,
+    min_frames: int = 25,
+    posture_max_z: float = 3.0,
+) -> list[dict[str, Any]]:
+    """W9 safety net: merge two live ids that are CO-LOCATED with disjoint cameras.
+
+    The facing-pair split leaves one physical player carrying two global ids in
+    different camera sets; the renderer then draws each id as the other's ghost.
+    Two ids are merged when their fused ground positions stay within ``radius_m``
+    for >= ``min_frames`` frames, they NEVER occupy the same camera-frame over
+    that window (co-occurring in one camera = genuinely two people — the same
+    invariant ``remap_ids`` enforces, applied here as the mergeability test
+    rather than a veto), and their billboard statures agree when both are known.
+    Winner = the id seen first. Records are patched in place; returns report
+    entries in the ``id_switch_report`` schema (with ``reason: colocated``).
+    """
+
+    from pose_estimation.cricket.pose_shape import (
+        STATURE_QUANTITIES,
+        posture_distance_z,
+    )
+
+    records = list(records)
+    # Final (post-stitch) fused position per frame per id.
+    by_frame: dict[int, dict[str, np.ndarray]] = defaultdict(dict)
+    first_frame: dict[str, int] = {}
+    for (player_id, frame_index), point in ground_positions.items():
+        final_id = id_remap.get(player_id, player_id)
+        by_frame[frame_index][final_id] = np.asarray(point, dtype=float)
+        first_frame[final_id] = min(first_frame.get(final_id, frame_index), frame_index)
+    occupancy: dict[str, set[tuple[str, int]]] = defaultdict(set)
+    for record in records:
+        frame_index = int(record["frame_index"])
+        camera_id = str(record.get("camera_id", "unknown"))
+        for player in record.get("players", []):
+            pid = player.get("global_player_id")
+            if pid:
+                occupancy[id_remap.get(pid, pid)].add((camera_id, frame_index))
+    posture_final: dict[str, Any] = {}
+    for pid, posture in posture_by_id.items():
+        posture_final.setdefault(id_remap.get(pid, pid), posture)
+
+    close: dict[tuple[str, str], int] = defaultdict(int)
+    for frame_index, ids in by_frame.items():
+        ordered = sorted(ids)
+        for i, a in enumerate(ordered):
+            for b in ordered[i + 1:]:
+                if float(np.linalg.norm(ids[a] - ids[b])) <= radius_m:
+                    close[(a, b)] += 1
+
+    parent: dict[str, str] = {}
+
+    def find(pid: str) -> str:
+        parent.setdefault(pid, pid)
+        while parent[pid] != pid:
+            parent[pid] = parent[parent[pid]]
+            pid = parent[pid]
+        return pid
+
+    report: list[dict[str, Any]] = []
+    for (a, b), n in sorted(close.items(), key=lambda kv: -kv[1]):
+        if n < min_frames:
+            continue
+        ra, rb = find(a), find(b)
+        if ra == rb:
+            continue
+        if occupancy[ra] & occupancy[rb]:
+            continue  # share a camera-frame somewhere => two real people
+        pa, pb = posture_final.get(ra), posture_final.get(rb)
+        if pa is not None and pb is not None:
+            result = posture_distance_z(pa, pb, quantities=STATURE_QUANTITIES)
+            if result is not None and result[0] > posture_max_z:
+                continue
+        winner, loser = sorted(
+            (ra, rb), key=lambda pid: (first_frame.get(pid, 1 << 60), pid)
+        )
+        parent[loser] = winner
+        occupancy[winner].update(occupancy[loser])
+        if posture_final.get(winner) is None and posture_final.get(loser) is not None:
+            posture_final[winner] = posture_final[loser]
+        report.append({
+            "merged_id": loser, "into_id": winner,
+            "at_frame": first_frame.get(loser), "reason": "colocated",
+            "close_frames": n,
+        })
+    if not report:
+        return []
+    flat = {pid: find(pid) for pid in parent}
+    for record in records:
+        for player in record.get("players", []):
+            pid = player.get("global_player_id")
+            if pid in flat and flat[pid] != pid:
+                player["global_player_id"] = flat[pid]
+    # fold into id_remap so downstream (ground rows, cardinality) uses final ids
+    for old, new in list(id_remap.items()):
+        id_remap[old] = flat.get(new, new)
+    for pid, target in flat.items():
+        if pid != target:
+            id_remap.setdefault(pid, target)
+            id_remap[pid] = target
+    return report

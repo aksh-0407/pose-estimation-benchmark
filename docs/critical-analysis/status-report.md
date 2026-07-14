@@ -28,7 +28,12 @@ count is secondary (double-counts acceptable occlusion transients). Collisions m
 
 ## 2. Before → after (measured, all 8 deliveries)
 
-> **2026-07-13 addendum — v8.0 is now the default** (tiled+NMS-0.55 detection on the
+> **2026-07-14 addendum — v8.1 default; 40-delivery production complete.** W9 (union-lift +
+> colocated-id merges) eliminated the ghost-under-player split-identity class (coloc 0,
+> mean agreement 0.782→0.834, `_7` 0.962); roles v1.2 auto-flips the bowling end; the full
+> 40-delivery dataset lives at `/home/ubuntu/pipetrack_v8/` (reproj 3.07–3.56 px across all
+> segments). Open items: `/remaining-work.md`. Superseded addendum below:
+> **2026-07-13 — v8.0** (tiled+NMS-0.55 detection on the
 > L40S, no-spawn P2, roles v1.1 with visible role tags, Wave-6 peripheral suppression):
 > `_4` agreement 0.770→0.972, `_7` 0.703→0.811, `M2` 0.781→0.886; core-role identity
 > equal-or-better on all 8 deliveries. Full verdict: fixes-log GRAND ANALYSIS v2.

@@ -11,6 +11,7 @@ import numpy as np
 
 from pose_estimation.cricket.contract import validate_group1_frame
 from pose_estimation.cricket.tracking_metrics import (
+    colocated_identity_metrics,
     cross_camera_agreement,
     evaluate_ground_truth,
     identity_collision_metrics,
@@ -28,6 +29,7 @@ from scripts.global_id.jsonl_io import (
     write_prediction_streams,
 )
 from scripts.global_id.stitching import (
+    merge_colocated_ids,
     build_link_costs,
     extract_segments,
     remap_ids,
@@ -297,6 +299,18 @@ def run_global_id(
         while id_remap[player_id] in id_remap:
             id_remap[player_id] = id_remap[id_remap[player_id]]
 
+    # W9: colocated-id merge — one physical player carrying two ids in disjoint
+    # camera sets (the ghost-under-player swap). Runs after temporal stitching so
+    # it sees final fragments; extends the same switch report.
+    if config.p4b.colocated_merge:
+        colocated_report = merge_colocated_ids(
+            records, ground_positions, posture_by_id, id_remap,
+            radius_m=config.p4b.colocated_radius_m,
+            min_frames=config.p4b.colocated_min_frames,
+            posture_max_z=config.p4b.colocated_posture_max_z,
+        )
+        switch_report = list(switch_report) + colocated_report
+
     # ID-2 cardinality prior: after stitching, drop any global id whose total
     # frame-span is below min_emit_frames (a fragment/shadow, not a real player who
     # is present the whole delivery). Applied to the FINAL (post-remap) ids so a
@@ -356,6 +370,21 @@ def run_global_id(
     )
     identity_proxy = identity_fragmentation_proxy(records, switch_report)
     collision_metrics = identity_collision_metrics(records)
+    # W9 tripwire: post-final occupancy per id + fused rows -> colocated swaps
+    final_occupancy: dict[str, set] = defaultdict(set)
+    for record in records:
+        fi = int(record["frame_index"])
+        cam = str(record.get("camera_id", "unknown"))
+        for player in record.get("players", []):
+            pid = player.get("global_player_id")
+            if pid:
+                final_occupancy[pid].add((cam, fi))
+    colocated_metrics = colocated_identity_metrics(
+        {
+            frame: rows for frame, rows in ground_rows_by_frame.items()
+        },
+        final_occupancy,
+    )
     completeness = track_completeness(records)
     agreement_metrics = cross_camera_agreement(records, detection_ground_positions)
     # Teleports judge identity leaps from POSITION series; height-plane
@@ -406,6 +435,11 @@ def run_global_id(
     if collision_metrics["same_camera_identity_collision_frames"] > 0:
         verdict = "fail"
         verdict_reasons.append("same_camera_id_collision")
+    if colocated_metrics["colocated_disjoint_pair_count"] > 0 and verdict != "fail":
+        verdict = "warn"
+        verdict_reasons.append(
+            f"colocated_split_ids: {colocated_metrics['colocated_disjoint_pair_count']} pairs"
+        )
     quality_verdict = {
         "verdict": verdict,
         "reasons": verdict_reasons,
@@ -436,6 +470,7 @@ def run_global_id(
         **collision_metrics,
         **agreement_metrics,
         **teleport_metrics,
+        **colocated_metrics,
         "dominant_tracks": dominant_tracks,
         "completeness": completeness,
     }

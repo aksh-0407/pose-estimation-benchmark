@@ -712,7 +712,9 @@ def ground_from_reprojection_ex(
                 break
             point = point - step
             if not np.isfinite(point).all():
-                return np.full(2, np.nan), None
+                # NOTE: must return a bare array — the caller treats the return as the
+                # xy point; a (point, None) tuple here crashed np.isfinite (audit fix).
+                return np.full(2, np.nan)
             if float(np.linalg.norm(step)) < float(tol_m):
                 break
         return point

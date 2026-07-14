@@ -1,0 +1,39 @@
+[
+  {
+    "at_frame": 266164,
+    "into_id": "P001",
+    "merged_id": "P009"
+  },
+  {
+    "at_frame": 266191,
+    "into_id": "P001",
+    "merged_id": "P012"
+  },
+  {
+    "at_frame": 266461,
+    "into_id": "P001",
+    "merged_id": "P015"
+  },
+  {
+    "at_frame": 266498,
+    "into_id": "P014",
+    "merged_id": "P016"
+  },
+  {
+    "at_frame": 266570,
+    "into_id": "P001",
+    "merged_id": "P017"
+  },
+  {
+    "at_frame": 266754,
+    "into_id": "P001",
+    "merged_id": "P018"
+  },
+  {
+    "at_frame": 266162,
+    "close_frames": 339,
+    "into_id": "P004",
+    "merged_id": "P011",
+    "reason": "colocated"
+  }
+]

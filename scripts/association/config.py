@@ -157,6 +157,10 @@ class P3AssociationConfig:
     contested_conf_scale: float = 0.25      # z0_reproj weight multiplier for contested members
     contested_sigma_scale: float = 2.5      # foot-pixel sigma multiplier -> per-view ground cov
     contested_mute_appearance: bool = True  # skip appearance/posture/kp samples when contested
+    # V2-L3: when a majority of a cluster's views flag airborne, emit the vertical
+    # ground projection of the triangulated hip midpoint instead of the biased z=0
+    # foot solve. Emit-only (gate unchanged). Default off (byte-identical).
+    airborne_pelvis_emit: bool = False
     # Cross-camera ground fusion for the EMITTED cluster position (feeds P4 Kalman +
     # ground_tracks). The merge GATE (max pairwise spread) is UNCHANGED across all
     # modes, so clustering/identity is byte-identical; only the reported position moves.
@@ -251,6 +255,15 @@ class P3AssociationConfig:
     # threshold (the facing-pair under-merge, ID-1). The shape LLR is
     # self-calibrated per delivery (same = temporal halves of one cluster,
     # diff = co-visible distinct clusters) and abstains when starved.
+    # W9 union-lift merge: same ground location + one coherent 3D skeleton across
+    # ALL member views => one person. The geometric fix for facing-pair split
+    # identities (ghost-under-player swaps). Default off (byte-identical).
+    graph_union_lift_merge: bool = False
+    graph_union_colocate_m: float = 1.0       # median co-frame distance gate
+    graph_union_min_co_frames: int = 25       # co-located frames required
+    graph_union_min_lift_frames: int = 6      # union lifts required for the test
+    graph_union_torso_p50_px: float = 20.0    # union torso reproj residual gate
+    graph_union_posture_max_z: float = 3.0    # billboard stature agreement gate
     graph_shape_enabled: bool = False
     graph_shape_min_frames: int = 8           # min lifted frames for a descriptor
     graph_shape_min_segments: int = 4         # min shared bone segments to compare

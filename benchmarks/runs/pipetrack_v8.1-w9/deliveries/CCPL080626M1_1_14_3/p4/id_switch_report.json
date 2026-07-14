@@ -1,0 +1,37 @@
+[
+  {
+    "at_frame": 221713,
+    "into_id": "P011",
+    "merged_id": "P014"
+  },
+  {
+    "at_frame": 221803,
+    "into_id": "P012",
+    "merged_id": "P015"
+  },
+  {
+    "at_frame": 221827,
+    "into_id": "P012",
+    "merged_id": "P016"
+  },
+  {
+    "at_frame": 221832,
+    "into_id": "P012",
+    "merged_id": "P017"
+  },
+  {
+    "at_frame": 221935,
+    "into_id": "P012",
+    "merged_id": "P018"
+  },
+  {
+    "at_frame": 221960,
+    "into_id": "P012",
+    "merged_id": "P019"
+  },
+  {
+    "at_frame": 222225,
+    "into_id": "P012",
+    "merged_id": "P020"
+  }
+]

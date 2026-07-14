@@ -1,3 +1,7 @@
+> **ROADMAP EXECUTED (2026-07-14).** All 15 fixes were implemented/adjudicated during the
+> v6→v8.1 campaign — verdicts in [fixes-log.md](fixes-log.md); still-open successors in
+> [/remaining-work.md](../../remaining-work.md). Kept for historical context.
+
 # Fixes roadmap (cross-cutting, priority-ordered)
 
 The per-phase docs list every fix in each phase's own priority order. This page ranks them

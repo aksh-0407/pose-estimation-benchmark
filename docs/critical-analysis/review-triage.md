@@ -1,3 +1,7 @@
+> **TRIAGE CLOSED (2026-07-14).** All confirmed items fixed; G1/G3 implemented flag-gated
+> (measurement pending), G6 shipped, A1–A7 unblocked-but-unstarted — live tracking in
+> [/remaining-work.md](../../remaining-work.md).
+
 # External Review Triage (2026-07-10)
 
 A full-codebase review (of a slightly older tree) was received mid-campaign. Every finding was

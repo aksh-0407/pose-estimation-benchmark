@@ -880,6 +880,11 @@ class TrackletGraphBuilder:
                 parent, members, find, llr_lookup
             )
 
+        if self.config.graph_union_lift_merge:
+            self.diagnostics["union_lift_merges"] = self._union_lift_merge_pass(
+                parent, members, find, llr_lookup
+            )
+
         cluster_members: dict[int, list[ChunkKey]] = {
             index: sorted(keys)
             for index, keys in enumerate(sorted(members.values(), key=lambda keys: keys[0]))
@@ -926,6 +931,135 @@ class TrackletGraphBuilder:
             calibration=calibration,
             diagnostics=dict(sorted(self.diagnostics.items())),
         )
+
+    def _union_lift_merge_pass(self, parent, members, find, llr_lookup) -> int:
+        """W9: same ground location + one coherent 3D skeleton across all views
+        => one person (the ghost-under-player / split-identity fix).
+
+        A facing-pair split leaves TWO clusters for one physical player (e.g.
+        {C1,C4} and {C2,C6}) whose cross edges were killed by the facing-pair
+        ground bias — no pairwise pass can ever rejoin them. This pass finds
+        cluster pairs that are CO-LOCATED over many frames, checks the billboard
+        stature agrees, then runs the decisive geometric test the user
+        prescribed: triangulate the UNION of both clusters' member views. A
+        genuine single person yields a valid low-residual skeleton in EVERY
+        view (from any angle); two different people produce the one-sided
+        chimera signature, which rejects the merge. Occluded views cannot poison
+        the test: ``lift_frame`` weights joints by confidence and RANSAC drops
+        outlier views.
+        """
+
+        from pose_estimation.cricket.pose_shape import (
+            STATURE_QUANTITIES,
+            posture_distance_z,
+        )
+        from scripts.association.cluster_lift import cluster_purity
+
+        cfg = self.config
+
+        def cluster_ground(keys: list[ChunkKey]) -> dict[int, np.ndarray]:
+            points: dict[int, list[np.ndarray]] = {}
+            for key in keys:
+                chunk = self._chunks.get(key)
+                if chunk is None:
+                    continue
+                for frame_index, ground in chunk.ground_by_frame.items():
+                    points.setdefault(frame_index, []).append(np.asarray(ground, float))
+            return {fi: np.mean(vals, axis=0) for fi, vals in points.items()}
+
+        def cluster_posture(keys: list[ChunkKey]):
+            pooled = PostureAccumulator()
+            for key in keys:
+                chunk = self._chunks.get(key)
+                if chunk is None:
+                    continue
+                for name, values in chunk.posture.samples.items():
+                    pooled.samples.setdefault(name, []).extend(values)
+            return pooled.aggregate(min_samples=cfg.posture_min_samples)
+
+        grounds = {root: cluster_ground(keys) for root, keys in members.items()}
+        candidates = []
+        for root_a, root_b in combinations(sorted(members), 2):
+            ga, gb = grounds[root_a], grounds[root_b]
+            co_frames = sorted(set(ga) & set(gb))
+            if len(co_frames) < cfg.graph_union_min_co_frames:
+                continue
+            dists = np.asarray(
+                [np.linalg.norm(ga[f] - gb[f]) for f in co_frames], dtype=float
+            )
+            med = float(np.median(dists))
+            if med > cfg.graph_union_colocate_m:
+                continue
+            candidates.append((med, root_a, root_b))
+
+        merges = 0
+        reasons = {"overlap": 0, "veto": 0, "posture": 0, "lift_frames": 0,
+                   "chimera": 0, "residual": 0}
+        for med, root_a, root_b in sorted(candidates):
+            root_a, root_b = find(root_a), find(root_b)
+            if root_a == root_b or root_a not in members or root_b not in members:
+                continue
+            # Hard blocks ONLY (same-camera overlap; confident cue veto). The usual
+            # sum>=0 evidence vote is deliberately NOT required here: the facing-pair
+            # ground bias makes exactly these cross edges sum negative, and the
+            # union-lift reprojection test below is the decisive replacement evidence.
+            blocked = False
+            for key_a in members[root_a]:
+                for key_b in members[root_b]:
+                    if key_a[0] == key_b[0]:
+                        overlap = self._overlap_frames(key_a, key_b)
+                        if overlap > self.config.graph_cannot_link_overlap_frames:
+                            blocked = True
+                            reasons["overlap"] += 1
+                            reasons.setdefault("overlap_detail", []).append({
+                                "cam": key_a[0], "frames": int(overlap),
+                                "len_a": len(self._chunks[key_a].frames),
+                                "len_b": len(self._chunks[key_b].frames),
+                            })
+                            break
+                    else:
+                        llr = llr_lookup.get(_pair_key(key_a, key_b))
+                        if llr is not None and llr < self.config.graph_llr_veto:
+                            blocked = True
+                            reasons["veto"] += 1
+                            break
+                if blocked:
+                    break
+            if blocked:
+                continue
+            posture_a = cluster_posture(members[root_a])
+            posture_b = cluster_posture(members[root_b])
+            if posture_a is not None and posture_b is not None:
+                result = posture_distance_z(
+                    posture_a, posture_b, quantities=STATURE_QUANTITIES
+                )
+                if result is not None and result[0] > cfg.graph_union_posture_max_z:
+                    reasons["posture"] += 1
+                    continue
+            lifts = self._cluster_lifts(sorted(members[root_a] + members[root_b]))
+            if len(lifts) < cfg.graph_union_min_lift_frames:
+                reasons["lift_frames"] += 1
+                continue
+            purity = cluster_purity(
+                lifts,
+                chimera_torso_residual_px=cfg.graph_chimera_torso_residual_px,
+                chimera_frame_fraction=cfg.graph_chimera_frame_fraction,
+            )
+            if purity.chimera_suspect:
+                reasons["chimera"] += 1
+                continue
+            if (
+                purity.torso_residual_p50 is None
+                or purity.torso_residual_p50 > cfg.graph_union_torso_p50_px
+            ):
+                reasons["residual"] += 1
+                continue
+            parent[root_b] = root_a
+            members[root_a] = sorted(members[root_a] + members[root_b])
+            del members[root_b]
+            merges += 1
+        self.diagnostics["union_lift_rejects"] = dict(reasons)
+        return merges
 
     def _corroboration_merge_pass(
         self,

@@ -50,6 +50,12 @@ RUN_NOTES = {
     "rtmpose-x-tiled-nms55": ("Tiled NMS-0.55 P1 probe (_7+M2).", "Superseded by tiled-w5-full", "fixes-log W5B-LIVE"),
     "rtmpose-x-tiled-w5-full": ("Tiled NMS-0.55 P1, all 8 benchmark deliveries (KEPT - v8 input).", "Current best RTMPose P1", "fixes-log GRAND ANALYSIS v2"),
     "yolo26x-pose-full-db8": ("YOLO26x-pose P1 full run (KEPT - best YOLO data).", "Kept for model comparison", "wip/model_comparison.md"),
+    "pipetrack_v8.1-w9": ("ACCEPTED v8.1 reference (KEPT): W9 union-lift + colocated merges over v8.0.", "Current local reference", "fixes-log W9"),
+    "_w9_probe": ("W9 union-lift iteration probe (_7,_2,_6).", "Diagnostic; superseded by v8.1-w9", "fixes-log W9"),
+    "_w9_probe2": ("W9 gate-widening probe (_7).", "Diagnostic", "fixes-log W9"),
+    "_w9_probe3": ("W9 rejection-counter probe (_7).", "Diagnostic", "fixes-log W9"),
+    "_w9_id_check": ("W9 flags-off byte-identity tree (M2).", "Diagnostic (identity proven)", "fixes-log W9"),
+    "_p3_prefetch_check": ("P3 appearance-prefetch byte-identity tree (M2).", "Diagnostic (identity proven)", "fixes-log W10-PERF"),
     "bakeoff_w5": ("Detector-only recall bake-off (5 candidates, _7+M2 sampled).", "t640 tiled won; native hi-res dead", "fixes-log W5"),
 }
 

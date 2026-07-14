@@ -1,0 +1,30 @@
+# P1.5 — 2D keypoint temporal stabilization
+#
+# Runs between P1 (2D inference) and P2 (per-camera tracking). It links each
+# camera's detections into short micro-tracks (IoU association, purely for
+# smoothing — NOT identity) and applies a One-Euro filter with a confidence-gated
+# spike clamp to the per-keypoint pixel trajectories, reducing frame-to-frame
+# jitter before it propagates into tracking / association / triangulation.
+#
+# All behaviour is flag-gated; `enabled: false` makes the stage a byte-identical
+# pass-through so it can be A/B-compared against the raw P1 stream.
+
+enabled: true
+frame_rate_fps: 50
+smooth_native: true          # also smooth the full Halpe-26 pose_2d_native block
+
+link:
+  iou_min: 0.3               # min IoU to continue a micro-track across frames
+  max_gap_frames: 2          # bridge this many missed frames before ending a micro-track
+
+smoothing:
+  method: one_euro           # one_euro (only method today)
+  min_cutoff: 1.7            # lower => smoother (more lag) at low speed
+  beta: 0.30                 # higher => less lag on fast motion (speed-adaptive)
+  d_cutoff: 1.0              # cutoff for the derivative estimate
+
+gating:
+  confidence_min: 0.30       # samples below this are not trusted for velocity/spike checks
+  max_jump_bbox_frac: 0.5    # a per-frame jump beyond this fraction of the bbox diagonal,
+  max_jump_px: 120.0         #   OR beyond this many px, on a low-confidence keypoint, is
+                             #   treated as a spike and replaced by the predicted position

@@ -297,3 +297,21 @@ def test_huber_cost_linear_beyond_delta():
 def test_parallax_weight_bounds():
     assert parallax_weight(5.0, min_deg=10.0) == 0.0
     assert parallax_weight(30.0, min_deg=10.0) == 1.0
+
+
+def test_ground_from_reprojection_ex_diverging_solve_returns_nan_not_crash():
+    """Audit fix (2026-07-14): the Gauss-Newton divergence branch returned a tuple
+    where callers expect a bare xy array, crashing np.isfinite. A degenerate camera
+    set must degrade to NaN, never raise."""
+    import numpy as np
+
+    from pose_estimation.cricket.geometry import ground_from_reprojection_ex
+
+    # two cameras with pathological projections that force wild steps
+    feet = np.array([[1e9, 1e9], [-1e9, -1e9]], dtype=float)
+    projections = np.stack([
+        np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1e-12, 1.0]]),
+        np.array([[0.0, 1.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1e-12, 1.0]]),
+    ])
+    xy, cov = ground_from_reprojection_ex(feet, projections)
+    assert xy.shape == (2,)  # bare array, not a tuple

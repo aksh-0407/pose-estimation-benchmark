@@ -1,0 +1,145 @@
+# v6 FROZEN BASELINE COPY (pipetrack_v6.0 ground). Do not edit after the baseline run;
+# per-fix variants live in configs/experiments/. Source: see pipeline_manifest sha256.
+# P3 cross-camera geometry-first association. Every runtime parameter is
+# explicit so run manifests are reproducible.
+image_w: 2560
+image_h: 1440
+matching_mode: multiway_cycle
+
+baseline_angle_degen_deg: 20.0
+degenerate_pairs: []
+
+w_epi: 0.6
+w_tri: 0.4
+parallax_min_deg: 10.0
+parallax_full_deg: 25.0
+mu_fine_score: 15.0
+sigma_fine_score: 5.0
+dummy_cost_scale: 3.0
+
+ankle_conf_min: 0.6
+keypoint_match_conf_min: 0.5
+max_ankle_above_bbox_fraction: 0.25
+
+# Calibrated ground-plane matching is the primary association cue.  FACING
+# (co-observing) pairs follow configs/facing.jpeg and receive the stricter gate.
+# These are the cameras that look at the SAME ground strip from opposite sides
+# (C1-C4 centre, C2-C6 near, C3-C5 far) -- NOT the diametrically-opposite
+# positions. The runner re-derives this from the calibration optical axes.
+ground_distance_gate_m: 3.5
+opposite_pair_ground_gate_m: 2.5
+ground_cluster_gate_m: 2.75
+ground_weight: 0.65
+epipolar_weight: 0.15
+epipolar_scale_px: 12.0
+appearance_enabled: true
+appearance_weight: 0.20
+pair_unmatched_cost: 0.75
+temporal_link_bonus: 0.25
+temporal_confirm_frames: 3
+opposite_camera_pairs:
+  - [cam_01, cam_04]
+  - [cam_02, cam_06]
+  - [cam_03, cam_05]
+cycle_xy_tol_m: 0.5
+cycle_reproj_tol_px: 12.0
+triangulation_min_views: 2
+triangulation_reproj_threshold_px: 10.0
+
+# Pose-shape descriptor: view-invariant 3D bone-length ratios emitted per multi-view
+# correspondence. A SOFT signal only -- feeds the P4a temporal tie-breaker and a small
+# confidence down-weight for anthropometrically implausible (likely chimera) clusters.
+# Segments spanning only low-parallax views are excluded (pose_parallax_min_deg), so the
+# cue never relies on the noisy near-collinear facing-pair triangulation.
+pose_descriptor_enabled: true
+pose_min_conf: 0.3
+pose_parallax_min_deg: 12.0
+pose_shoulder_width_m: [0.25, 0.65]
+pose_hip_width_m: [0.15, 0.55]
+pose_torso_len_m: [0.35, 0.85]
+pose_torso_tilt_max_deg: 75.0
+pose_confidence_penalty: 0.15
+
+# Tracklet-graph identity: decide who-is-who once per P2-tracklet pair over the
+# whole delivery (evidence aggregated across all co-visible frames, cues fused as
+# calibrated log-likelihood ratios), then emit per-frame correspondences from the
+# stable bindings. per_frame reproduces the historical per-frame clustering.
+association_mode: tracklet_graph
+graph_sample_gate_m: 6.0
+graph_min_covis_frames: 10
+graph_covis_full_frames: 40
+graph_llr_merge_threshold: 2.0
+graph_llr_veto: -4.5
+graph_llr_positive_cap: 1.5
+graph_llr_ground_neg_clip: 2.0
+graph_move_margin: 0.5
+graph_refine_passes: 2
+graph_cannot_link_overlap_frames: 3
+graph_rescue_min_covis: 30
+graph_traj_attach_gate_m: 1.5
+binding_min_single_frames: 150
+graph_hard_dist_gate_m: 2.75
+graph_motion_enabled: true
+graph_min_app_samples: 5
+ground_sigma_px_base: 2.0
+ground_sigma_px_bbox_frac: 0.01
+# Floor absorbs cross-camera calibration bias (~0.7-1.2 m same-player residuals).
+ground_var_floor_m: 0.4
+# Emitted cluster ground position. z0_reproj = joint z=0-constrained robust (Huber +
+# inlier refit) reprojection minimisation over every member's projection matrix; uses
+# the (cm-accurate) calibration directly and is well-posed on the low-parallax facing
+# pairs, unlike free triangulation. Merge GATE unchanged, so clustering is identical.
+# Verified on delivery 1: emitted point 0.176->0.145 m from the triangulated foot,
+# reprojection 84->74 px vs the historical median. See wip/3d_location_redesign.md.
+ground_fusion_mode: z0_reproj
+# Feet-unusable recovery (cut-off bboxes) + synthetic tracklets for persistent
+# untracked detections (umpires): both required to bind the close-to-camera
+# figures whose bbox-bottom ground projections are garbage.
+approx_feet_enabled: true
+approx_hip_height_m: 0.93
+approx_shoulder_height_m: 1.42
+approx_head_height_m: 1.78
+approx_var_floor_m: 0.8
+synthetic_tracklets_enabled: true
+syn_chain_gate_m: 1.2
+syn_chain_max_gap_frames: 150
+syn_min_confidence: 0.2
+purity_split_enabled: true
+purity_jump_slack: 1.5
+purity_jump_floor_m: 1.5
+frame_rate_fps: 50.0
+kinematic_v_max_mps: 9.0
+# Ground-anchored (billboard) posture: the pose-shape identity layer. Metric,
+# per-camera, no cross-camera triangulation, so it works on the facing pairs.
+posture_enabled: true
+posture_min_samples: 8
+# Cue calibration bootstrapped from this delivery's own unambiguous matches.
+calibration_mode: auto
+cue_calibration_path: ""
+anchor_pair_min_frames: 30
+anchor_pair_dist_m: 1.5
+anchor_pair_isolation_m: 3.0
+diff_pair_min_dist_m: 3.0
+
+chi2_gate_2dof: 5.991
+confidence_high: 0.7
+confidence_discard: 0.3
+single_camera_confidence: 0.45
+untracked_single_camera_confidence: 0.20
+
+anchor_hysteresis_margin: 2
+anchor_hysteresis_frames: 3
+anchor_priority:
+  - cam_01
+  - cam_04
+  - cam_02
+  - cam_03
+  - cam_05
+  - cam_06
+  - cam_07
+
+# --- v5 ID overhaul flags (WS2 ID-1: cross-camera under-merge on facing pairs) ---
+# Corroboration-aware single-cue merge + parallax-adaptive facing-pair gate.
+graph_corrob_merge: true
+graph_llr_merge_single: 1.2
+graph_facing_gate_scale: 1.3

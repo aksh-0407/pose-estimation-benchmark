@@ -1,0 +1,94 @@
+{
+  "bowling_direction_costs": null,
+  "bowling_direction_source": "run_detected",
+  "bowling_direction_xy": [
+    -7.468632283412962e-19,
+    -1.0
+  ],
+  "created_at": "2026-07-14T04:35:43.247338+00:00",
+  "delivery_id": "CCPL080626M1_1_14_6",
+  "match_id": "CCPL080626",
+  "roles": {
+    "P001": {
+      "confidence": 0.65,
+      "role": "bowler",
+      "source": "heuristic_v1"
+    },
+    "P002": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P003": {
+      "confidence": 0.65,
+      "role": "umpire",
+      "source": "heuristic_v1"
+    },
+    "P004": {
+      "confidence": 0.65,
+      "role": "non_striker",
+      "source": "heuristic_v1"
+    },
+    "P005": {
+      "confidence": 0.65,
+      "role": "striker",
+      "source": "heuristic_v1"
+    },
+    "P006": {
+      "confidence": 0.65,
+      "role": "wicketkeeper",
+      "source": "heuristic_v1"
+    },
+    "P007": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P008": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P009": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P011": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P012": {
+      "confidence": 0.65,
+      "role": "umpire",
+      "source": "heuristic_v1"
+    },
+    "P013": {
+      "confidence": 0.0,
+      "role": "unknown",
+      "source": "heuristic_v1"
+    },
+    "P014": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    },
+    "P016": {
+      "confidence": 0.0,
+      "role": "unknown",
+      "source": "heuristic_v1"
+    },
+    "P020": {
+      "confidence": 0.0,
+      "role": "unknown",
+      "source": "heuristic_v1"
+    },
+    "P022": {
+      "confidence": 0.4,
+      "role": "fielder",
+      "source": "heuristic_v1"
+    }
+  },
+  "schema_version": "roles/v1"
+}

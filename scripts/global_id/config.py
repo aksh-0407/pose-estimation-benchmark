@@ -229,6 +229,14 @@ class P4BConfig:
     # long bridge additionally requires a pose-shape agreement (both descriptors
     # mature and within pose_stitch_max_distance), keeping the license conservative.
     # occupancy_bridge=false is byte-identical to the baseline.
+    # W9 colocated-id merge (ghost-under-player fix, P4-level safety net): merge two
+    # ids co-located within colocated_radius_m for >= colocated_min_frames frames
+    # whose histories NEVER share a camera-frame (disjoint-camera = one person seen
+    # from different sides) and whose billboard statures agree. Default off.
+    colocated_merge: bool = False
+    colocated_radius_m: float = 0.75
+    colocated_min_frames: int = 25
+    colocated_posture_max_z: float = 3.0
     occupancy_bridge: bool = False
     temporal_gate_frames_occupancy: int = 300
     occupancy_bridge_require_pose: bool = True

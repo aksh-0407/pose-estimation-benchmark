@@ -1,19 +1,14 @@
-# v7 DEFAULT (cut 2026-07-11 from v7rc__p4: asymmetric R 0.8 + normalized stitch costs).
-# p4a: +posture_gate_veto_z/reentry_posture_max_z (F6b), +online_role_proxy (F5);
-# p4b: +occupancy_bridge block (F6).
+# v8.1 DEFAULT p4 (v8 + W9 colocated-id merge, 2026-07-14). Prior comments
+# consolidated in configs/experiments history + fixes-log W9 entry.
 frame_rate_fps: 50.0
 kinematic_v_max_mps: 9.0
-
 p4a:
-  posture_gate_veto_z: 3.0        # F6b: billboard-posture Stage-2 veto (RMS z)
-  reentry_posture_max_z: 3.0      # F6b: posture gate at re-entry
-  online_role_proxy: true         # F5: role-aware Singer dynamics during tracking
-  use_measurement_covariance: true  # F10: P3 ground covariance as per-measurement R
+  posture_gate_veto_z: 3.0
+  reentry_posture_max_z: 3.0
+  online_role_proxy: true
+  use_measurement_covariance: true
   r_floor_m: 0.15
-  r_ceiling_m: 0.8   # W3b: 2.0 froze single-cam tracks -> jump on next fix
-  # Emit the chi2-gated Kalman posterior as the ground position (ISSUE-5). Verified on
-  # all 8: trajectory jitter (disp p95) ~halved, worst emitted jump 14.0 m -> 0.36 m
-  # (_7), collisions still 0. The reported track can no longer teleport on one bad frame.
+  r_ceiling_m: 0.8
   emit_kalman_posterior: true
   confirm_hits: 3
   lost_window_frames: 30
@@ -26,54 +21,58 @@ p4a:
   role_latch_frames: 5
   cap_max_pos_var: 25.0
   confidence_high: 0.7
-  # Track anything the geometry can place on the pitch, including untracked
-  # single-camera detections (P3 confidence ~0.20). Persistent ones confirm into a
-  # geometric track and get an id; transient noise never reaches confirm_hits. This
-  # is what lets a person P2 failed to tracklet still receive a global id.
   confidence_discard: 0.15
   local_identity_mahalanobis_gate: 25.0
-  # (camera, P2-tracklet) ownership claims expire after this many frames without
-  # re-assertion, so one bad merge can heal instead of poisoning the tracklet.
   ownership_ttl_frames: 50
-  # Shadow-id suppression + cricket capacity prior (max 15 people on the field).
   shadow_confirm_gate_m: 1.2
   shadow_confirm_override_hits: 30
   expected_roster_max: 15
   roster_cap_min_separation_m: 3.0
-  # Pose-shape temporal tie-breaker (added to the Stage-2 cost inside the chi2 gate
-  # only). pose_match_weight scales a [0,1] bone-ratio distance; 0 disables. A track
-  # must accumulate pose_min_updates confident descriptors before its pose is trusted,
-  # and the two descriptors must share pose_min_shared_segments to compare at all.
   pose_match_weight: 2.0
   pose_descriptor_ema: 0.15
   pose_min_updates: 5
   pose_min_shared_segments: 4
-  # --- v5 ID overhaul (ID-2 fragmentation + ID-3 teleports) ---
-  pose_gate_veto_distance: 0.30
-  reentry_pose_max_distance: 0.30
+  pose_gate_veto_distance: 0.3
+  reentry_pose_max_distance: 0.3
   adaptive_lost_window: true
   lost_window_max_frames: 90
   min_emit_frames: 30
   role_params:
-    bowler: {alpha: 2.0, sigma_a: 3.0, measurement_noise: 0.3}
-    striker: {alpha: 1.5, sigma_a: 2.5, measurement_noise: 0.3}
-    non_striker: {alpha: 0.5, sigma_a: 1.0, measurement_noise: 0.3}
-    wicketkeeper: {alpha: 0.3, sigma_a: 0.5, measurement_noise: 0.2}
-    umpire: {alpha: 0.2, sigma_a: 0.3, measurement_noise: 0.2}
-    fielder: {alpha: 1.0, sigma_a: 2.0, measurement_noise: 0.4}
-    unknown: {alpha: 1.0, sigma_a: 2.0, measurement_noise: 0.4}
-
+    bowler:
+      alpha: 2.0
+      sigma_a: 3.0
+      measurement_noise: 0.3
+    striker:
+      alpha: 1.5
+      sigma_a: 2.5
+      measurement_noise: 0.3
+    non_striker:
+      alpha: 0.5
+      sigma_a: 1.0
+      measurement_noise: 0.3
+    wicketkeeper:
+      alpha: 0.3
+      sigma_a: 0.5
+      measurement_noise: 0.2
+    umpire:
+      alpha: 0.2
+      sigma_a: 0.3
+      measurement_noise: 0.2
+    fielder:
+      alpha: 1.0
+      sigma_a: 2.0
+      measurement_noise: 0.4
+    unknown:
+      alpha: 1.0
+      sigma_a: 2.0
+      measurement_noise: 0.4
 p4b:
-  occupancy_bridge: true          # F6: disjoint-occupancy long-gap bridging
+  occupancy_bridge: true
   temporal_gate_frames_occupancy: 300
   occupancy_bridge_require_pose: true
-  normalized_costs: true      # G7: commensurate stitch costs (legacy mode is dead beyond 0.6 s gaps)
-  posture_stitch_max_z: 3.0       # F12: billboard-posture stitch gate
+  normalized_costs: true
+  posture_stitch_max_z: 3.0
   w_posture: 0.5
-  # Min-cost-flow path cover that bridges fragmented confirmed tracklets across
-  # short gaps (temporal + spatial + role + velocity-continuity costs). A merge is
-  # forbidden whenever the two histories ever share a (camera, frame) cell, so
-  # stitching can never create a same-camera-frame identity collision.
   enabled: true
   cross_camera_min_frames: 30
   cross_camera_min_track_ratio: 0.5
@@ -82,15 +81,26 @@ p4b:
   w_spatial: 1.0
   w_role: 100.0
   new_traj_cost_factor: 3.0
-  pose_stitch_max_distance: 0.30
+  pose_stitch_max_distance: 0.3
   w_pose: 2.0
   velocity_continuity_weight: 0.5
   kinematic_slack: 1.5
   incompatible_role_pairs:
-    - [bowler, wicketkeeper]
-    - [striker, wicketkeeper]
-    - [bowler, striker]
-    - [bowler, non_striker]
-    - [umpire, bowler]
-    - [umpire, striker]
-    - [umpire, wicketkeeper]
+  - - bowler
+    - wicketkeeper
+  - - striker
+    - wicketkeeper
+  - - bowler
+    - striker
+  - - bowler
+    - non_striker
+  - - umpire
+    - bowler
+  - - umpire
+    - striker
+  - - umpire
+    - wicketkeeper
+  colocated_merge: true
+  colocated_radius_m: 0.75
+  colocated_min_frames: 25
+  colocated_posture_max_z: 3.0

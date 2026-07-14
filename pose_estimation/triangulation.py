@@ -33,8 +33,16 @@ def triangulate_point_dlt(
     projection_matrices: np.ndarray,
     confidences: np.ndarray | None = None,
     min_views: int = 2,
+    hartley: bool = False,
 ) -> np.ndarray:
-    """Triangulate one 3D point from 2D observations using weighted DLT."""
+    """Triangulate one 3D point from 2D observations using weighted DLT.
+
+    ``hartley=True`` (G1) equilibrates each DLT row to unit norm before the SVD
+    (confidence weights applied after), the single-point analogue of Hartley
+    conditioning: raw rows mix pixel-scale (~1e3) and matrix-scale entries, which
+    skews the least-squares toward the worst-scaled view. Off by default
+    (byte-identical legacy path).
+    """
 
     points_xy = np.asarray(points_xy, dtype=float)
     projection_matrices = np.asarray(projection_matrices, dtype=float)
@@ -54,13 +62,21 @@ def triangulate_point_dlt(
     if int(valid.sum()) < min_views:
         return np.full(3, np.nan, dtype=float)
 
-    rows = []
-    for (x_coord, y_coord), projection, confidence in zip(points_xy[valid], projection_matrices[valid], confidences[valid]):
-        weight = float(np.sqrt(max(confidence, 1e-8)))
-        rows.append(weight * (x_coord * projection[2] - projection[0]))
-        rows.append(weight * (y_coord * projection[2] - projection[1]))
+    pts = points_xy[valid]                                  # (V, 2)
+    projs = projection_matrices[valid]                      # (V, 3, 4)
+    weights = np.sqrt(np.maximum(confidences[valid], 1e-8))  # (V,)
+    rows_x = pts[:, 0, None] * projs[:, 2, :] - projs[:, 0, :]   # (V, 4)
+    rows_y = pts[:, 1, None] * projs[:, 2, :] - projs[:, 1, :]   # (V, 4)
+    if hartley:
+        norm_x = np.linalg.norm(rows_x, axis=1, keepdims=True)
+        norm_y = np.linalg.norm(rows_y, axis=1, keepdims=True)
+        rows_x = np.where(norm_x > 1e-12, rows_x / np.where(norm_x > 1e-12, norm_x, 1.0), rows_x)
+        rows_y = np.where(norm_y > 1e-12, rows_y / np.where(norm_y > 1e-12, norm_y, 1.0), rows_y)
+    stacked = np.empty((rows_x.shape[0] * 2, 4), dtype=float)
+    stacked[0::2] = weights[:, None] * rows_x
+    stacked[1::2] = weights[:, None] * rows_y
 
-    _, _, vt_matrix = np.linalg.svd(np.vstack(rows))
+    _, _, vt_matrix = np.linalg.svd(stacked)
     homogeneous = vt_matrix[-1]
     if abs(homogeneous[3]) < 1e-12:
         return np.full(3, np.nan, dtype=float)
@@ -72,7 +88,12 @@ def reprojection_errors_for_point(
     points_xy: np.ndarray,
     projection_matrices: np.ndarray,
 ) -> np.ndarray:
-    """Reproject one 3D point into all views and return pixel errors."""
+    """Reproject one 3D point into all views and return pixel errors.
+
+    Vectorized (W10-PERF): one batched matmul across views replaces the
+    per-view python loop; per-element arithmetic is unchanged, so results are
+    bit-identical to the loop version (verified on real P3 outputs).
+    """
 
     point_xyz = np.asarray(point_xyz, dtype=float)
     points_xy = np.asarray(points_xy, dtype=float)
@@ -80,10 +101,16 @@ def reprojection_errors_for_point(
     errors = np.full(points_xy.shape[0], np.nan, dtype=float)
     if not np.isfinite(point_xyz).all():
         return errors
-    for index, (xy_obs, projection) in enumerate(zip(points_xy, projection_matrices)):
-        if np.isfinite(xy_obs).all():
-            xy_proj = _project_point(point_xyz, projection)
-            errors[index] = float(np.linalg.norm(xy_proj - xy_obs))
+    homogeneous = np.append(point_xyz, 1.0)
+    projected = projection_matrices @ homogeneous          # (V, 3)
+    depth = projected[:, 2]
+    obs_ok = np.isfinite(points_xy).all(axis=1)
+    depth_ok = np.abs(depth) >= 1e-12
+    safe = obs_ok & depth_ok
+    if np.any(safe):
+        xy = projected[safe, :2] / depth[safe, None]
+        errors[safe] = np.linalg.norm(xy - points_xy[safe], axis=1)
+    # observation valid but degenerate depth -> NaN projection = NaN error (legacy)
     return errors
 
 
@@ -128,12 +155,18 @@ def ransac_triangulate_point(
     reprojection_threshold_px: float = 10.0,
     min_views: int = 2,
     cheirality: bool = False,
+    hartley: bool = False,
+    parallax_order: bool = False,
 ) -> TriangulationResult:
     """Triangulate with pairwise RANSAC and re-fit on inlier views.
 
     ``cheirality=True`` additionally requires the point to lie in front of a view for
     that view to count as an inlier, and discards candidate solutions behind either
     seed camera (flag-gated: off reproduces the legacy behaviour byte-for-byte).
+    ``hartley=True`` (G1) row-equilibrates the DLT systems. ``parallax_order=True``
+    (G3) tries high-parallax seed pairs first, so exact inlier/error ties resolve
+    toward the best-conditioned geometry instead of camera-index order. Both flags
+    off = legacy byte-identical.
     """
 
     points_xy = np.asarray(points_xy, dtype=float)
@@ -159,6 +192,32 @@ def ransac_triangulate_point(
         candidate_pairs: Sequence[tuple[int, int]] = [tuple(valid_indices)]
     else:
         candidate_pairs = list(combinations(valid_indices, 2))
+    if parallax_order and len(candidate_pairs) > 1:
+        # G3: rank seed pairs by the angle between their viewing rays through the
+        # observations (via a provisional 2-view point). High parallax first.
+        def _pair_parallax(pair: tuple[int, int]) -> float:
+            left, right = pair
+            provisional = triangulate_point_dlt(
+                points_xy[[left, right]], projection_matrices[[left, right]],
+                confidences[[left, right]], min_views=2, hartley=hartley,
+            )
+            if not np.isfinite(provisional).all():
+                return -1.0
+            angle = 0.0
+            try:
+                centers = []
+                for proj in projection_matrices[[left, right]]:
+                    m, p4 = proj[:, :3], proj[:, 3]
+                    centers.append(-np.linalg.solve(m, p4))
+                v1 = provisional - centers[0]
+                v2 = provisional - centers[1]
+                denom = float(np.linalg.norm(v1) * np.linalg.norm(v2))
+                if denom > 1e-9:
+                    angle = float(np.arccos(np.clip(v1 @ v2 / denom, -1.0, 1.0)))
+            except np.linalg.LinAlgError:
+                return -1.0
+            return angle
+        candidate_pairs = sorted(candidate_pairs, key=_pair_parallax, reverse=True)
 
     for left, right in candidate_pairs:
         candidate_point = triangulate_point_dlt(
@@ -166,6 +225,7 @@ def ransac_triangulate_point(
             projection_matrices[[left, right]],
             confidences[[left, right]],
             min_views=2,
+            hartley=hartley,
         )
         if cheirality and np.isfinite(candidate_point).all():
             if np.any(depth_signs(candidate_point, projection_matrices[[left, right]]) <= 0):
@@ -190,9 +250,12 @@ def ransac_triangulate_point(
             projection_matrices[best_inliers],
             confidences[best_inliers],
             min_views=min_views,
+            hartley=hartley,
         )
     else:
-        best_point = triangulate_point_dlt(points_xy, projection_matrices, confidences, min_views=min_views)
+        best_point = triangulate_point_dlt(
+            points_xy, projection_matrices, confidences, min_views=min_views, hartley=hartley
+        )
         errors = reprojection_errors_for_point(best_point, points_xy, projection_matrices)
         best_inliers = np.isfinite(errors) & (errors <= reprojection_threshold_px) & (confidences > 0)
         if cheirality:
@@ -266,17 +329,323 @@ def point_covariance_3d(
     return cov if np.isfinite(cov).all() else None
 
 
+def _skeleton_two_view_batched(
+    keypoints_by_view: np.ndarray,
+    projection_matrices: np.ndarray,
+    reprojection_threshold_px: float,
+    cheirality: bool,
+    hartley: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Exact 2-view fast path (W10-PERF): for V==2 the pairwise RANSAC collapses
+    analytically to one DLT per joint (candidate == refit == fallback), so ALL
+    joints are solved in a single batched SVD. Bit-identical to the per-joint
+    path (same row order, same LAPACK kernel per matrix; verified on real data).
+    """
+
+    kpv = keypoints_by_view
+    projs = projection_matrices
+    joint_count = kpv.shape[1]
+    points3d = np.full((joint_count, 3), np.nan, dtype=float)
+    confidences_out = np.zeros(joint_count, dtype=float)
+    mean_errors = np.full(joint_count, np.nan, dtype=float)
+
+    pts = kpv[:, :, :2]
+    conf = kpv[:, :, 2]
+    valid = np.isfinite(pts).all(axis=2) & np.isfinite(conf) & (conf > 0)  # (2, J)
+    both = valid.all(axis=0)
+    idx = np.flatnonzero(both)
+    if idx.size == 0:
+        return points3d, confidences_out, mean_errors
+
+    weights = np.sqrt(np.maximum(conf[:, idx], 1e-8))       # (2, K)
+    systems = np.empty((idx.size, 4, 4), dtype=float)
+    for view in range(2):
+        rows_x = pts[view, idx, 0, None] * projs[view, 2, :] - projs[view, 0, :]
+        rows_y = pts[view, idx, 1, None] * projs[view, 2, :] - projs[view, 1, :]
+        if hartley:
+            norm_x = np.linalg.norm(rows_x, axis=1, keepdims=True)
+            norm_y = np.linalg.norm(rows_y, axis=1, keepdims=True)
+            rows_x = np.where(norm_x > 1e-12, rows_x / np.where(norm_x > 1e-12, norm_x, 1.0), rows_x)
+            rows_y = np.where(norm_y > 1e-12, rows_y / np.where(norm_y > 1e-12, norm_y, 1.0), rows_y)
+        systems[:, 2 * view] = weights[view][:, None] * rows_x
+        systems[:, 2 * view + 1] = weights[view][:, None] * rows_y
+    _, _, vt = np.linalg.svd(systems)
+    hom = vt[:, -1, :]                                       # (K, 4)
+    scale_ok = np.abs(hom[:, 3]) >= 1e-12
+    sub_points = np.full((idx.size, 3), np.nan, dtype=float)
+    sub_points[scale_ok] = hom[scale_ok, :3] / hom[scale_ok, 3:4]
+
+    hom_points = np.concatenate([sub_points, np.ones((idx.size, 1))], axis=1)
+    projected = np.einsum("vij,kj->vki", projs, hom_points)   # (2, K, 3)
+    depth = projected[:, :, 2]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        proj_xy = np.where(
+            np.abs(depth)[:, :, None] >= 1e-12,
+            projected[:, :, :2] / np.where(np.abs(depth) >= 1e-12, depth, 1.0)[:, :, None],
+            np.nan,
+        )
+        errors_vk = np.linalg.norm(proj_xy - pts[:, idx], axis=2)  # (2, K)
+    point_finite = np.isfinite(sub_points).all(axis=1)
+    errors_vk = np.where(point_finite[None, :], errors_vk, np.nan)
+
+    inliers_vk = np.isfinite(errors_vk) & (errors_vk <= reprojection_threshold_px) & (conf[:, idx] > 0)
+    if cheirality:
+        reference = np.array([0.0, 0.0, 0.0, 1.0])
+        w_ref = projs[:, 2, :] @ reference                    # (2,)
+        w = depth                                             # (2, K)
+        signs = np.zeros_like(w)
+        for view in range(2):
+            if abs(float(w_ref[view])) > 1e-9:
+                signs[view] = np.sign(w[view]) * np.sign(w_ref[view])
+            else:
+                det_m = float(np.linalg.det(projs[view][:, :3]))
+                signs[view] = np.sign(det_m) * np.sign(w[view])
+        signs = np.where(point_finite[None, :], signs, 0.0)
+        inliers_vk &= signs > 0
+
+    inlier_any = inliers_vk.any(axis=0)
+    counts = inliers_vk.sum(axis=0)
+    safe_counts = np.maximum(counts, 1)
+    mean_conf = np.where(inliers_vk, conf[:, idx], 0.0).sum(axis=0) / safe_counts
+    mean_err = np.where(inliers_vk, np.nan_to_num(errors_vk, nan=0.0), 0.0).sum(axis=0) / safe_counts
+    points3d[idx] = sub_points
+    confidences_out[idx] = np.where(inlier_any, mean_conf, 0.0)
+    mean_errors[idx] = np.where(inlier_any, mean_err, np.nan)
+    return points3d, confidences_out, mean_errors
+
+
+def _batched_pair_dlt(pts_pair, projs_pair, conf_pair, hartley):
+    """DLT for K joints from one camera pair: pts (2,K,2), projs (2,3,4), conf (2,K)."""
+
+    K = pts_pair.shape[1]
+    weights = np.sqrt(np.maximum(conf_pair, 1e-8))            # (2, K)
+    systems = np.empty((K, 4, 4), dtype=float)
+    for view in range(2):
+        rows_x = pts_pair[view, :, 0, None] * projs_pair[view, 2, :] - projs_pair[view, 0, :]
+        rows_y = pts_pair[view, :, 1, None] * projs_pair[view, 2, :] - projs_pair[view, 1, :]
+        if hartley:
+            norm_x = np.linalg.norm(rows_x, axis=1, keepdims=True)
+            norm_y = np.linalg.norm(rows_y, axis=1, keepdims=True)
+            rows_x = np.where(norm_x > 1e-12, rows_x / np.where(norm_x > 1e-12, norm_x, 1.0), rows_x)
+            rows_y = np.where(norm_y > 1e-12, rows_y / np.where(norm_y > 1e-12, norm_y, 1.0), rows_y)
+        systems[:, 2 * view] = weights[view][:, None] * rows_x
+        systems[:, 2 * view + 1] = weights[view][:, None] * rows_y
+    _, _, vt = np.linalg.svd(systems)
+    hom = vt[:, -1, :]
+    ok = np.abs(hom[:, 3]) >= 1e-12
+    out = np.full((K, 3), np.nan, dtype=float)
+    out[ok] = hom[ok, :3] / hom[ok, 3:4]
+    return out
+
+
+def _batched_errors(points3d, pts, projs):
+    """Reprojection errors for K points into V views: points (K,3), pts (V,K,2)."""
+
+    K = points3d.shape[0]
+    hom_points = np.concatenate([points3d, np.ones((K, 1))], axis=1)   # (K,4)
+    projected = np.einsum("vij,kj->vki", projs, hom_points)            # (V,K,3)
+    depth = projected[:, :, 2]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        proj_xy = np.where(
+            np.abs(depth)[:, :, None] >= 1e-12,
+            projected[:, :, :2] / np.where(np.abs(depth) >= 1e-12, depth, 1.0)[:, :, None],
+            np.nan,
+        )
+        errors = np.linalg.norm(proj_xy - pts, axis=2)                 # (V,K)
+    point_ok = np.isfinite(points3d).all(axis=1)
+    return np.where(point_ok[None, :], errors, np.nan), depth
+
+
+def _batched_depth_signs(depth, projs, point_ok):
+    """depth_signs for K points across V views, replicating the reference test."""
+
+    reference = np.array([0.0, 0.0, 0.0, 1.0])
+    w_ref = projs[:, 2, :] @ reference                                  # (V,)
+    signs = np.zeros_like(depth)
+    for view in range(projs.shape[0]):
+        if abs(float(w_ref[view])) > 1e-9:
+            signs[view] = np.sign(depth[view]) * np.sign(w_ref[view])
+        else:
+            det_m = float(np.linalg.det(projs[view][:, :3]))
+            signs[view] = np.sign(det_m) * np.sign(depth[view])
+    return np.where(point_ok[None, :], signs, 0.0)
+
+
+def _skeleton_multi_view_batched(
+    kpv: np.ndarray,
+    projs: np.ndarray,
+    reprojection_threshold_px: float,
+    min_views: int,
+    cheirality: bool,
+    hartley: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Exact batched replica of the per-joint pairwise RANSAC (W10-PERF).
+
+    Candidate pairs are evaluated in the same lexicographic order as
+    ``combinations(valid_indices, 2)`` per joint; the best-candidate update rule,
+    the inlier-refit, the <min_views fallback and the confidence computation all
+    replicate ransac_triangulate_point bit-for-bit (verified on real P3/P6 data).
+    """
+
+    V, J = kpv.shape[0], kpv.shape[1]
+    pts = kpv[:, :, :2]
+    conf = kpv[:, :, 2]
+    valid = np.isfinite(pts).all(axis=2) & np.isfinite(conf) & (conf > 0)   # (V,J)
+    n_valid = valid.sum(axis=0)
+
+    points3d = np.full((J, 3), np.nan, dtype=float)
+    confidences_out = np.zeros(J, dtype=float)
+    mean_errors = np.full(J, np.nan, dtype=float)
+
+    solvable = n_valid >= min_views
+    if not np.any(solvable):
+        return points3d, confidences_out, mean_errors
+
+    best_count = np.zeros(J, dtype=int)
+    best_err = np.full(J, np.inf, dtype=float)
+    best_inliers = np.zeros((V, J), dtype=bool)
+    conf_pos = conf > 0
+
+    for a, b in combinations(range(V), 2):
+        active = solvable & valid[a] & valid[b]
+        idx = np.flatnonzero(active)
+        if idx.size == 0:
+            continue
+        cand = _batched_pair_dlt(
+            pts[[a, b]][:, idx], projs[[a, b]], conf[[a, b]][:, idx], hartley
+        )
+        errors, depth_all = _batched_errors(cand, pts[:, idx], projs)
+        point_ok = np.isfinite(cand).all(axis=1)
+        if cheirality:
+            seed_depth = np.stack([depth_all[a], depth_all[b]])
+            seed_signs = _batched_depth_signs(seed_depth, projs[[a, b]], point_ok)
+            seed_bad = point_ok & (seed_signs <= 0).any(axis=0)
+        else:
+            seed_bad = np.zeros(idx.size, dtype=bool)
+        inl = np.isfinite(errors) & (errors <= reprojection_threshold_px) & conf_pos[:, idx]
+        if cheirality:
+            all_signs = _batched_depth_signs(depth_all, projs, point_ok)
+            inl &= all_signs > 0
+        counts = inl.sum(axis=0)
+        with np.errstate(invalid="ignore"):
+            errs_sum = np.where(inl, np.nan_to_num(errors, nan=0.0), 0.0).sum(axis=0)
+        mean_e = np.where(counts > 0, errs_sum / np.maximum(counts, 1), np.inf)
+        viable = (~seed_bad) & (counts >= min_views)
+        take = viable & (
+            (counts > best_count[idx])
+            | ((counts == best_count[idx]) & (mean_e < best_err[idx]))
+        )
+        upd = idx[take]
+        best_count[upd] = counts[take]
+        best_err[upd] = mean_e[take]
+        best_inliers[:, upd] = inl[:, take]
+
+    # Final refit / fallback, grouped by identical view subsets for batching.
+    final_points = np.full((J, 3), np.nan, dtype=float)
+    refit_mask = solvable & (best_count >= min_views)
+    fallback_mask = solvable & ~refit_mask
+
+    def _grouped_dlt(joint_idx, view_masks):
+        groups: dict[bytes, list[int]] = {}
+        for j in joint_idx:
+            groups.setdefault(view_masks[:, j].tobytes(), []).append(j)
+        for key, joints in groups.items():
+            views = np.frombuffer(key, dtype=bool)
+            vsel = np.flatnonzero(views)
+            joints = np.asarray(joints)
+            if vsel.size < 2:
+                # single-view system: legacy DLT returns NaN via min_views guard
+                continue
+            weights = np.sqrt(np.maximum(conf[np.ix_(vsel, joints)], 1e-8))
+            systems = np.empty((joints.size, 2 * vsel.size, 4), dtype=float)
+            for row, v in enumerate(vsel):
+                rows_x = pts[v, joints, 0, None] * projs[v, 2, :] - projs[v, 0, :]
+                rows_y = pts[v, joints, 1, None] * projs[v, 2, :] - projs[v, 1, :]
+                if hartley:
+                    norm_x = np.linalg.norm(rows_x, axis=1, keepdims=True)
+                    norm_y = np.linalg.norm(rows_y, axis=1, keepdims=True)
+                    rows_x = np.where(norm_x > 1e-12, rows_x / np.where(norm_x > 1e-12, norm_x, 1.0), rows_x)
+                    rows_y = np.where(norm_y > 1e-12, rows_y / np.where(norm_y > 1e-12, norm_y, 1.0), rows_y)
+                systems[:, 2 * row] = weights[row][:, None] * rows_x
+                systems[:, 2 * row + 1] = weights[row][:, None] * rows_y
+            _, _, vt = np.linalg.svd(systems)
+            hom = vt[:, -1, :]
+            ok = np.abs(hom[:, 3]) >= 1e-12
+            pts3 = np.full((joints.size, 3), np.nan, dtype=float)
+            pts3[ok] = hom[ok, :3] / hom[ok, 3:4]
+            final_points[joints] = pts3
+
+    _grouped_dlt(np.flatnonzero(refit_mask), best_inliers)
+    _grouped_dlt(np.flatnonzero(fallback_mask), valid)
+
+    # Final errors + (for fallback) recomputed inliers, then confidence.
+    idx_all = np.flatnonzero(solvable)
+    errors_all, depth_all = _batched_errors(final_points[idx_all], pts[:, idx_all], projs)
+    point_ok_all = np.isfinite(final_points[idx_all]).all(axis=1)
+    final_inliers = best_inliers[:, idx_all]
+    fb_local = fallback_mask[idx_all]
+    if np.any(fb_local):
+        fb_inl = (
+            np.isfinite(errors_all) & (errors_all <= reprojection_threshold_px)
+            & conf_pos[:, idx_all]
+        )
+        if cheirality:
+            all_signs = _batched_depth_signs(depth_all, projs, point_ok_all)
+            fb_inl &= all_signs > 0
+        final_inliers = np.where(fb_local[None, :], fb_inl, final_inliers)
+
+    counts = final_inliers.sum(axis=0)
+    safe = np.maximum(counts, 1)
+    conf_mean = np.where(final_inliers, conf[:, idx_all], 0.0).sum(axis=0) / safe
+    err_mean = np.where(final_inliers, np.nan_to_num(errors_all, nan=0.0), 0.0).sum(axis=0) / safe
+
+    points3d[idx_all] = final_points[idx_all]
+    confidences_out[idx_all] = np.where(counts > 0, conf_mean, 0.0)
+    mean_errors[idx_all] = np.where(counts > 0, err_mean, np.nan)
+    return points3d, confidences_out, mean_errors
+
+
 def triangulate_skeleton_ransac(
     keypoints_by_view: np.ndarray,
     projection_matrices: np.ndarray,
     reprojection_threshold_px: float = 10.0,
     min_views: int = 2,
     cheirality: bool = False,
+    hartley: bool = False,
+    parallax_order: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Triangulate a skeleton from shape (V, J, 3) keypoints."""
+    """Triangulate a skeleton from shape (V, J, 3) keypoints.
+
+    ``hartley``/``parallax_order`` (G1/G3, flag-gated off = byte-identical) are
+    forwarded per joint to :func:`ransac_triangulate_point`. Batched fast paths
+    (W10-PERF, bit-identical) handle the 2-view and the generic multi-view cases;
+    ``parallax_order=True`` falls back to the per-joint reference loop.
+    """
 
     keypoints_by_view = np.asarray(keypoints_by_view, dtype=float)
     projection_matrices = np.asarray(projection_matrices, dtype=float)
+    if (
+        keypoints_by_view.ndim == 3
+        and keypoints_by_view.shape[0] == 2
+        and keypoints_by_view.shape[2] >= 3
+        and min_views <= 2
+        and projection_matrices.shape == (2, 3, 4)
+    ):
+        return _skeleton_two_view_batched(
+            keypoints_by_view[:, :, :3], projection_matrices,
+            reprojection_threshold_px, cheirality, hartley,
+        )
+    if (
+        keypoints_by_view.ndim == 3
+        and keypoints_by_view.shape[0] >= 3
+        and keypoints_by_view.shape[2] >= 3
+        and not parallax_order
+        and projection_matrices.shape == (keypoints_by_view.shape[0], 3, 4)
+    ):
+        return _skeleton_multi_view_batched(
+            keypoints_by_view[:, :, :3], projection_matrices,
+            reprojection_threshold_px, min_views, cheirality, hartley,
+        )
     if keypoints_by_view.ndim != 3 or keypoints_by_view.shape[2] < 3:
         raise ValueError("keypoints_by_view must have shape (V, J, >=3)")
     if projection_matrices.shape != (keypoints_by_view.shape[0], 3, 4):
@@ -295,6 +664,8 @@ def triangulate_skeleton_ransac(
             reprojection_threshold_px=reprojection_threshold_px,
             min_views=min_views,
             cheirality=cheirality,
+            hartley=hartley,
+            parallax_order=parallax_order,
         )
         points3d[joint_index] = result.point_xyz
         confidences[joint_index] = result.confidence

@@ -440,3 +440,46 @@ def evaluate_ground_truth(
         "idfp": idfp,
         "idfn": idfn,
     }
+
+
+def colocated_identity_metrics(
+    ground_rows_by_frame: dict[int, list[dict]],
+    occupancy_by_id: dict[str, set[tuple[str, int]]],
+    *,
+    radius_m: float = 0.75,
+    min_frames: int = 25,
+) -> dict:
+    """W9 tripwire: distinct global ids co-located on the ground with DISJOINT
+    camera occupancy — one physical player carrying two ids seen from different
+    sides (the ghost-under-player swap). Pairs that ever share a camera-frame are
+    genuinely two people and are counted separately (context, not failure).
+    """
+
+    import numpy as np
+    from collections import defaultdict
+    from itertools import combinations
+
+    close: dict[tuple[str, str], int] = defaultdict(int)
+    for frame_index, rows in ground_rows_by_frame.items():
+        pts = {row["global_player_id"]: np.asarray(row["ground_xy"], float) for row in rows}
+        ordered = sorted(pts)
+        for a, b in combinations(ordered, 2):
+            if float(np.linalg.norm(pts[a] - pts[b])) <= radius_m:
+                close[(a, b)] += 1
+    disjoint_pairs, shared_pairs, disjoint_frames = [], [], 0
+    for (a, b), n in sorted(close.items(), key=lambda kv: -kv[1]):
+        if n < min_frames:
+            continue
+        if occupancy_by_id.get(a, set()) & occupancy_by_id.get(b, set()):
+            shared_pairs.append({"ids": [a, b], "close_frames": n})
+        else:
+            disjoint_pairs.append({"ids": [a, b], "close_frames": n})
+            disjoint_frames += n
+    return {
+        "colocated_disjoint_pair_count": len(disjoint_pairs),
+        "colocated_disjoint_frames": disjoint_frames,
+        "colocated_shared_pair_count": len(shared_pairs),
+        "colocated_disjoint_pairs": disjoint_pairs[:10],
+        "radius_m": radius_m,
+        "min_frames": min_frames,
+    }

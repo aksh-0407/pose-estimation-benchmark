@@ -1,0 +1,57 @@
+{
+  "base_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/pipetrack_v8.0",
+  "configs": {
+    "p1b": {
+      "path": "configs/v8/p1b_stabilization.yaml",
+      "sha256": "d43a68a2c092eec3aeeebd1e4a31ead74fde2563326bc9d181e4e6b5991f8046"
+    },
+    "p2": {
+      "path": "configs/v8/p2_tracking.yaml",
+      "sha256": "193c96d3e3be21071f6c12a0346e44fbbd4f46a61ce186acaa37c663e07b7b89"
+    },
+    "p3": {
+      "path": "configs/experiments/w9__p3.yaml",
+      "sha256": "32fddd2ce3740363121deec425af60c7a60c720c6c8cde3a3808b6fa9443a8d7"
+    },
+    "p4": {
+      "path": "configs/experiments/w9__p4.yaml",
+      "sha256": "65b5ed0a518bc98586d2e44d30f3f282e1bd5187811599f38c40b0938a3f8b5b"
+    },
+    "p5": {
+      "path": "configs/v8/p5_roles.yaml",
+      "sha256": "2e2ff66d58277c1123247e7e2430effeab9de4aba1532c4457c957db03944182"
+    }
+  },
+  "created_at": "2026-07-14T04:31:17.271440+00:00",
+  "deliveries": [
+    "CCPL080626M1_1_14_1",
+    "CCPL080626M1_1_14_2",
+    "CCPL080626M1_1_14_3",
+    "CCPL080626M1_1_14_4",
+    "CCPL080626M1_1_14_5",
+    "CCPL080626M1_1_14_6",
+    "CCPL080626M1_1_14_7",
+    "CCPL080626M2_1_12_1"
+  ],
+  "enable_lift": true,
+  "enable_stabilization": true,
+  "input_tree": "/home/aksh/quidich/Pose_Estimation/benchmarks/runs/rtmpose-x-tiled-w5-full",
+  "schema_version": "pipeline_manifest/v1",
+  "stages_run": [
+    "p3",
+    "p3_5",
+    "p4",
+    "p5",
+    "p6_3d"
+  ],
+  "triangulation": {
+    "butter_cutoff_hz": 6.0,
+    "cheirality": true,
+    "dense_fill": true,
+    "ema_alpha": 0.65,
+    "min_views": 2,
+    "native_skeleton": true,
+    "reprojection_threshold_px": 10.0,
+    "smoother": "butterworth"
+  }
+}

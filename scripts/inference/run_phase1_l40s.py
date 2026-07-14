@@ -400,6 +400,7 @@ def make_tiled_loader(args):
     inference_detector pipeline was the tiled-mode bottleneck, not GPU compute).
     """
     import cv2
+    import numpy as np
 
     from detector_bakeoff import tile_layout
 
@@ -413,12 +414,23 @@ def make_tiled_loader(args):
             crop = img[y:y + th, x:x + tw]
             scale = DET_INPUT_LONG_SIDE / max(tw, th)
             rw, rh = int(round(tw * scale)), int(round(th * scale))
-            crops.append(cv2.resize(crop, (rw, rh), interpolation=cv2.INTER_LINEAR))
+            resized = cv2.resize(crop, (rw, rh), interpolation=cv2.INTER_LINEAR)
+            # Pad bottom/right to /32 like the generic pipeline's Pad transform:
+            # RTMDet's FPN needs stride-divisible inputs; extreme aspect crops
+            # (cam_07 full frame -> 640x163) otherwise crash the neck concat.
+            ph = (rh + 31) // 32 * 32
+            pw = (rw + 31) // 32 * 32
+            if (ph, pw) != (rh, rw):
+                canvas = np.zeros((ph, pw, 3), dtype=resized.dtype)
+                canvas[:rh, :rw] = resized
+                resized = canvas
+            crops.append(resized)
             metas.append({
                 "offset": (x, y),
                 "tile": (x, y, tw, th),
                 "ori_shape": (th, tw),
                 "img_shape": (rh, rw),
+                "pad_shape": (ph, pw),
                 "scale_factor": (rw / tw, rh / th),
             })
         entry["tile_crops"] = crops
@@ -449,6 +461,7 @@ def detect_person_boxes_tiled_fast(detector, entries, args):
             samples.append(DetDataSample(metainfo={
                 "img_shape": meta["img_shape"],
                 "ori_shape": meta["ori_shape"],
+                "pad_shape": meta["pad_shape"],
                 "scale_factor": meta["scale_factor"],
             }))
             plan.append((idx, meta))
