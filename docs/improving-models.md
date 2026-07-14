@@ -4,7 +4,7 @@ Getting a good model is the starting point, not the goal. Off-the-shelf 2D keypo
 jitter, drop out under occlusion, and get swapped in crowds; multi-view fusion and identity
 are where the production value is. This page is the map of *where the quality lives now* and
 how to work on it. The definitive, evidence-backed analysis is in the
-[critical analysis](critical-analysis/README.md); this is the practical loop.
+[pipeline reference](pipeline/README.md); this is the practical loop.
 
 ## The improvement loop
 
@@ -15,9 +15,9 @@ baseline run  ->  apply one change (behind a flag)  ->  re-run affected stage(s)
 
 Every intervention should be **proven, not assumed**: run the baseline, apply the change,
 re-run, and compare the committed proxy metrics
-([`run_id_pipeline.py`](scripts.md#the-batch-identity-driver) prints them jointly). A change
+(`python -m identity.id_pipeline` prints them jointly). A change
 is a win only if it helps broadly across the 8 deliveries without regressing a hard
-invariant or another clip. See [metrics.md](metrics.md).
+invariant or another clip. See [reference/metrics.md](reference/metrics.md).
 
 ## Where the quality lives (measured)
 
@@ -36,7 +36,7 @@ mosaics place players correctly but their IDs swap and fragment. In rough priori
 4. **Teleports** — an ID jumps to a different nearby person in crowds/occlusion.
 
 The open issues, their evidence, and prioritised fixes are enumerated per phase in the
-[critical analysis](critical-analysis/README.md) and in `wip/id_issues.md` /
+[pipeline reference](pipeline/README.md) and in the measured [diagnosis/](diagnosis/README.md) (
 `wip/3d_location_issues_v2.md`.
 
 ## The levers the code already gives you
@@ -51,7 +51,7 @@ The open issues, their evidence, and prioritised fixes are enumerated per phase 
   = the `z0_reproj` emitter, `ground_covariance`, `robust_fuse_ground`) turns multi-view foot
   pixels into a position with uncertainty on the low-parallax facing geometry.
 - **Cue fusion** — the P3 tracklet graph fuses ground/epipolar/appearance/pose-shape/motion
-  as log-likelihood ratios; the P4 Singer-KF + min-cost-flow stitcher maintain identity.
+  as log-likelihood ratios; the 05 global-id Singer-KF + min-cost-flow stitcher maintain identity.
   Most improvements are new/stronger cues or better gates behind a `configs/*` flag.
 
 ## Practical starting points
@@ -64,4 +64,4 @@ The open issues, their evidence, and prioritised fixes are enumerated per phase 
   -gated refine pass), since single-linkage can merge but never un-merge.
 
 Each of these is spelled out with SOTA references and expected effect in the per-phase docs
-under [critical-analysis/](critical-analysis/README.md).
+under [pipeline/](pipeline/README.md).

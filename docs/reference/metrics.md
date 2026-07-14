@@ -3,7 +3,7 @@
 There is **no per-player identity or 3D-location ground truth** for the cricket
 deliveries, so almost every quality number the pipeline reports is an explicitly-labelled
 **proxy** derived from geometry and self-consistency. This page defines them. (If you add
-labels, `--ground-truth` unlocks real MOTA/IDF1 in P4.)
+labels, `--ground-truth` unlocks real MOTA/IDF1 in global identity (05).)
 
 ## Calibration accuracy (the anchor)
 
@@ -12,7 +12,7 @@ surveyed/known ball position into each camera lands within **mean 1.2–1.9 px, 
 on all deliveries. This is why identity and location are solved directly on the calibrated
 ground plane — the calibration is centimetre-accurate and can be trusted.
 
-## Identity proxies (P3 / P4)
+## Identity proxies (03 association / 05 global identity)
 
 Reported in `association_metrics.json` and `global_id_metrics.json`:
 
@@ -32,9 +32,9 @@ Reported in `association_metrics.json` and `global_id_metrics.json`:
   most deliveries (near-identical kit, desaturated footage) — i.e. it carries almost no
   identity information.
 
-## 3D-location proxies (P3 / P6)
+## 3D-location proxies (03 association / 04 lift)
 
-From `eval_ground_accuracy.py` and the P6 triangulation:
+From `tools/diagnosis/eval_ground_accuracy.py` and the 04 lift (triangulation):
 
 - **emitted-point reprojection error (px)** — reproject the emitted ground/3D point into the
   member camera views; distance to the actual foot pixels used.
@@ -51,7 +51,7 @@ From `eval_ground_accuracy.py` and the P6 triangulation:
 ## Temporal quality
 
 - **temporal jitter** — mean frame-to-frame joint displacement (the "how noisy" number),
-  measured on 2D keypoints and on 3D/ground trajectories. `pose_estimation/metrics.py`
+  measured on 2D keypoints and on 3D/ground trajectories. `src/identity/common/metrics.py`
   provides `temporal_jitter`, `reprojection_error`, `mpjpe`/`p_mpjpe`.
 - **emitted-trajectory jump p95** — worst per-frame position jump after the Kalman-posterior
   emit (halved vs the raw re-mean; worst case cut from 14.0 m to 0.36 m on the hardest clip).
@@ -59,7 +59,7 @@ From `eval_ground_accuracy.py` and the P6 triangulation:
 ## How to use them
 
 No single proxy is optimised in isolation — the batch driver
-([`run_id_pipeline.py`](scripts.md#the-batch-identity-driver)) prints them **jointly** across
+(`python -m identity.id_pipeline`) prints them **jointly** across
 all deliveries and diffs against a frozen baseline. A change is a "win" only if it improves
 the panel broadly without regressing the hard invariants (same-camera collisions = 0) or
-another delivery. See [improving-models.md](improving-models.md).
+another delivery. See [improving-models.md](../improving-models.md).

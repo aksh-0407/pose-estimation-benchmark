@@ -1,53 +1,62 @@
 # Documentation
 
-This is the **Group-1 cricket 3D-pose & identity pipeline**: 7-camera cricket footage →
-per-player 2D pose → cross-camera identity → 3D pose & ground location → mosaic render.
-
-If you only read one page, read **[getting-started.md](getting-started.md)**. If you want
-the engineering depth, read the **[critical analysis](critical-analysis/README.md)**.
+The **Group-1 cricket 3D-pose & identity pipeline**: 7-camera footage → per-player 2D pose →
+cross-camera identity → 3D pose & ground location → roles → mosaic render.
 
 ## Start here
 
 | # | Doc | What you get |
 | - | --- | ------------ |
 | 1 | [getting-started.md](getting-started.md) | From a fresh checkout to a rendered mosaic on one delivery, step by step. |
-| 2 | [critical-analysis/phases.md](critical-analysis/phases.md) | The ordered pipeline (current **and** proposed), inputs/outputs, and flowcharts. |
-| 3 | [critical-analysis/README.md](critical-analysis/README.md) | Per-phase methods, math, weaknesses, and the prioritised fix roadmap. |
+| 2 | [architecture.md](architecture.md) | The shared concepts: camera rig & facing pairs, calibration, the data contract, skeletons, run-dir layout, metrics, the causal chain. |
+| 3 | [pipeline/README.md](pipeline/README.md) | The ordered pipeline + per-stage deep dives (method, config, what's been tried, current state). |
 
 ## Reference
 
 | Doc | Use it when… |
 | --- | ------------ |
-| [scripts.md](scripts.md) | …you want to know exactly what a pipeline script does, its I/O, and key flags. |
+| [reference/cli.md](reference/cli.md) | …you want the exact command, I/O and flags for a stage or tool. |
+| [reference/configuration.md](reference/configuration.md) | …you need to read or edit a `configs/0N_*.yaml`. |
+| [reference/metrics.md](reference/metrics.md) | …you want to know what a reported number or proxy means. |
+| [reference/data-inventory.md](reference/data-inventory.md) | …you want the dataset inventory. |
 | [rtmpose-x-runbook.md](rtmpose-x-runbook.md) | …you're installing/running/tuning P1 (RTMPose-X) on a new or remote machine. |
-| [configuration.md](configuration.md) | …you need to read or edit a `configs/*.yaml` (p2/p3/p4, model envs, keypoint maps). |
-| [metrics.md](metrics.md) | …you want to know what a reported number or proxy means. |
-| [improving-models.md](improving-models.md) | …you're reducing jitter, fixing identity, or improving 3D location. |
 | [troubleshooting.md](troubleshooting.md) | …something broke (model download, env, CUDA). |
+| [shared-data.md](shared-data.md) | …a downstream group needs to consume a run's outputs. |
 
-## The pipeline stages
+## Status & analysis
 
-`P1` 2D inference → `P2` per-camera tracking → `P3` cross-camera association → `P4` global
-identity → `P5` roles → `P6` 3D lift → UE export / mosaic render. Each stage reads and
-writes a canonical run directory. Full detail in
-[critical-analysis/phases.md](critical-analysis/phases.md).
+| Doc | What it is |
+| --- | ---------- |
+| [../remaining-work.md](../remaining-work.md) | The consolidated backlog (deferred / parked / pending). |
+| [changes_tbd.md](changes_tbd.md) | The prioritized, evidence-backed algorithm fix list (C1–C10) + restructure follow-ups. |
+| [diagnosis/README.md](diagnosis/README.md) | The measured 40-delivery production diagnosis (teleports, split identity, coverage). |
+| [pipeline/fixes-log.md](pipeline/fixes-log.md) | The dated A/B campaign ledger (historical). |
+
+## The pipeline at a glance
+
+P1 2D inference → **01** stabilization → **02** per-camera tracking → **03** cross-camera
+association → **04** 3D lift → **05** global identity → **06** roles → UE export / mosaic render.
+The 3D lift runs **before** global identity (Associate → Triangulate → Track). Each stage reads
+and writes a canonical run directory; full detail in [pipeline/README.md](pipeline/README.md).
 
 ## Common commands
 
-```bash
-# P1 — 2D pose over a delivery (RTMPose-X, top-down); emits COCO-17 + Halpe-26
-conda run -n pose-lab python src/core/inference/run_phase1_rtmpose_inference.py \
-  --model-id rtmpose_x_body8 --deliveries CCPL080626M1_1_14_1 \
-  --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
+Everything runs under the single `pose-lab` conda env, invoked as a module.
 
-# P2→P4 identity (batch driver over deliveries), then inspect the metric panel
-PY=/home/aksh/miniconda3/envs/pose-lab/bin/python
-$PY -m identity.id_pipeline \
-  --input-tree data/derived/runs/pipetrack_v3 --output-tree data/derived/runs/pipetrack_v5 --jobs 8
+```bash
+# Whole chain over one delivery (phase-select with --from-stage/--until-stage)
+python -m main --deliveries CCPL080626M1_1_14_1 \
+  --input-tree data/derived/runs/<p1-run> --output-tree data/derived/runs/demo \
+  --artifacts-root data/derived/mosaics/demo
+
+# P1 — 2D pose over a delivery (RTMPose-X, top-down); emits COCO-17 + Halpe-26
+python -m core.inference.run_phase1_rtmpose_inference --model-id rtmpose_x_body8 \
+  --deliveries CCPL080626M1_1_14_1 --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
 
 # Render the mosaic (7 tiles + bird's-eye monitor + roster), coloured by global ID
-$PY -m identity.visualization.render_videos \
-  --drive-root drive --run-dir <p4-run> --delivery-id CCPL080626M1_1_14_1 --mode mosaic --show p4
+python -m identity.visualization.render_videos \
+  --drive-root drive --run-dir <05_global_id-run> --delivery-id CCPL080626M1_1_14_1 \
+  --mode mosaic --show p4
 ```
 
-See [scripts.md](scripts.md) for the full per-stage command sequence (P2→P3→P4→P6).
+See [reference/cli.md](reference/cli.md) for the full per-stage command sequence.

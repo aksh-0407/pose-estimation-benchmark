@@ -40,18 +40,18 @@ deliveries) lives in [`src/identity/id_pipeline.py`](src/identity/id_pipeline.py
   fresh checkout to a rendered mosaic on one delivery.
 - Want the honest engineering picture — every phase's methods, math, weaknesses, and a
   prioritised fix roadmap grounded in the code and the measured results? Read the
-  **[critical analysis](docs/critical-analysis/README.md)**.
+  **[critical analysis](docs/pipeline/README.md)**.
 
 ## Documentation
 
 - [docs/index.md](docs/index.md) — the documentation map.
-- [docs/critical-analysis/](docs/critical-analysis/README.md) — **the deep dive**: phases,
+- [docs/pipeline/](docs/pipeline/README.md) — **the deep dive**: phases,
   per-phase method analysis, issues, and fixes.
 - [docs/rtmpose-x-runbook.md](docs/rtmpose-x-runbook.md) — install & run P1 (RTMPose-X) on a
   new/remote machine.
-- [docs/scripts.md](docs/scripts.md) — every pipeline script and its I/O.
-- [docs/configuration.md](docs/configuration.md) — the `configs/*.yaml` files.
-- [docs/metrics.md](docs/metrics.md) — the quality metrics and proxies the pipeline reports.
+- [docs/reference/cli.md](docs/reference/cli.md) — every pipeline script and its I/O.
+- [docs/reference/configuration.md](docs/reference/configuration.md) — the `configs/*.yaml` files.
+- [docs/reference/metrics.md](docs/reference/metrics.md) — the quality metrics and proxies the pipeline reports.
 - [docs/improving-models.md](docs/improving-models.md) — the ongoing quality work.
 - [docs/troubleshooting.md](docs/troubleshooting.md) — when setup breaks.
 

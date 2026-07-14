@@ -12,7 +12,7 @@ and the RTMDet person-detector checkpoint. Options:
 
 - Retry — it's often transient.
 - Download the file from another network or a verified mirror, then drop it at the exact
-  `path` listed for that asset in [`configs/model_envs.yaml`](configuration.md#model-setup).
+  `path` listed for that asset in [`configs/model_envs.yaml`](reference/configuration.md#shared).
 - Re-check with `python3 tools/check_assets.py --models rtmpose_x_body8 --fail-missing`.
 
 ### mmpose config `_base_` not found
@@ -37,16 +37,16 @@ going forward.
 
 ## Pipeline runs
 
-### P2–P6 import errors (NumPy/SciPy)
+### Identity-stage (01–06) import errors (NumPy/SciPy)
 
 The tracking → global-ID → triangulation stages need NumPy ≥ 1.23.5 and SciPy ≥ 1.10. Run
 them in an env that has them (e.g. `pose-lab`), not the mmpose env.
 
 ### The mosaic render is missing tiles / roles / ground monitor
 
-The renderer reads several artifacts from the P4 run: `predictions/*.jsonl`,
-`diagnostics/correspondences.jsonl` (P3 badges), `diagnostics/ground_tracks.jsonl` (the
-bird's-eye monitor), and `../p5/roles.json` (the roster). A missing panel usually means the
+The renderer reads several artifacts from the 05_global_id run: `predictions/*.jsonl`,
+`diagnostics/correspondences.jsonl` (03 association badges), `diagnostics/ground_tracks.jsonl` (the
+bird's-eye monitor), and `../06_roles/roles.json` (the roster). A missing panel usually means the
 corresponding stage didn't write its diagnostic — re-run that stage. Camera 07 has a
 different native resolution (~3775×960); if a tile looks wrong, check the per-camera image
 size handling.

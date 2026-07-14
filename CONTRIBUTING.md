@@ -23,7 +23,7 @@ python3 tools/check_assets.py --models rtmpose_x_body8 --fail-missing
 
 The tracking/association/global-ID/triangulation stages (P2–P6) run in an env with
 NumPy ≥ 1.23.5 and SciPy ≥ 1.10 (e.g. `pose-lab`). See the per-stage commands
-in [docs/scripts.md](docs/scripts.md).
+in [docs/reference/cli.md](docs/reference/cli.md).
 
 ## Workflow
 
@@ -47,6 +47,6 @@ in [docs/scripts.md](docs/scripts.md).
 - **Prove it, don't assume it.** Re-run the affected stage(s) and compare the committed
   proxy metrics (cross-camera agreement, distinct-ID count, teleports, ground-reprojection)
   against the baseline snapshot before claiming a win. See
-  [docs/metrics.md](docs/metrics.md) and [docs/improving-models.md](docs/improving-models.md).
+  [docs/reference/metrics.md](docs/reference/metrics.md) and [docs/improving-models.md](docs/improving-models.md).
 - **The same-camera identity invariant is hard**: two detections in the same camera-frame
   must never share a global ID. Don't weaken it.
