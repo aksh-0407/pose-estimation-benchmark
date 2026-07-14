@@ -39,3 +39,44 @@ the lever).
 **Incidents**: cam_07 pad-to-/32 (fast-path probes must cover the panoramic cam);
 calibration provenance (copied laptop→box, verified + team-confirmed single session);
 box-vs-local panels are near-parity not identical when P1 binaries differ.
+
+## Earlier-era settled facts (from auto-memory, re-verified against v8.1 on 2026-07-14)
+
+**Rig geometry**: world origin = pitch centre, +Y toward Far End, z=0 = ground; stump
+mid-bases at (0, ±10.08 m). cam01/04 end-on pair, cams 02/03 east (+x), 05/06 west (−x),
+cam07 oblique panoramic. Facing pairs C1↔C4, C2↔C6, C3↔C5 are the CO-OBSERVING pairs
+(look-at point, NOT antipodal position) — the old config bug is fixed in `configs/v8/`.
+
+**Ground fusion (v8 defaults, A/B-proven)**: `ground_fusion_mode: z0_reproj` (Huber z=0
+reprojection minimisation) beat median 0.176→0.145 m; the literature covariance-fusion
+recipe LOST (0.248 m) — with cm-accurate calibration, minimise reprojection, don't model
+homography noise. P4 `emit_kalman_posterior: true` (chi2-gated) halved trajectory-disp
+p95, worst emitted jump 14 m→0.36 m. BEV lesson: remaining teleports/low agreement are
+IDENTITY, not location.
+
+**Identity cues (measured)**: kit-colour appearance d′≈0.09 on this desaturated footage
+(cue auto-abstains); appearance LLRs must be calibrated PER CAMERA PAIR (a global fit
+punished all cam_07 pairs by −1.3…−1.8). Rescue/refinement merges need ≥30 co-visible
+frames (an 18-frame rescue built a fielder chimera).
+
+**Cut-off / untracked figures**: upper-body ground estimate (hips z 0.93 → shoulders 1.42
+→ bbox-top 1.78) must be STICKY per tracklet — per-frame anchor switching flip-flops ~1 m
+and shatters purity splits; failed approximations must yield NaN ground, never garbage
+bbox-bottom. Persistent untracked detections (umpires) become synthetic tracklets
+(`syn_min_confidence: 0.2` — the 0.24–0.29 conf tail otherwise mints rival IDs).
+
+**Mosaic layout** (`scripts/visualization/mosaic_layout.py`): fully auto-derived per
+delivery; bowling direction from PER-CAMERA tracklet motion projected on the pitch axis —
+NEVER from fused cross-camera tracks (inter-camera bias reads as motion; that bug produced
+a wrong direction). Flip rule validated on M2 (opposite end).
+
+**P1 model history**: RTMPose-L body8 mandate (2026-07-08; no YOLO, no WholeBody) was
+superseded by user-approved RTMPose-X. Key fact: the only x-size body checkpoint is
+**Halpe-26** (no COCO-17 x exists); its first 17 keypoints are exactly COCO-17, joints
+17–25 add head/neck/hip + 6 foot keypoints. "Don't switch to YOLO" still stands.
+
+**Phase-1 perf lore**: batch/io/prefetch knobs are batch-invariant (speed only, never
+keypoints); warm-cache benchmarks LIE — always measure on cold data; on the laptop 4060,
+GPU nvJPEG decode was a dead end (~19 ms vs cv2 ~14 ms AND competes with pose for the GPU)
+— but that verdict is laptop-specific; during L40S renders the GPU is idle, so re-measure
+there (05 §1).

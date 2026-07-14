@@ -10,7 +10,9 @@ Leads, in expected-yield order:
   `ffmpeg` with nvenc, or a BtbN/ffmpeg-builds GPL binary) → encoding offloaded to GPU.
 - **GPU decode**: frame JPEG decode via nvJPEG (torchvision.io.decode_jpeg(device='cuda')
   in the cricket-rtmpose-l env) instead of cv2.imread — decode is a large slice of render
-  time (7 cams × 600 × 2560×1440).
+  time (7 cams × 600 × 2560×1440). Caveat: nvJPEG lost to cv2 on the laptop 4060 (~19 vs
+  14 ms, GPU shared with pose) — but during renders the L40S GPU is IDLE, so measure fresh
+  there rather than trusting that verdict.
 - **Compositing on GPU**: torch tensor ops for resize/blend instead of cv2/numpy (biggest
   rewrite; only if the first two don't reach the target).
 - Parallelism: renders are per-delivery independent — with GPU decode+encode, 4+ parallel

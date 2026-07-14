@@ -10,10 +10,13 @@ re-deriving anything. Read this index, then open only what the task needs.
 | `03-campaign-knowledge.md` | Distilled discoveries, verdicts and rejections from the v6→v8.1 campaign (don't re-litigate) |
 | `04-conventions.md` | Evaluation standard, git rules, monitoring directive, doc structure |
 | `05-active-threads.md` | What's next / in flight: mosaic-VRAM optimization lead, manager reprojection questions, open decisions |
+| `06-user-and-machines.md` | User/PS-1 admin, laptop hardware + crash rules, envs, Claude-accounts memory layout |
 
 Authoritative deep references (in-repo): `/remaining-work.md` (full backlog),
 `docs/critical-analysis/fixes-log.md` (every A/B + verdict), `docs/runs/` (archived run
 panels), `/home/ubuntu/pipetrack_v8/README.md` on the box (production dataset guide).
 
-NOTE: auto-memory is per-account; the user rotates accounts, so THESE files are the
-cross-account source of truth. Keep them updated as sessions end.
+NOTE: the user rotates 5 Claude accounts, but all their auto-memory dirs for this repo
+are hardlinked to ONE file set (verified 2026-07-14) — that memory was audited and
+consolidated here. THESE repo files are the cross-account source of truth; keep them
+updated as sessions end.
