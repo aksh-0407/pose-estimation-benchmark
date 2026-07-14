@@ -45,11 +45,12 @@ data/raw/*
 !data/raw/.gitkeep
 data/derived/*
 !data/derived/.gitkeep
+data/viz/*
+!data/viz/.gitkeep
 benchmarks/datasets/*
 !benchmarks/datasets/.gitkeep
-# Company drive: commit docs, but never the 14 GB dataset or the personal LaTeX
-# report. (Embedded drive/.git and local junk were removed during cleanup.)
-drive/dataset/
+# Company drive: commit the docs mirror, but never the personal LaTeX report.
+# (The dataset now lives under data/raw/<dataset>/, ignored above.)
 drive/LaTex Files/
 *.zip
 *.tar
