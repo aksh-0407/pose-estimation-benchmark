@@ -149,4 +149,4 @@ plane through the ground point — works on facing pairs without triangulation).
 | 7 | **Raise multi-camera binding rate** (jointly with fixes 1–3) to shrink the ~50% single-camera fraction. | ★★ | Half the player-frames get no cross-camera correction today; more binding is the lever. | More triangulable frames → better 3D + identity. | (rolls up 1–3) | — |
 
 Cross-phase: ID-1/ID-5/V2-L1 are the top of the whole-pipeline roadmap —
-[fixes-roadmap.md](../changes_tbd.md).
+[to_do.md](../../wip/to_do.md).

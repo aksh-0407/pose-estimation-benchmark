@@ -36,7 +36,7 @@ flowchart TD
   C -- yes --> CL["spike clamp -> predicted pos"]
   C -- no --> OE
   CL --> OE["One-Euro filter (x,y)<br/>smoothing.py"]
-  OE --> W["write smoothed pose_2d + pose_2d_native<br/>recompute keypoints_norm"]
+  OE --> W["write smoothed pose_2d (Halpe-26)<br/>recompute keypoints_norm"]
   W --> M["jitter before/after metric"]
 ```
 

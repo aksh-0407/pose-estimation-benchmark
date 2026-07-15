@@ -7,7 +7,7 @@ the scripts checked in here (run on the L40S, env `cricket-rtmpose-l`).
 
 **Meeting-ready single-file summary** (pipeline processes + diagnosis + Q&A):
 `../critical-analysis/meeting-debug-reference.md`.
-**Prioritized fixes**: `../changes_tbd.md`.
+**Prioritized fixes**: `../../wip/to_do.md`.
 
 ## Read order
 | File | What |
@@ -36,4 +36,4 @@ mean-over-fragments emission bug) while the 3D skeletons are smooth-but-sparse; 
 split identity is real and concentrated on the geometrically hard cameras (cam_04 end-on,
 cam_07 panoramic). Everything scales with the **single-camera fraction** — it's a
 detection/coverage problem first, an identity-algorithm problem second. Fixes, cheap-first,
-are in `../changes_tbd.md`.
+are in `../../wip/to_do.md`.

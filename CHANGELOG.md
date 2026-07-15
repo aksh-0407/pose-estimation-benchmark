@@ -21,9 +21,8 @@ suppression) → UE export + mosaic/BEV render.
 Production: 40 deliveries (`CCPL080626`), mean cross-camera agreement 0.862, reprojection
 3.07–3.56 px, same-camera collisions 0, colocated-id pairs 0 on 38/40. Identity remains the
 dominant quality ceiling (facing-pair split identity, single-camera coverage). Open work:
-[`remaining-work.md`](remaining-work.md); prioritized algorithm backlog:
-[`docs/changes_tbd.md`](docs/changes_tbd.md); measured 40-delivery diagnosis:
-[`docs/diagnosis/`](docs/diagnosis/README.md).
+[`wip/to_do.md`](wip/to_do.md) (the consolidated backlog + prioritized algorithm
+fix list); measured 40-delivery diagnosis: [`docs/diagnosis/`](docs/diagnosis/README.md).
 
 ## 2026-07 — Repository restructure
 

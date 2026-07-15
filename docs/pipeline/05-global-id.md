@@ -87,7 +87,7 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
   matched mostly on kinematics, which fails after long occlusions → a fresh ID.
 - **2D-only tracking by default** — 05 now reads 04 and carries its 3D forward, but by default
   tracks on the ground plane and does not *consume* the 3D pose, so it lacks the richest
-  disambiguating signal until decide-in-3D is enabled ([changes_tbd](../changes_tbd.md)).
+  disambiguating signal until decide-in-3D is enabled ([to_do.md](../../wip/to_do.md)).
 - **Many hand-tuned constants** on a single 12-second tuning delivery — real risk of overfitting.
 
 ## Issues
@@ -115,4 +115,4 @@ cell (the same-person-can't-be-two-places invariant). A final cardinality prior 
 | 7 | **Get identity ground truth** (hand-label a few hundred frames on 2–3 deliveries incl. _7/M2) to report real **MOTA/IDF1/HOTA** instead of proxies. | ★★ | Every identity number today is a proxy; without labels, tuning is guesswork. | Measurable identity work; catches overfitting. | Medium (labelling) | CLEAR-MOT / IDF1 / HOTA [Luiten 2009.07736] |
 
 Cross-phase: ID-2/ID-3 sit just under 03's ID-1/ID-5 in the roadmap; several fixes here depend on
-the triangulation re-placement — see [fixes-roadmap.md](../changes_tbd.md).
+the triangulation re-placement — see [to_do.md](../../wip/to_do.md).

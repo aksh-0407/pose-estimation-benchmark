@@ -4,7 +4,7 @@
 import json, os, glob
 import numpy as np
 
-ROOT="/home/ubuntu/pipetrack_v8/deliveries"
+ROOT=os.environ.get("DELIVERIES_ROOT", "data/derived/40_full/pipetrack_v8/deliveries")
 FPS=50.0
 
 def cam_files(d, stage):

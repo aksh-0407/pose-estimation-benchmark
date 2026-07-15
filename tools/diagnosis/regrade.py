@@ -4,7 +4,7 @@ Composite score over the axes that actually reflect delivery usability, plus har
 invariant gates. Replaces the teleport-proxy-driven verdict."""
 import json, os, glob
 import numpy as np
-ROOT="/home/ubuntu/pipetrack_v8/deliveries"; FPS=50.0
+ROOT=os.environ.get("DELIVERIES_ROOT", "data/derived/40_full/pipetrack_v8/deliveries"); FPS=50.0
 
 def emitted_bigjumps(path):
     per_id={}

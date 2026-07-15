@@ -11,8 +11,8 @@ logs.
 - `../diagnosis/README.md`, `../diagnosis/README.md` — 3D-location issues (12 → resolved/open).
 - `../../wip/methods_log.md` — accept/reject lab notebook (M0…M11; z0_reproj win, calibration audit).
 - `../diagnosis/README.md` — SOTA-mapped redesign + the empirical A/B pivot.
-- `implementation_plan.md`, `changes_tbd.md`, `CHANGELOG.md` — plan, deferred work, round-by-round history.
-- Committed metrics: `data/derived/runs/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
+- `implementation_plan.md`, `wip/to_do.md`, `CHANGELOG.md` — plan, deferred work, round-by-round history.
+- Committed metrics: `data/derived/<dataset>/pipetrack_v<num>/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
 
 **Key code locations:**
 - P1: `src/core/inference/run_phase1_rtmpose_inference.py` (`boxes_from_det_result:485`, `inference_topdown_batch:528`, `player_records:619`).

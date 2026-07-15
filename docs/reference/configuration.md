@@ -55,8 +55,8 @@ v1 requires the 05 run to have `online_role_proxy: true`.
 
 ## Shared
 
-- `keypoint_mappings.yaml` — COCO-17 and Halpe-26 skeleton definitions + the reduction any model
-  output takes to `coco_17`.
+- `keypoint_mappings.yaml` — COCO-17 + Halpe-26 skeleton definitions and the source→COCO-17 index
+  maps (the pipeline skeleton is Halpe-26; names/edges in `src/core/keypoints.py`).
 - `model_envs.yaml` / `model_registry.yaml` — the P1 model catalog (checkpoints, the `pose-lab`
   env, latency/reprojection budgets). P1 uses `rtmpose_x_body8`.
 - `reference/{ground_conventions,camera_layout}.jpeg` — the ground-convention and camera-layout

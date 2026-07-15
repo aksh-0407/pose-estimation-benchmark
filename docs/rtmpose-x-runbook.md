@@ -15,10 +15,9 @@ order; 18–26 add head/neck/hip + 6 foot keypoints (heels, big/small toes).
 - **Model:** RTMPose-x, 384×288, top-down (paired with an RTMDet-m person detector).
 - **Output skeleton:** Halpe-26 (26 keypoints). Its first 17 are exactly COCO-17 in
   COCO order; 18–26 add head/neck/hip + 6 foot keypoints (heels, big/small toes).
-- **Per-frame record:** every player carries **both**
-  - `pose_2d` — COCO-17 (17 kpts), the contract the rest of the pipeline consumes, and
-  - `pose_2d_native` — the full Halpe-26 (26 kpts) for future phases (feet etc.).
-  `pose_2d.keypoints_px == pose_2d_native.keypoints_px[0:17]`.
+- **Per-frame record:** every player carries `pose_2d` — the full **Halpe-26** (26 kpts; the
+  first 17 are COCO-17 in COCO order, then head/neck/hip + 6 feet). This is the contract the rest
+  of the pipeline consumes.
 - Runs in the shared `pose-lab` Conda env (mmpose 1.3.2 / mmcv 2.1.0 /
   mmdet 3.2.0 / torch 2.1.0-cu121) — **no separate env**.
 
@@ -100,10 +99,10 @@ conda run -n pose-lab python src/core/inference/run_phase1_rtmpose_inference.py 
   --model-id rtmpose_x_body8 \
   --det-batch-size 32 --pose-batch-size 96 \
   --io-workers 16 --cv2-threads 2 --prefetch-batches 3 \
-  --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
+  --dataset 8_init --version 9
 ```
 
-Output → `data/derived/runs/rtmpose-x/predictions/bt_XX__<delivery>__cam_YY.jsonl`
+Output → `data/derived/8_init/pipetrack_v9/<delivery>/00_inference/predictions/bt_XX__<delivery>__cam_YY.jsonl`
 (one per camera; 56 cameras = 8 deliveries × 7 cameras spread across bt_01/02/03).
 `run_manifest.json` records config, timings, and FPS on completion.
 
@@ -114,9 +113,9 @@ Useful flags: `--groups/--deliveries/--cameras/--frame-limit` (filter), `--list`
 
 ```bash
 # each finished camera file has exactly 600 lines
-for f in data/derived/runs/rtmpose-x/predictions/*.jsonl; do echo "$(wc -l < "$f") $f"; done
-# expect 56 files
-ls data/derived/runs/rtmpose-x/predictions/*.jsonl | wc -l
+for f in data/derived/8_init/pipetrack_v9/*/00_inference/predictions/*.jsonl; do echo "$(wc -l < "$f") $f"; done
+# expect 56 files (8 deliveries × 7 cameras)
+ls data/derived/8_init/pipetrack_v9/*/00_inference/predictions/*.jsonl | wc -l
 ```
 
 ---
@@ -127,7 +126,7 @@ The remote capture box stores frames in a different native layout —
 `/home/ubuntu/pose_data/{bt1,bt2,bt3}/<delivery>/camera<NN>/frame_*.jpg` — and writes to
 a caller-chosen output dir. Use the dedicated runner
 [`run_phase1_l40s.py`](../src/core/inference/run_phase1_l40s.py) (it reuses the exact same
-mmdet/mmpose building blocks and P1 schema, incl. the 26-keypoint `pose_2d_native`, and
+mmdet/mmpose building blocks and P1 schema (the 26-keypoint Halpe-26 `pose_2d`), and
 has the same prefetch + thread-cap optimisation). RTMPose-x is fully wired: just pass
 `--model-id rtmpose_x_body8`.
 

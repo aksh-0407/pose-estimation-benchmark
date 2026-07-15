@@ -597,7 +597,7 @@ flowchart TB
 | Occasional **swaps** in scrums | Ground position alone can't separate identical‑kit players standing close; pose cue is soft and abstains when parallax is poor |
 | Early **wrong merges never recovered** | P3 uses greedy single‑linkage union‑find, which can merge but never *split* |
 
-**Levers we are working on (ordered by value‑for‑risk, from `changes_tbd.md`):**
+**Levers we are working on (ordered by value‑for‑risk, from `wip/to_do.md`):**
 
 1. **Empirical weight/gate tuning** — sweep `ground_weight` / `epipolar_weight` /
    `appearance_weight` and the ground gates against the mosaic. The tight facing‑pair gate

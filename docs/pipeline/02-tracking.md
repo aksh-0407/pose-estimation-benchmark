@@ -105,4 +105,4 @@ medoid representative) supplies the cosine cue and the dormant re-ID key. This i
 | 5 | **Adaptive gates + adaptive dormant window** scaled by track maturity and local detection density. | ★ | One global constant can't fit all cameras/densities; keep established players alive longer. | Fewer needless deletions/re-births. | Low-Medium | UCMCTrack [2312.08952] |
 
 Cross-phase context: 02 fragmentation is the upstream half of the fragmentation problem 05 tries
-to stitch — see [05-global-id.md](05-global-id.md) and [fixes-roadmap.md](../changes_tbd.md).
+to stitch — see [05-global-id.md](05-global-id.md) and [to_do.md](../../wip/to_do.md).

@@ -41,5 +41,5 @@ The detector, not the pose model, was the upstream bottleneck:
   (worker-side crop prep): **18–25 fps for 9× detector work** on the L40S.
 
 ## Open follow-ups
-Queued in `remaining-work.md` §3.3: YOLO26-l / RF-DETR recall-oracle probes through the same
+Queued in [`to_do.md`](to_do.md) (A9): YOLO26-l / RF-DETR recall-oracle probes through the same
 bake-off harness; clean L-vs-X ablation only if someone needs the number.

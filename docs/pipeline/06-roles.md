@@ -51,14 +51,14 @@ to have `online_role_proxy: true`.
 - **v1.2 auto-flip — added** (W8): removes the hardcoded bowling-end assumption.
 - **W6 suppression — accepted, conservative**: 0–3 IDs/clip suppressed, zero core-role suppression.
 - A parallel `global_id/` rewrite (contributed alongside the roles work) is **parked** pending its
-  own changelog + 8-delivery A/B ([`../../remaining-work.md`](../../remaining-work.md) §1.3).
+  own changelog + 8-delivery A/B ([`wip/to_do.md`](../../wip/to_do.md) §B).
 
 ## Current issues & measured state
 
 No teleport or identity contribution (`../diagnosis/09-per-phase-issue-register.md`, P5). The
 open items are **visual arbitration only** — bowling-end orientation (visually confirmed on `_2`;
 spot-check more) and the keeper pick — and need mosaic sign-off, not code changes
-([`../../remaining-work.md`](../../remaining-work.md) §1.4).
+([`wip/to_do.md`](../../wip/to_do.md) §B).
 
 ## Entry-point commands
 

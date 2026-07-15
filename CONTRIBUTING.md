@@ -13,7 +13,7 @@ model weights and the frame dataset are **not** committed and are set up locally
 ## One-time setup
 
 ```bash
-git clone <this-repo> pose-estimation && cd pose-estimation
+git clone <this-repo> pipetrack && cd pipetrack
 pip install -r requirements.txt
 
 # P1 model env + weights (RTMPose-X + RTMDet detector)
@@ -36,7 +36,7 @@ in [docs/reference/cli.md](docs/reference/cli.md).
    python3 tools/audit_repo.py --fail
    ```
 4. Commit only source, configs, docs, and the small committed run metrics
-   (`data/derived/runs/<run>/**/​*_metrics.json`, manifests). Do **not** commit weights,
+   (`data/derived/<dataset>/pipetrack_v<num>/**/​*_metrics.json`, manifests). Do **not** commit weights,
    frames, or raw per-frame prediction dumps — they are gitignored.
 5. Push and open a pull request.
 

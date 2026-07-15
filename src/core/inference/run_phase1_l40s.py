@@ -41,6 +41,7 @@ import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -61,8 +62,10 @@ from core.dataset import (  # noqa: E402
     parse_frame_id,
 )
 
-DEFAULT_POSE_DATA = "/home/ubuntu/pose_data"
-DEFAULT_OUTPUT_DIR = "/home/ubuntu/pose-data-inference-output"
+# Env-overridable so nothing is machine-hardcoded (on the L40S box the data lives under
+# ~/bits-pose-data; export POSE_DATA / PIPETRACK_OUT there, or prefer the --dataset flow).
+DEFAULT_POSE_DATA = os.environ.get("POSE_DATA", "data/raw/40_full")
+DEFAULT_OUTPUT_DIR = os.environ.get("PIPETRACK_OUT", "data/derived/40_full/pipetrack")
 GROUP_RE = re.compile(r"^bt_?0*(?P<num>\d+)$", re.IGNORECASE)
 
 

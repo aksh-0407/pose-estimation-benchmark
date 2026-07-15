@@ -12,7 +12,7 @@ the full **Halpe-26** world skeleton (`pose_3d`, 26 joints incl. feet) plus the 
 `correspondences.jsonl` forward so global-id (05) reads everything from the lift run and **carries
 the 3D forward**. The old terminal re-triangulation (`07_lift3d`) is **gone**: 06 stamps roles onto
 04's 3D for the final handoff. By default 05 still *tracks* on the ground plane; **consuming** the 3D
-(decide-in-3D) is the flag-gated A/B in [changes_tbd](../changes_tbd.md).
+(decide-in-3D) is the flag-gated A/B in [to_do.md](../../wip/to_do.md).
 
 ## I/O & config
 
@@ -78,7 +78,7 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
   a prior is a guess, low-confidence but still emitted.
 - **Global identity doesn't consume the 3D by default** — 05 now reads 04 and carries the 3D
   forward, but by default still tracks on the ground plane and ignores the 3D pose/covariance.
-  Consuming it (decide-in-3D) is implemented behind a flag and A/B-gated — [changes_tbd](../changes_tbd.md).
+  Consuming it (decide-in-3D) is implemented behind a flag and A/B-gated — [to_do.md](../../wip/to_do.md).
 
 ## Issues
 
@@ -104,4 +104,4 @@ applies confidence-weighted temporal EMA (α=0.65). Together these take multi-ca
 | 6 | **Gate skeletal-prior fill** — cap how long a joint may be prior-filled and down-weight/flag it, or prefer the single-view PnP lift (fix 2) over pure priors. | ★ | Avoids emitting fabricated limbs on long single-view stretches. | Fewer wrong emitted joints. | Low | — |
 
 Cross-phase: fix 1 here is the enabler for 03's splittable clustering and 05's 3D tracking —
-see [changes_tbd.md](../changes_tbd.md).
+see [to_do.md](../../wip/to_do.md).

@@ -19,7 +19,7 @@ p4,p5,p6_3d}`. 40 deliveries (M1 overs 14/16/17; M2 overs 11/12 + innings-2 over
 
 | Stage | Plain-English job | Method we use | Key output |
 |---|---|---|---|
-| **P1** 2D pose | Find every person in every frame of every camera and estimate their skeleton | RTMDet-m person detector on a **4×2 overlapping tile grid + full frame** (small players survive), cross-tile **NMS 0.55** (both crossing players kept), fp16; then **RTMPose-X** top-down, **Halpe-26** skeleton (COCO-17 + head/neck/hip + 6 foot keypoints) | `pose_2d` (17) + `pose_2d_native` (26 incl. feet) |
+| **P1** 2D pose | Find every person in every frame of every camera and estimate their skeleton | RTMDet-m person detector on a **4×2 overlapping tile grid + full frame** (small players survive), cross-tile **NMS 0.55** (both crossing players kept), fp16; then **RTMPose-X** top-down, **Halpe-26** skeleton (COCO-17 + head/neck/hip + 6 foot keypoints) | `pose_2d` (Halpe-26, 26 incl. feet) |
 | **P1b** 2D stabilize | Remove per-frame keypoint jitter before it propagates | **One-Euro filter** + confidence-gated spike clamp over IoU micro-tracks | smoother 2D (−20–34% jitter) |
 | **02** per-camera track | Link detections over time **within one camera** into tracklets (one person = one tracklet) | ByteTrack-style two-stage Hungarian (IoU + pose-cosine) + constant-velocity Kalman; low-confidence detections associate-only (no new births); zero-IoU fast movers matched by motion | `local_track_id` |
 | **03** cross-camera ID | Decide which tracklet in camera A is the **same person** as which in camera B/C/… | Whole-delivery **tracklet graph**: per-pair calibrated log-likelihood-ratio cues (ground distance on the z=0 plane, appearance, billboard posture, motion) fused → union-find merge + facing-pair corroboration; ground position by **z=0-constrained robust reprojection** (Gauss–Newton + Huber); **W9 union-lift merge** (two clusters merge if ONE triangulated skeleton explains all views) | `correspondences.jsonl`, per-cluster world `ground_xy`, binding ids |
@@ -132,7 +132,7 @@ simultaneously fixes teleports, split IDs, and 3D coverage. (2.7)
 **Q: Is calibration the problem?**
 A: No — it's cm-accurate (ball reproj p95 ≤ 4.5 px), flat 3.07–3.56 px across all 40, team
 confirmed one session. Camera spread is even. The error floor is 2D pose-model noise (2–3 px,
-hips worst), not calibration. (`remaining-work.md` §5a)
+hips worst), not calibration. (`wip/to_do.md` §H)
 
 **Q: Are we minting garbage IDs / colliding people?**
 A: Same-camera collisions are **0 everywhere** (hard invariant held). Final ID counts are in
@@ -142,4 +142,4 @@ roster range. The internal over-mint is cleaned by stitching. (2.6)
 A: (1) Fix 05 emission (drop mean-over-fragments, velocity-gate, damp single-cam) → kills the
 visible teleports. (2) Fix the verdict/teleport metric → stop mislabeling 27 deliveries.
 (3) Attack split ID at cam_04/cam_07 (depth-aware association + F16 lift). Prioritized list
-with code pointers: `docs/changes_tbd.md`.
+with code pointers: `wip/to_do.md`.

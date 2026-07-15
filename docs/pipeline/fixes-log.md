@@ -2,8 +2,7 @@
 
 > **Historical record — paths and version names are accurate as of each dated entry** (the v6 → v8.1
 > campaign, pre-restructure). Not rewritten to the current `src/` layout; that would falsify the record.
-> Current open work: [`../../remaining-work.md`](../../remaining-work.md) and
-> [`../changes_tbd.md`](../changes_tbd.md). Current pipeline docs: [`README.md`](README.md).
+> Current open work: [`wip/to_do.md`](../../wip/to_do.md). Current pipeline docs: [`README.md`](README.md).
 
 This log records the implementation and A/B evaluation of every fix in the campaign. For each fix
 it states the purpose, the implementation (files and flags), the measured result against the
@@ -369,7 +368,7 @@ Documented costs: `_5` agreement −0.120 (IDs/persistence there still better th
 teleport proxy up on stitched clips (the accepted occlusion-restoration artifact — id
 restored = a counted "jump" across the gap). Remaining program: Wave 5 probe (tiled
 detection) and Wave 6 (role-focused peripheral suppression), plus the open list in
-`wip/changes_tbd.md`.
+`wip/to_do.md`.
 
 ### W5 - Detector Recall Bake-off (L40S remote; IN PROGRESS 2026-07-13)
 
@@ -698,7 +697,7 @@ pad-to-/32 backfill), 18-25 fps tiled fp16. Chain: 40/40 `compute ok`, 0 errors.
 
 **Panel (all 40):** agreement mean 0.862 (0.527-0.992); reproj 3.07-3.56 px mean on every
 delivery; collisions 0 everywhere; coloc 0 on 38/40 (residual 1 pair each on `M1_1_14_7`
-and `M2_1_11_3` — see remaining-work.md 5b). Calibration provenance verified empirically
+and `M2_1_11_3` — see wip/to_do.md §H). Calibration provenance verified empirically
 (frame-md5 identity across machines; flat reproj across all 7 segments incl. innings-2);
 team confirmation of a single calibration session still requested.
 
@@ -710,7 +709,7 @@ documented so it is not chased as a bug.
 **Repository state at close:** default `configs/v8/` = v8.1; 212 tests; kept run trees:
 `pipetrack_v8.1-w9` (local reference), `rtmpose-x-tiled-w5-full` (P1 input),
 `yolo26x-pose-full-db8` (model comparison); all else archived to `docs/runs/` and deleted.
-Open work consolidated in `/remaining-work.md`.
+Open work consolidated in `wip/to_do.md`.
 
 ## Current Default / Recommended State
 
@@ -727,7 +726,7 @@ Open work consolidated in `/remaining-work.md`.
 
 - A/B verdicts for F1 and the Wave-1 batch (runs in flight), then Wave-2/3/4 A/Bs.
 - Decision-gated Wave 5 (pretrained ReID only with sign-off, 3D P4 costs, PnP lift,
-  OC-SORT, detector/RTMO block) per [to-do.md](../../remaining-work.md).
+  OC-SORT, detector/RTMO block) per [to_do.md](../../wip/to_do.md).
 
 Literature check (July 2026, web research; reshapes the Wave-5 detector block):
 

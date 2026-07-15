@@ -26,12 +26,12 @@ Per-stage method, config and current state: [../pipeline/README.md](../pipeline/
 
 - **`python -m main`** — full chain P1→06 + render across deliveries; `--from-stage`/`--until-stage`
   select the window, `--base-tree` reuses frozen upstream stages, then prints/diffs a joint metric
-  panel. Stage dirs are `deliveries/<D>/0N_<stage>/`; configs default to `configs/0N_*.yaml`.
+  panel. Stage dirs are `<D>/{00_inference,0N_<stage>}/`; configs default to `configs/0N_*.yaml`.
 - **`python -m identity.id_pipeline`** — the identity-only inner loop (association → global-id over
   a frozen tracking tree) with the metric panel.
 
-Common flags: `--deliveries`, `--input-tree`, `--output-tree`, `--artifacts-root`
-(mosaics → `data/derived/mosaics/<run>/`), `--drive-root`, `--jobs`, `--skip-render`,
+Common flags: `--dataset`, `--version`, `--deliveries`, `--output-tree`, `--artifacts-root`
+(mosaics → `data/viz/<dataset>/pipetrack_v<num>/`), `--drive-root`, `--jobs`, `--skip-render`,
 `--panel-only`, `--baseline`.
 
 ## Tools (`tools/`)

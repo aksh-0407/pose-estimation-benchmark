@@ -11,8 +11,8 @@ from core.calibration import build_ground_calibrators
 from identity.p2_tracking.runner import infer_match_id
 
 # ROOT/DRIVE point at the box's production tree; override for a local run.
-ROOT="/home/ubuntu/pipetrack_v8/deliveries"
-DRIVE="/home/ubuntu/render_drive"
+ROOT=os.environ.get("DELIVERIES_ROOT", "data/derived/40_full/pipetrack_v8/deliveries")
+DRIVE=os.environ.get("DRIVE_ROOT", "data/raw/8_init")
 RAD=1.5
 
 def cluster(points):

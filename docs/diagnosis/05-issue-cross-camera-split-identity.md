@@ -77,7 +77,7 @@ split identity → extra distinct ids (over-mint) → the id also appears as the
 ghost in the render → and if a later merge *does* fire late, the seam becomes an emitted
 teleport (`04-...`). So this issue feeds both the "many IDs" and the "teleport" complaints.
 
-## Fix direction (see ../changes_tbd.md items C4, C5)
+## Fix direction (see ../../wip/to_do.md items A4, A5)
 - **Geometry-aware association weighting**: down-weight the ground-distance cue for grazing
   cameras (cam_04 end-on, cam_07) by their calibrated depth-uncertainty, and *up-weight* the
   cross-view triangulation-consistency test (union-lift) which is the facing-pair-capable cue.

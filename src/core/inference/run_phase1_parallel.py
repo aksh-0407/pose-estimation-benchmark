@@ -90,8 +90,8 @@ def _run_shard(job: dict) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--pose-data", default="/home/ubuntu/pose_data",
-                   help="Root holding bt1/bt2/bt3 (default: /home/ubuntu/pose_data).")
+    p.add_argument("--pose-data", default=os.environ.get("POSE_DATA", "data/raw/40_full"),
+                   help="Root holding the capture groups (default: $POSE_DATA or data/raw/40_full).")
     p.add_argument("--output-dir", required=True,
                    help="Shared prediction output dir (all shards write here).")
     p.add_argument("--shards", type=int, default=3,

@@ -57,9 +57,9 @@ deliveries) lives in [`src/identity/id_pipeline.py`](src/identity/id_pipeline.py
 
 ## Data & calibration
 
-Frames live under `drive/dataset/bt_0{1,2,3}/<delivery>/camera<NN>/frame_*.jpg` (7 cameras,
-~600 frames/delivery). Bundle-adjusted calibration (per-camera 3×4 projection matrices) and
-pitch geometry come from `drive/dataset/calibration-data/`. The calibration is
+Frames live under `data/raw/<dataset>/bt_0{1,2,3}/<delivery>/camera<NN>/frame_*.jpg` (7 cameras,
+~600 frames/delivery). Bundle-adjusted calibration (per-camera 3×4 projection matrices) and pitch
+geometry come from `data/raw/8_init/calibration-data/` (one session, shared by both matches). The calibration is
 **centimetre-accurate** (ball reprojection p95 ≤ 4.5 px), which is why the pipeline solves
 identity and location directly on the calibrated ground plane. Heavy inputs (frames,
 weights) are never committed.

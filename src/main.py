@@ -10,7 +10,7 @@ The 3D lift (04_lift) is the single triangulation and runs BEFORE global_id (Ass
 Triangulate -> Track): global_id and roles carry its 3D forward, and 06_roles emits the
 terminal role-stamped, suppression-filtered predictions consumed downstream.
 
-Designed as the A/B workhorse (docs/critical-analysis/, docs/changes_tbd.md):
+Designed as the A/B workhorse (docs/critical-analysis/, wip/to_do.md):
 
 - ``--from-stage``/``--until-stage`` (or ``--only``/``--skip`` if wired) select the stage
   window; ``--base-tree`` reuses upstream stage dirs from a frozen run (read in place).

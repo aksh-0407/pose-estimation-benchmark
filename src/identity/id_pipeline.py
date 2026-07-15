@@ -175,7 +175,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                         help="Tree holding the P2 inputs (deliveries/<D>/02_tracking).")
     parser.add_argument("--output-tree", default="data/derived/runs/pipetrack_v8-id",
                         help="Tree to write association/global_id into.")
-    parser.add_argument("--drive-root", default="drive")
+    parser.add_argument("--drive-root", default="data/raw/8_init",
+                        help="Dataset raw/footage root (default: data/raw/8_init).")
     parser.add_argument("--p3-config", default="configs/03_association.yaml")
     parser.add_argument("--p4-config", default="configs/05_global_id.yaml")
     parser.add_argument("--expected-frames", type=int, default=600)

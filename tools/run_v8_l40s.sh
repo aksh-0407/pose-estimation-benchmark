@@ -12,7 +12,7 @@ set -euo pipefail
 
 PY=${PY:-$HOME/miniconda3/envs/pose-lab/bin/python}
 REPO=$(cd "$(dirname "$0")/.." && pwd)
-OUT=${OUT:-/home/ubuntu/pipetrack_v8}
+OUT=${OUT:-data/derived/40_full/pipetrack_v8}
 P1_TREE=${P1_TREE:-$OUT/p1_rtmpose-x-tiled}
 DRIVE=${DRIVE:-$HOME/render_drive}
 

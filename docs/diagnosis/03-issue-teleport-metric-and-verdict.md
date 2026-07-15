@@ -55,7 +55,7 @@ the same artifact. It is not — the proxy runs on raw detections, the real one 
 emitted Kalman track. **The metric being noisy does not mean the output is clean.** Both are
 true and they are different measurements.
 
-## Fix direction (see ../changes_tbd.md item C1)
+## Fix direction (see ../../wip/to_do.md item A1)
 Replace / supplement the proxy with a metric on the **emitted** `ground_tracks.jsonl`,
 velocity-gated, and computed **only on multi-camera segments** (skip frames where the id is
 single-camera, since those carry ~1 m irreducible foot uncertainty). Keep the raw proxy as a

@@ -110,7 +110,8 @@ def evaluate(run_dir: Path, drive_root: Path, match_id: str) -> dict:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run-dir", required=True)
-    ap.add_argument("--drive-root", default="drive")
+    ap.add_argument("--drive-root", default="data/raw/8_init",
+                    help="Dataset raw root (default: data/raw/8_init).")
     ap.add_argument("--match-id", default="CCPL080626")
     args = ap.parse_args(argv)
     result = evaluate(Path(args.run_dir), Path(args.drive_root), args.match_id)

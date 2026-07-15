@@ -4,7 +4,7 @@ step (persistent jump, stitch seam / real ID switch). Cross-ref id_switch_report
 import json, os
 import numpy as np
 
-ROOT = "/home/ubuntu/pipetrack_v8/deliveries"
+ROOT = os.environ.get("DELIVERIES_ROOT", "data/derived/40_full/pipetrack_v8/deliveries")
 FPS = 50.0
 TH = 25.0  # m/s over one frame ~ 0.5 m
 

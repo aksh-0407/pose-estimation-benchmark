@@ -32,12 +32,13 @@ near-degenerate epipolar geometry** — the epipolar cue is dropped when the bas
 ## Calibration
 
 Bundle-adjusted per-camera 3×4 projection matrices + intrinsics + pitch geometry load from
-`drive/dataset/calibration-data/<match>/` (`src/core/calibration.py`). Calibration is
+`data/raw/8_init/calibration-data/<match>/` (`src/core/calibration.py`; both matches share this one
+session, so other datasets borrow it). Calibration is
 **centimetre-accurate** (ball reprojection p95 ≤ 4.5 px), and the **pitch centre is the world
 origin**. Because of that accuracy, identity and location are solved directly on the calibrated
 **z = 0 ground plane** (the ground homography is `P[:, [0,1,3]]` inverted).
 
-## The data contract (`g1_player_frame/v0`)
+## The data contract (`g1_player_frame/v1`)
 
 Every stage reads and writes one canonical JSONL record per camera-frame
 (`src/core/contract.py`, `validate_group1_frame`). This is also the **hand-off surface** to the
@@ -47,17 +48,16 @@ other groups — they consume these fields, not our code.
 - **player**: `global_player_id` (unique within a camera-frame; required at final hand-off),
   `local_track_id`, `role`, `track_state` (confirmed/lost/tentative), `single_camera`,
   `bbox_xywh_px/_norm`, `detection_confidence`, `track_confidence`, `pose_2d`, `pose_3d`
-- **pose_2d**: `{skeleton: coco_17, keypoints_px[17][2], keypoints_norm[17][2], confidence[17]}`
-- **pose_3d** (null until triangulation): `{keypoints_world_m[17][3], confidence[17], mean_reprojection_error_px[17]}`
-- **sidecar blocks** carried alongside (non-contract, so validators/consumers are unaffected):
-  `pose_2d_native` / `pose_3d_native` = full **Halpe-26** (adds head/neck/hip-mid + 6 foot points).
+- **pose_2d**: `{skeleton: halpe26, keypoints_px[26][2], keypoints_norm[26][2], confidence[26]}`
+- **pose_3d** (null until triangulation; per-joint nullable): `{keypoints_world_m[26][3], confidence[26], mean_reprojection_error_px[26]}`
+- **pose_3d_named** (self-describing, added at the lift): `{root_joint, root_world_m[3], joints_root_relative_m{name:[dx,dy,dz]}}` — root in world metres, every joint relative to it.
 
 ## Skeletons
 
-P1 emits **COCO-17** (`pose_2d`, the downstream contract) and the full **Halpe-26**
-(`pose_2d_native`) — the first 17 Halpe joints are COCO-17 in COCO order; joints 17–25 add
-head/neck/hip-mid and big-toe/small-toe/heel L&R. Halpe feet drive ground-contact estimation.
-Skeleton definitions + the mapping to `coco_17` live in `configs/keypoint_mappings.yaml`.
+The pipeline skeleton is **Halpe-26** (`pose_2d` / `pose_3d`, 26 joints). Indices 0–16 are COCO-17
+in COCO order; joints 17–25 add head/neck/hip-mid and big-toe/small-toe/heel L&R. Halpe feet drive
+ground-contact estimation. Names + edges are in `src/core/keypoints.py` (`HALPE26_KEYPOINTS`,
+`HALPE26_EDGES`); a labelled reference is `docs/reference/skeleton-halpe26.md`.
 
 ## Run-directory layout
 
@@ -66,10 +66,10 @@ Each stage consumes an `--input-run-dir` and writes an `--output-run-dir` holdin
 inspectable and re-runnable in isolation. The batch driver `src/main.py` lays a delivery out as:
 
 ```
-data/derived/runs/<run_id>/deliveries/<DELIVERY>/
-  01_stabilization/  02_tracking/  03_association/  04_lift/
-  05_global_id/  06_roles/  07_lift3d/  08_render/  logs/
-data/derived/mosaics/<run_id>/<DELIVERY>/*.mp4
+data/derived/<dataset>/pipetrack_v<num>/<DELIVERY>/
+  00_inference/  01_stabilization/  02_tracking/  03_association/  04_lift/
+  05_global_id/  06_roles/  logs/
+data/viz/<dataset>/pipetrack_v<num>/<DELIVERY>/*.mp4
 ```
 
 ## Environment
@@ -97,7 +97,7 @@ of proxies (`src/identity/common/metrics.py`):
   **single_camera_rate** — association/tracking health.
 
 A ground-truth MOTA/IDF1/HOTA evaluator is implemented (`evaluate_ground_truth`) but unused
-until frames are labelled ([`remaining-work.md`](../remaining-work.md) §1.2).
+until frames are labelled ([`wip/to_do.md`](../wip/to_do.md) §B).
 
 ## The one-line causal chain
 
@@ -108,5 +108,5 @@ The dominant failure mode, end to end (measured — `diagnosis/09`):
 > emitted teleports + colour flicker; **06** drops the same frames → 3D coverage gaps.
 
 Identity — not location — is the current quality ceiling. The prioritized fixes are in
-[`changes_tbd.md`](changes_tbd.md); the measured 40-delivery diagnosis is in
+[`wip/to_do.md`](../wip/to_do.md); the measured 40-delivery diagnosis is in
 [`diagnosis/`](diagnosis/README.md).

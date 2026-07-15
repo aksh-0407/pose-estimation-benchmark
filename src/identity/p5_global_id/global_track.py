@@ -39,7 +39,7 @@ class GlobalTrack:
     single_camera: bool = False
     # Confirmed neighbours within the density radius when this track was last
     # marked missed while CONFIRMED — a crowded loss reads as occlusion and earns
-    # a longer lost window (changes_tbd: density-scaled adaptive window).
+    # a longer lost window (wip/to_do.md: density-scaled adaptive window).
     density_at_loss: int = 0
     local_track_ids_by_cam: dict[str, str] = field(default_factory=dict)
     local_track_id_history: set[tuple[str, str]] = field(default_factory=set, repr=False)

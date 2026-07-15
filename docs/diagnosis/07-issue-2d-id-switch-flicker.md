@@ -40,7 +40,7 @@ P2 tracklets are stable and P3 uses a whole-delivery tracklet graph (not purely 
 which is why most tracklets keep one id. The flicker is concentrated on the
 marginal/peripheral tracklets that the graph binds weakly.
 
-## Fix direction (see ../changes_tbd.md item C7)
+## Fix direction (see ../../wip/to_do.md item A7)
 - **Lock global id per P2 tracklet, not per frame.** Once a `(camera, local_track_id)` is
   bound to a global id with confidence, hold it for the tracklet's life unless strong evidence
   overrides — a tracklet is one person, so its global id should be piecewise-constant by

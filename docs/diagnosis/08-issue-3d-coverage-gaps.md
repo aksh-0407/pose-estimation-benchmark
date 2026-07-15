@@ -31,8 +31,8 @@ honest.
 Neither currently gives a dense-and-smooth positional output. The lever that fixes both is
 raising real multi-camera coverage.
 
-## Fix direction (see ../changes_tbd.md item C8)
-- **F16 single-view PnP lift** (deferred experiment, `remaining-work.md` §3.2): fit the
+## Fix direction (see ../../wip/to_do.md item A8)
+- **F16 single-view PnP lift** (deferred experiment, `wip/to_do.md` A8): fit the
   identity's canonical skeleton (bone lengths learned from its multi-view frames) to the lone
   2D view with honest covariance. Turns single-camera frames from "no 3D" into "3D with a
   wider error bar" — raises coverage and gives the ground track a physically-constrained

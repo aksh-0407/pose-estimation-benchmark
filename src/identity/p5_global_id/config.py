@@ -123,7 +123,7 @@ class P4AConfig:
     # rather than deleted and re-born as a fresh id. False keeps the flat window.
     adaptive_lost_window: bool = False
     lost_window_max_frames: int = 90
-    # changes_tbd (density half of the adaptive window): a CONFIRMED track lost
+    # wip/to_do.md (density half of the adaptive window): a CONFIRMED track lost
     # inside a pack earns density_bonus_frames extra window per confirmed
     # neighbour within density_radius_m at the loss moment (same cap). Off = legacy.
     density_lost_window: bool = False

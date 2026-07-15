@@ -78,7 +78,7 @@ class P3AssociationConfig:
     # Pose-shape descriptor (view-invariant 3D bone-length ratios). Emitted per
     # multi-view correspondence as a SOFT signal: it feeds the P4a temporal
     # tie-breaker and (via torso plausibility) a small confidence down-weight for
-    # likely chimera clusters. Never a hard gate -- see changes_tbd.md.
+    # likely chimera clusters. Never a hard gate -- see wip/to_do.md.
     pose_descriptor_enabled: bool = True
     pose_min_conf: float = 0.3
     pose_parallax_min_deg: float = 12.0

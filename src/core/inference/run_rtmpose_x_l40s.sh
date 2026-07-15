@@ -16,8 +16,8 @@ set -euo pipefail
 # Extra args pass through, e.g.:
 #   bash src/core/inference/run_rtmpose_x_l40s.sh --groups bt1 --frame-limit 100
 
-POSE_DATA="${POSE_DATA:-/home/ubuntu/pose_data}"
-OUTPUT_DIR="${OUTPUT_DIR:-/home/ubuntu/pose-rtm-x}"
+POSE_DATA="${POSE_DATA:-data/raw/40_full}"
+OUTPUT_DIR="${OUTPUT_DIR:-data/derived/40_full/pipetrack/p1}"
 MODEL_ID="${MODEL_ID:-rtmpose_x_body8}"
 DEVICE="${DEVICE:-cuda:0}"
 RUN_ID="${RUN_ID:-rtmpose-x-l40s}"

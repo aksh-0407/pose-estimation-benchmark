@@ -18,10 +18,10 @@ dependence on the detector — if the detector misses a person, that person has 
 
 | | |
 |---|---|
-| **Input** | `drive/dataset/.../camera<NN>/frame_*.jpg`; pose model from `configs/model_envs.yaml`; detector config/weights |
-| **Output** | `predictions/<group>__<delivery>__cam_NN.jsonl` — per player: `pose_2d` (COCO-17), `pose_2d_native` (Halpe-26, 26 kpts), `bbox_xywh_px`, `detection_confidence`; `run_manifest.json`, `p1_metrics.json` |
-| **Key knobs** | `--model-id` (default `rtmpose_x_body8`), `--det-config/--det-checkpoint`, `--bbox-thr` (0.3), `--nms-thr` (0.3), `--max-people`, batch/prefetch |
-| **Skeletons** | `configs/keypoint_mappings.yaml` (source → COCO-17) |
+| **Input** | `data/raw/<dataset>/.../camera<NN>/frame_*.jpg`; pose model from `configs/model_envs.yaml`; detector config/weights |
+| **Output** | per delivery `<D>/00_inference/predictions/<group>__<delivery>__cam_NN.jsonl` — per player: `pose_2d` (Halpe-26, 26 kpts incl. feet), `bbox_xywh_px`, `detection_confidence`; `run_manifest.json`, `p1_metrics.json` |
+| **Key knobs** | `--dataset`/`--version` (derive paths), `--model-id` (default `rtmpose_x_body8`), `--det-config/--det-checkpoint`, `--bbox-thr` (0.3), `--nms-thr` (0.3), `--max-people`, batch/prefetch |
+| **Skeletons** | `src/core/keypoints.py` (`HALPE26_KEYPOINTS`); `configs/keypoint_mappings.yaml` (COCO-17 subset) |
 
 ## Flowchart
 
@@ -32,8 +32,8 @@ flowchart TD
   G --> B["person boxes (N,5)"]
   B --> C["top-down crops<br/>build_pose_pipeline:525"]
   C --> P["RTMPose-X (SimCC head)<br/>inference_topdown_batch:531"]
-  P --> H["harmonise to COCO-17<br/>select_coco17_pose:586"]
-  H --> REC["player record:<br/>pose_2d (17) + pose_2d_native (26)<br/>player_records:622"]
+  P --> H["Halpe-26 keypoints (26)"]
+  H --> REC["player record:<br/>pose_2d = Halpe-26 (26)<br/>player_records"]
 ```
 
 ## Methods walkthrough
@@ -56,10 +56,9 @@ keypoints), 384×288 input — the accuracy-first choice.
 
 **Skeleton harmonisation — `select_coco17_pose` ([:586](../../src/core/inference/run_phase1_rtmpose_inference.py#L586))
 and `player_records` ([:622](../../src/core/inference/run_phase1_rtmpose_inference.py#L622)).**
-The native skeleton is reduced to COCO-17 via `configs/keypoint_mappings.yaml`; for Halpe-26
-the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.keypoints_px[0:17]`
-(verified). Both are written per player, so downstream stays on the COCO-17 contract while the
-**feet** stay available in `pose_2d_native` for a better ground-contact estimate.
+`pose_2d` carries the full **Halpe-26** (26 keypoints); indices 0–16 are COCO-17 in COCO order,
+17–25 add head/neck/hip + 6 feet. The whole pipeline consumes the 26-joint pose directly, and the
+**feet** feed the ground-contact estimate. Names/edges: `src/core/keypoints.py`.
 
 ## Pros
 
@@ -103,8 +102,8 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
   there is no cricket-specific recall/precision measurement justifying it over stronger detectors.
 - **P1-4 (★) `bbox_thr=0.3` is a single global threshold.** It trades recall (dark umpires) against
   false positives (crowd/background) with one number for all cameras and lighting.
-- **P1-5 (★) Halpe-26 feet are persisted but under-used.** `pose_2d_native` carries the feet, but
-  the identity gate still uses the legacy bbox-bottom/ankle foot pixel in several paths
+- **P1-5 (★) Halpe-26 feet are available but under-used.** `pose_2d` carries the feet, but the
+  identity gate still uses the legacy bbox-bottom/ankle foot pixel in several paths
   (`geometry.py` foot logic), leaving accuracy on the table.
 
 ## Fixes (all, priority-ordered)
@@ -114,8 +113,8 @@ the first 17 are already COCO-17, so `pose_2d.keypoints_px == pose_2d_native.key
 | 1 | **Upgrade the detector** to RTMDet-l/x (drop-in, same ecosystem) and evaluate **RT-DETR** / **Co-DETR** for max recall on small/dark subjects; benchmark recall on hand-labelled umpire/deep-fielder frames. | ★★★ | Recall lost here is unrecoverable; a stronger detector directly reduces the missing-umpire fragmentation. | Fewer synthetic-tracklet work-arounds; higher multi-camera binding. | Medium; weights + one config, `--det-*` already wired. | RTMDet [2212.07784]; RT-DETR [2304.08069]; Co-DETR [2211.12860] |
 | 2 | **Evaluate RTMO (one-stage)** as an alternative that removes the detector bottleneck entirely — bottom-up, so recall is not gated by a separate box stage; 74.8 AP / 141 FPS. | ★★ | Directly attacks P1-1 by eliminating the detector-recall dependency; also faster. | Better small-person recall + throughput; needs re-validation of the whole 2D contract. | Medium-High; new model path + schema check. | RTMO [2312.07526], CVPR 2024 |
 | 3 | **Confidence-recalibration + per-camera / adaptive `bbox_thr`** (lower where a camera is dark, with stronger NMS to control FPs); optionally test-time augmentation (multi-scale) for distant people. | ★★ | Cheap recall gains on exactly the hard subjects, without a model swap. | +recall on umpires/deep fielders. | Low; CLI/config only. | standard TTA; RTMDet |
-| 4 | **Use the Halpe-26 feet** as the primary ground-contact keypoint everywhere (not just `pose_2d_native`), replacing the bbox-bottom fallback. | ★★ | Feet are already computed; using them tightens the z0 ground solve at no inference cost. | Lower ground error on visible-foot players. | Low-Medium; `geometry.py` foot selection. | Pose2Sim foot handling |
+| 4 | **Use the Halpe-26 feet** as the primary ground-contact keypoint everywhere, replacing the bbox-bottom fallback. | ★★ | Feet are already computed; using them tightens the z0 ground solve at no inference cost. | Lower ground error on visible-foot players. | Low-Medium; `geometry.py` foot selection. | Pose2Sim foot handling |
 | 5 | **Domain-fine-tune the detector** (and optionally the pose model) on a few hundred labelled cricket frames incl. umpires/keepers in pads. | ★ | The kit/pose distribution differs from COCO; fine-tuning is the durable recall fix. | Best long-run recall + fewer pose outliers. | High; labelling + training. | standard transfer learning |
 | 6 | **Learned temporal 2D refinement (SmoothNet)** as an alternative/complement to 01 (stabilization)'s One-Euro filter for the long-tail jitter under occlusion. | ★ | One-Euro is causal and local; SmoothNet fixes long-range jitter bursts 01 (stabilization) cannot. | Lower jitter on hard occluded segments. | Medium; offline model. | SmoothNet [2112.13715], ECCV 2022 |
 
-See the cross-phase priorities in [fixes-roadmap.md](../changes_tbd.md).
+See the cross-phase priorities in [to_do.md](../../wip/to_do.md).

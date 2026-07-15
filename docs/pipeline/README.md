@@ -48,7 +48,7 @@ colocated-id pairs 0 on 38/40. Identity is the dominant ceiling: facing-pair spl
 (**03**) and single-camera coverage (**P1**) are the root drivers; **05** manufactures the
 visible emitted teleports (mean-of-fragments emission). The measured breakdown is in
 [`../diagnosis/`](../diagnosis/README.md); the prioritized fixes in
-[`../changes_tbd.md`](../changes_tbd.md).
+[`wip/to_do.md`](../../wip/to_do.md).
 
 ## History
 

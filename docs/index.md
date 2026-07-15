@@ -27,8 +27,7 @@ cross-camera identity → 3D pose & ground location → roles → mosaic render.
 
 | Doc | What it is |
 | --- | ---------- |
-| [../remaining-work.md](../remaining-work.md) | The consolidated backlog (deferred / parked / pending). |
-| [changes_tbd.md](changes_tbd.md) | The prioritized, evidence-backed algorithm fix list (C1–C10) + restructure follow-ups. |
+| [../wip/to_do.md](../wip/to_do.md) | The single consolidated backlog — everything deferred / parked / pending, incl. the prioritized algorithm fix list (A1–A10). |
 | [diagnosis/README.md](diagnosis/README.md) | The measured 40-delivery production diagnosis (teleports, split identity, coverage). |
 | [pipeline/fixes-log.md](pipeline/fixes-log.md) | The dated A/B campaign ledger (historical). |
 
@@ -44,14 +43,12 @@ and writes a canonical run directory; full detail in [pipeline/README.md](pipeli
 Everything runs under the single `pose-lab` conda env, invoked as a module.
 
 ```bash
-# Whole chain over one delivery (phase-select with --from-stage/--until-stage)
-python -m main --deliveries CCPL080626M1_1_14_1 \
-  --input-tree data/derived/runs/<p1-run> --output-tree data/derived/runs/demo \
-  --artifacts-root data/derived/mosaics/demo
-
-# P1 — 2D pose over a delivery (RTMPose-X, top-down); emits COCO-17 + Halpe-26
+# P1 — 2D pose over a delivery (RTMPose-X, top-down); emits Halpe-26 (26 joints)
 python -m core.inference.run_phase1_rtmpose_inference --model-id rtmpose_x_body8 \
-  --deliveries CCPL080626M1_1_14_1 --run-id rtmpose-x --run-dir data/derived/runs/rtmpose-x
+  --dataset 8_init --version 9 --deliveries CCPL080626M1_1_14_1
+
+# Whole chain over one delivery (phase-select with --from-stage/--until-stage)
+python -m main --dataset 8_init --version 9 --deliveries CCPL080626M1_1_14_1
 
 # Render the mosaic (7 tiles + bird's-eye monitor + roster), coloured by global ID
 python -m identity.visualization.render_videos \

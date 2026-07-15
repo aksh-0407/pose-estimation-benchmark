@@ -2,7 +2,7 @@
 
 Every phase of the chain, the issues found in the 40-delivery production tree, and the
 downstream symptom each feeds. Cross-references the deep-dive issue docs (03–08) and the
-change list (`../changes_tbd.md`).
+change list (`../../wip/to_do.md`).
 
 Pipeline order: **P1** (2D pose) → **P1b** (2D stabilization) → **P2** (per-camera tracking)
 → **P3** (cross-camera association) → **P3.5** (binding 3D lift) → **P4a** (online global id)
@@ -16,7 +16,7 @@ Pipeline order: **P1** (2D pose) → **P1b** (2D stabilization) → **P2** (per-
 |---|---|---|---|
 | P1-1 | **Deep-field / small-subject recall** is the upstream driver of everything. Deep fielders and umpires are ~10–20 px; when a camera misses them they become single-camera → no triangulation, noisy foot ray, split id. | single_cam 0.76–0.82 on `M2_2_3_*`; coverage falls to 0.48. | 05, 08, 04 |
 | P1-2 | **cam_07 panoramic** (3775×960) sees players tiny with low keypoint confidence; its 2D is the weakest and its tracklets fail to associate. | cam_05↔cam_07 top split pair on M2_2_3. | 05 |
-| P1-3 | jitter_px 1.2–3.4 (panel) — 2D keypoint noise is 2–3 px, the floor for reprojection error; hips are the worst joint (11–12 px cross-view). | manager reprojection analysis (`remaining-work.md` §5a). | 3D reproj |
+| P1-3 | jitter_px 1.2–3.4 (panel) — 2D keypoint noise is 2–3 px, the floor for reprojection error; hips are the worst joint (11–12 px cross-view). | manager reprojection analysis (`wip/to_do.md` §H). | 3D reproj |
 
 Verdict: P1 is **not** the identity algorithm's fault, but it is the **root cause** of the
 coverage/single-cam problem that everything else inherits. Highest-leverage upstream fix.
@@ -73,7 +73,7 @@ mis-association into non-physical jumps.
 
 ## P5 — roles (v1.2)
 No teleport/identity contribution. Open visual arbitration only: bowling-end orientation and
-keeper pick (`remaining-work.md` §1.4) — needs mosaic sign-off, not a code fix. Peripheral
+keeper pick (`wip/to_do.md` §B) — needs mosaic sign-off, not a code fix. Peripheral
 suppression correctly never touches core roles.
 
 ## P6 — terminal 3D (RANSAC DLT + Butterworth)

@@ -5,7 +5,7 @@ flip = a colour switch in the mosaic. Also P6 3D coverage per delivery."""
 import json, os, glob
 import numpy as np
 
-ROOT="/home/ubuntu/pipetrack_v8/deliveries"
+ROOT=os.environ.get("DELIVERIES_ROOT", "data/derived/40_full/pipetrack_v8/deliveries")
 
 rows=[]
 for d in sorted(os.listdir(ROOT)):
