@@ -729,7 +729,8 @@ def main() -> int:
         if args.drive_root is None:
             args.drive_root = str(raw_root(args.data_root, args.dataset))
         if args.run_dir is None:
-            args.run_dir = str(derived_root(args.data_root, args.dataset, args.version) / "p1")
+            # The run root; P1 writes per delivery under <run>/<DELIVERY>/00_inference/.
+            args.run_dir = str(derived_root(args.data_root, args.dataset, args.version))
     if args.drive_root is None:
         args.drive_root = "drive"
     if not args.show_torch_warnings:
