@@ -797,11 +797,9 @@ def main() -> int:
         print("Smoke run detected; enabling visualizations.", flush=True)
     run_dir = abspath(args.run_dir) if args.run_dir else (ROOT / "data" / "derived" / "runs" / run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
-    pred_dir = run_dir / "predictions"
-    delivery_metrics_dir = run_dir / "delivery_metrics"
-    if not args.benchmark_only:
-        pred_dir.mkdir(parents=True, exist_ok=True)
-        delivery_metrics_dir.mkdir(parents=True, exist_ok=True)
+    def inference_dir(delivery: str) -> Path:
+        """Per-delivery P1 stage dir: <run>/<delivery>/00_inference/ (sits beside 01..06)."""
+        return run_dir / delivery / "00_inference"
 
     print(f"Loading detector + RTMPose on {device} ...", flush=True)
     detector, pose_model, inference_detector, pose_config, pose_checkpoint = build_models(args, device)
@@ -838,8 +836,7 @@ def main() -> int:
         "overlay_frame_ids": sorted(args.overlay_frame_ids) if args.overlay_frame_ids is not None else None,
         "overlay_row_indices": sorted(args.overlay_row_indices) if args.overlay_row_indices is not None else None,
         "visualizations": rel(run_dir / "visualizations") if args.overlay else None,
-        "prediction_dir": rel(pred_dir) if not args.benchmark_only else None,
-        "delivery_metrics_dir": rel(delivery_metrics_dir) if not args.benchmark_only else None,
+        "run_dir": rel(run_dir),
         "cameras": [], "frames_processed": 0, "frames_skipped": 0,
         "total_people": 0, "failed_frames": 0,
     }
@@ -862,7 +859,9 @@ def main() -> int:
     for t in targets:
         cam_id, delivery_id = t["camera_id"], t["delivery_id"]
         camera_name = f"{t['group']}/{delivery_id}/{cam_id}"
-        out_jsonl = pred_dir / f"{t['group']}__{delivery_id}__{cam_id}.jsonl"
+        out_jsonl = inference_dir(delivery_id) / "predictions" / f"{t['group']}__{delivery_id}__{cam_id}.jsonl"
+        if not args.benchmark_only:
+            out_jsonl.parent.mkdir(parents=True, exist_ok=True)
         done: set[str] = set()
         existing_people = 0
         if args.resume and not args.benchmark_only and out_jsonl.exists():
@@ -1117,8 +1116,7 @@ def main() -> int:
         "nms_thr": args.nms_thr,
         "kpt_thr": args.kpt_thr,
         "git_sha": git_sha(ROOT),
-        "prediction_dir": rel(pred_dir) if not args.benchmark_only else None,
-        "delivery_metrics_dir": rel(delivery_metrics_dir) if not args.benchmark_only else None,
+        "run_dir": rel(run_dir),
         "visualizations": summary["visualizations"],
         "summary": {
             "delivery_count": len({camera["delivery_id"] for camera in summary["cameras"]}),
@@ -1167,7 +1165,7 @@ def main() -> int:
                 failure for failure in overlay_failures
                 if failure.get("delivery_id") == delivery_id
             ]
-            delivery_dir = delivery_metrics_dir / delivery_id
+            delivery_dir = inference_dir(delivery_id)
             delivery_dir.mkdir(parents=True, exist_ok=True)
             delivery_metrics = {
                 "schema_version": "cricket_phase1_metrics/v2",
@@ -1188,7 +1186,7 @@ def main() -> int:
                 "bbox_thr": args.bbox_thr,
                 "nms_thr": args.nms_thr,
                 "kpt_thr": args.kpt_thr,
-                "prediction_dir": rel(pred_dir),
+                "prediction_dir": rel(inference_dir(delivery_id) / "predictions"),
                 "visualizations": summary["visualizations"],
                 "summary": {
                     "camera_count": len(delivery_cameras),
@@ -1232,7 +1230,7 @@ def main() -> int:
                 "det_batch_size": args.det_batch_size,
                 "pose_batch_size": args.pose_batch_size,
                 "io_workers": args.io_workers,
-                "prediction_dir": rel(pred_dir),
+                "prediction_dir": rel(inference_dir(delivery_id) / "predictions"),
                 "visualizations": summary["visualizations"],
                 "summary": delivery_metrics["summary"],
             }

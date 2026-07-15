@@ -34,11 +34,11 @@ def test_stage_window_bounds_and_order():
 
 def test_plan_resolves_reused_stage_from_base_tree(tmp_path):
     base = tmp_path / "base"
-    (base / "deliveries" / "D1" / "02_tracking").mkdir(parents=True)
+    (base / "D1" / "02_tracking").mkdir(parents=True)
     args = _args(tmp_path, ["--base-tree", str(base), "--from-stage", "03_association"])
     plan = DeliveryPlan("D1", args, _stage_window("03_association", "06_roles"))
     # tracking is outside the window -> read in place from the base tree
-    assert plan.stage_dir("02_tracking") == base / "deliveries" / "D1" / "02_tracking"
+    assert plan.stage_dir("02_tracking") == base / "D1" / "02_tracking"
     # association is inside the window -> written to the output tree
     assert plan.stage_dir("03_association") == plan.output_root / "03_association"
 
@@ -60,20 +60,19 @@ def test_plan_errors_without_base_tree(tmp_path):
 
 
 def test_p2_input_switches_on_stabilization_flag(tmp_path):
-    input_tree = tmp_path / "p1run"
-    input_tree.mkdir()
     # default: stabilization ON -> tracking reads the 01_stabilization stage dir
-    args = _args(tmp_path, ["--input-tree", str(input_tree)])
+    args = _args(tmp_path)
     plan = DeliveryPlan("D1", args, _stage_window("01_stabilization", "05_global_id"))
     assert plan.p2_input() == plan.output_root / "01_stabilization"
-    # opt-out: raw P1 feed
-    args = _args(tmp_path, ["--input-tree", str(input_tree), "--no-enable-stabilization"])
+    # opt-out: raw P1 feed = the per-delivery 00_inference stage (must exist to resolve)
+    args = _args(tmp_path, ["--no-enable-stabilization"])
     plan = DeliveryPlan("D1", args, _stage_window("01_stabilization", "05_global_id"))
-    assert plan.p2_input() == input_tree.resolve()
+    (plan.output_root / "00_inference").mkdir(parents=True)
+    assert plan.p2_input() == plan.output_root / "00_inference"
 
 
 def test_read_panel_row_includes_computed_p2_tracks(tmp_path):
-    d = tmp_path / "tree" / "deliveries" / "D1"
+    d = tmp_path / "tree" / "D1"
     (d / "02_tracking").mkdir(parents=True)
     (d / "05_global_id").mkdir(parents=True)
     (d / "02_tracking" / "tracking_metrics.json").write_text(json.dumps({

@@ -2,9 +2,9 @@
 global_id -> roles -> mosaic render.
 
 Extends the identity inner-loop driver (``identity.id_pipeline``) to the whole delivery
-chain starting from a P1 predictions run. Each stage writes the canonical run-dir layout
-under ``<output-tree>/deliveries/<DELIVERY>/{01_stabilization,02_tracking,03_association,
-04_lift,05_global_id,06_roles,logs}`` and the mosaics land in ``<artifacts-root>/<DELIVERY>/``.
+chain. P1 lands per delivery as the ``00_inference`` stage; each stage writes the canonical
+run-dir layout ``<output-tree>/<DELIVERY>/{00_inference,01_stabilization,02_tracking,
+03_association,04_lift,05_global_id,06_roles,logs}`` and mosaics land in ``<artifacts-root>/<DELIVERY>/``.
 
 The 3D lift (04_lift) is the single triangulation and runs BEFORE global_id (Associate ->
 Triangulate -> Track): global_id and roles carry its 3D forward, and 06_roles emits the
@@ -102,31 +102,38 @@ class DeliveryPlan:
         self.delivery = delivery
         self.args = args
         self.stages = stages
-        self.output_root = Path(args.output_tree).resolve() / "deliveries" / delivery
+        self.output_root = Path(args.output_tree).resolve() / delivery
         self.base_root = (
-            Path(args.base_tree).resolve() / "deliveries" / delivery if args.base_tree else None
+            Path(args.base_tree).resolve() / delivery if args.base_tree else None
         )
         self.logs = self.output_root / "logs"
 
     def stage_dir(self, stage: str) -> Path:
-        """The dir a stage writes to (output tree) or is reused from (base tree)."""
+        """The dir a stage writes to (output tree) or is reused from (base tree).
+
+        In-window stages live in the output tree. Pre-window stages (notably ``00_inference``,
+        which P1 writes into the run before this driver runs) are reused from ``--base-tree``
+        when present, else read from the output tree itself.
+        """
         if stage in self.stages:
             return self.output_root / stage
-        if self.base_root is None:
-            raise SystemExit(
-                f"{self.delivery}: stage '{stage}' is outside the run window and no "
-                f"--base-tree was given to reuse it from"
-            )
-        reused = self.base_root / stage
-        if not reused.is_dir():
-            raise SystemExit(f"{self.delivery}: reused stage dir missing: {reused}")
-        return reused
+        if self.base_root is not None:
+            reused = self.base_root / stage
+            if reused.is_dir():
+                return reused
+        local = self.output_root / stage
+        if local.is_dir():
+            return local
+        raise SystemExit(
+            f"{self.delivery}: stage '{stage}' not found in the run"
+            + ("" if self.base_root is None else " or --base-tree")
+        )
 
     def p2_input(self) -> Path:
-        """P2 reads stabilized predictions when 01 (stabilization) is enabled, else the raw P1 run."""
+        """P2 reads stabilized predictions when 01 (stabilization) is enabled, else raw P1 (00_inference)."""
         if self.args.enable_stabilization:
             return self.stage_dir("01_stabilization")
-        return Path(self.args.input_tree).resolve()
+        return self.stage_dir("00_inference")
 
 
 def run_compute_chain(plan: DeliveryPlan) -> dict:
@@ -150,7 +157,7 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
                 continue
             rc = _run_stage(
                 "identity.p1_stabilization.run_stabilization",
-                common(Path(args.input_tree).resolve(), out_dir)
+                common(plan.stage_dir("00_inference"), out_dir)
                 + ["--config", args.p1b_config],
                 args.python, log,
             )
@@ -254,7 +261,7 @@ def write_pipeline_manifest(args: argparse.Namespace, stages: list[str], deliver
     manifest = {
         "schema_version": "pipeline_manifest/v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "input_tree": str(Path(args.input_tree).resolve()),
+        "run_tree": str(Path(args.output_tree).resolve()),
         "base_tree": str(Path(args.base_tree).resolve()) if args.base_tree else None,
         "stages_run": stages,
         "deliveries": deliveries,
@@ -301,7 +308,7 @@ def read_panel_row(tree: Path, delivery: str) -> dict:
     cache: dict[str, dict] = {}
     for name, rel, key, _spec in PANEL_COLUMNS:
         if rel not in cache:
-            path = tree / "deliveries" / delivery / rel
+            path = tree / delivery / rel
             cache[rel] = json.loads(path.read_text()) if path.exists() else {}
         if key.startswith("@"):
             row[name] = _COMPUTED_COLUMNS[key](cache[rel])
@@ -343,14 +350,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
                              "on the L40S box point it at ~/bits-pose-data).")
     parser.add_argument("--dataset", default=None,
                         help="Dataset from configs/datasets.yaml (e.g. 8_init, 40_full). With "
-                             "--version, derives --drive-root/--input-tree/--output-tree/--artifacts-root.")
+                             "--version, derives --drive-root/--output-tree/--artifacts-root.")
     parser.add_argument("--version", default=None,
                         help="Run version token -> pipetrack_v<version> (requires --dataset).")
-    parser.add_argument("--input-tree", default=None,
-                        help="P1 predictions run dir (flat predictions/*.jsonl). "
-                             "Default with --dataset: <derived>/pipetrack_v<version>/p1.")
     parser.add_argument("--output-tree", default=None,
-                        help="Tree to write stage outputs into (deliveries/<D>/...). "
+                        help="Run root; stages write <output-tree>/<DELIVERY>/<stage>/. P1 must have "
+                             "written <output-tree>/<DELIVERY>/00_inference/. "
                              "Default with --dataset: <derived>/pipetrack_v<version>.")
     parser.add_argument("--base-tree", default=None,
                         help="Frozen tree to reuse stages before --from-stage from (read in place).")
@@ -413,29 +418,26 @@ def main(argv: list[str] | None = None) -> int:
             args.drive_root = str(raw_root(args.data_root, args.dataset))
         if args.output_tree is None:
             args.output_tree = derived
-        if args.input_tree is None:
-            args.input_tree = str(Path(derived) / "p1")
         if args.artifacts_root is None:
             args.artifacts_root = str(viz_root(args.data_root, args.dataset, args.version))
     if args.drive_root is None:
         args.drive_root = "drive"
-    if args.input_tree is None:
-        args.input_tree = "data/derived/runs/rtmpose-x-tiled-w5-full"
     if args.output_tree is None:
         raise SystemExit("provide --output-tree (or --dataset with --version)")
     if args.skip_render and args.until_stage == "08_render":
         args.until_stage = "06_roles"
     if args.deliveries == "all":
-        # Discover every delivery present in the input tree's P1 predictions
-        # (filenames are <capture_group>__<delivery>__cam_NN.jsonl).
-        seen = set()
-        for pred in sorted((ROOT / args.input_tree / "predictions").glob("*.jsonl")):
-            parts = pred.stem.split("__")
-            if len(parts) == 3:
-                seen.add(parts[1])
+        # Discover every delivery with P1 output in the run (<run>/<DELIVERY>/00_inference).
+        run_root = Path(args.output_tree).resolve()
+        seen = sorted(
+            d.name for d in run_root.glob("*")
+            if (d / "00_inference" / "predictions").is_dir()
+        )
         if not seen:
-            raise SystemExit(f"--deliveries all: no predictions found under {args.input_tree}")
-        deliveries = sorted(seen)
+            raise SystemExit(
+                f"--deliveries all: no <DELIVERY>/00_inference/predictions found under {run_root}"
+            )
+        deliveries = seen
     else:
         deliveries = (
             [d.strip() for d in args.deliveries.split(",") if d.strip()]
