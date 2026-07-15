@@ -186,3 +186,14 @@ Landed locally (unit-verified, 201 tests); end-to-end + A/B pending on the L40S 
   (a) allow per-joint `null` in `pose_3d.keypoints_world_m` (relax the contract to nullable points)
   and emit whatever triangulated; or (b) gate the skip on the COCO-17 core only, prior-fill/flag feet.
   Recommend (a) — it preserves body 3D and marks un-triangulated feet honestly. Verify tri_cov recovers.
+
+- **CORRECTION (measured 2026-07-15) — the nullable-joint fix did NOT recover tri_cov.** After
+  re-running 04–06 on 8_init with the fix, tri_cov was unchanged (0.27–0.57). Root cause was
+  mis-diagnosed: feet are prior-filled, so almost no player-frames were dropped for missing feet.
+  The real coverage gap vs v8 is (1) a modest 26-vs-17 effect at the binding lift (v8 p3_5=0.646 →
+  v9 04_lift=0.566 on M1_1_14_1) and (2) **dropping the global-keyed terminal re-triangulation** —
+  v8's p6_3d pooled all views per FINAL global id (0.817) whereas v9's single 04 lift is binding-keyed
+  (0.566). Recovering (2) means re-triangulating per global id after 05 (what 07_lift3d did) or
+  pooling 3D in 05 — i.e. part of the **deferred decide-in-3D** work, not a quick fix. The 8_init
+  set also includes weak deliveries (M2_1_12_1 etc.) that drag the mean down. The nullable-joint
+  change is kept (correct/honest per-joint null), just not a coverage lever.
