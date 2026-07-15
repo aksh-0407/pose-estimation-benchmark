@@ -178,3 +178,11 @@ Landed locally (unit-verified, 201 tests); end-to-end + A/B pending on the L40S 
   finish during the L40S pass.
 - **NOTE — YOLO/generic P1 path.** `phase1_outputs.coerce_coco17_keypoints` now pads to 26 (feet = 0)
   under the halpe26 contract — fine for the benchmark-only YOLO path; RTMPose-x (the mandate) emits real 26.
+
+- **FINDING (v9 8_init run, 2026-07-15) — 26-joint 3D coverage regression.** `tri_cov` dropped to
+  0.27–0.57 (v8 COCO-17 was ~0.48–0.92). Cause: the lift skips a player-frame when the smoothed
+  26-point skeleton isn't fully finite (`run_triangulation.py` ~L347), so a frame where the feet
+  aren't multi-view-triangulable loses ALL 3D — even the body joints that were fine. Fix options:
+  (a) allow per-joint `null` in `pose_3d.keypoints_world_m` (relax the contract to nullable points)
+  and emit whatever triangulated; or (b) gate the skip on the COCO-17 core only, prior-fill/flag feet.
+  Recommend (a) — it preserves body 3D and marks un-triangulated feet honestly. Verify tri_cov recovers.
