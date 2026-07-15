@@ -139,6 +139,17 @@ def test_p3_p4_p6_canonical_run_smoke(tmp_path: Path):
     validate_group1_frame(lifted)
 
 
+def test_pose_3d_allows_null_joints():
+    """A player-frame with some un-triangulated joints (e.g. occluded feet) validates:
+    those joints are null in keypoints_world_m while confidence/reproj stay full-length."""
+    rec = example_group1_frame(final_handoff=True)
+    kw = rec["players"][0]["pose_3d"]["keypoints_world_m"]
+    kw[20] = None  # left_big_toe not triangulated
+    kw[24] = None  # left_heel not triangulated
+    validate_group1_frame(rec)  # must not raise
+    assert len(rec["players"][0]["pose_3d"]["confidence"]) == 26
+
+
 def test_lift_before_global_id_chain(tmp_path: Path):
     """04 lift (binding) runs before global-id, copies correspondences forward, and
     global-id carries the 26-joint pose_3d through; 06 finalize stamps role."""

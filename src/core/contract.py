@@ -61,10 +61,13 @@ def validate_points(
     count: int,
     dims: int,
     field_name: str,
+    allow_none_entries: bool = False,
 ) -> None:
     if not isinstance(value, list) or len(value) != count:
         raise ValueError(f"{field_name} must contain {count} points")
     for point in value:
+        if allow_none_entries and point is None:
+            continue  # a joint that could not be triangulated is emitted as null
         validate_numeric_vector(point, length=dims, field_name=f"{field_name} point")
 
 
@@ -102,6 +105,7 @@ def validate_pose_3d(value: Any) -> None:
         count=KEYPOINT_COUNT,
         dims=3,
         field_name="pose_3d.keypoints_world_m",
+        allow_none_entries=True,  # un-triangulated joints (e.g. occluded feet) emit as null
     )
     validate_numeric_vector(
         value.get("confidence"),

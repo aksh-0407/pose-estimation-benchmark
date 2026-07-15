@@ -56,7 +56,12 @@ def main() -> int:
     packets: list[dict] = []
     for record, player in iter_identified_player_frames(Path(args.run_dir)):
         pose = player["pose_3d"]
-        points = np.asarray(pose["keypoints_world_m"], dtype=float)
+        # keypoints_world_m is per-joint nullable; null (un-triangulated) -> NaN, which
+        # build_pose_packet serialises back to null in both world-m and UE-cm.
+        points = np.array(
+            [[float("nan")] * 3 if p is None else p for p in pose["keypoints_world_m"]],
+            dtype=float,
+        )
         confidence = pose.get("confidence") or [1.0] * len(points)
         packet = build_pose_packet(
             frame_id=str(record["frame_index"]),

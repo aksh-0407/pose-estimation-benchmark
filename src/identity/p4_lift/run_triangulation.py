@@ -333,21 +333,28 @@ def triangulate_canonical_run(
             continue
         points = smoothed[key]
         confidences = smoothed_conf[key]
-        if not np.isfinite(points).all():
-            continue  # a joint the temporal + skeletal fill still could not recover
-        # Extrapolated joints have no measured reprojection error -> finite sentinel so
-        # the contract validates; their low confidence already flags them as priors.
+        # Per-joint nullable emit: keep the frame as long as the mid-hip (COCO l/r hip)
+        # triangulated, so a player-frame is not dropped just because the feet were not
+        # multi-view-visible — body joints still ship, un-triangulated joints emit as null.
+        finite = np.isfinite(points).all(axis=1)
+        if not (finite[11] and finite[12]):
+            continue  # no placeable root/ground position -> no 3D for this frame
+        # Non-triangulated / extrapolated joints get a finite sentinel error + zero conf so
+        # the contract validates; the null world point already flags them as unavailable.
         errors = np.asarray(raw[key][2], dtype=float).copy()
         was_measured = np.isfinite(errors)
         measured_errors.append(errors[was_measured])
         errors[~was_measured] = 100.0
-        if not was_measured.all():
+        errors[~finite] = 100.0
+        if not finite.all():
             extrapolated_joint_frames += 1
-        confidences = np.nan_to_num(confidences, nan=0.0)
-        # Canonical Halpe-26 world skeleton (feet included) plus the self-describing
-        # named + root-relative view (root = mid-hip) for downstream consumers.
+        confidences = np.where(finite, np.nan_to_num(confidences, nan=0.0), 0.0)
+        # Canonical Halpe-26 world skeleton (feet included, per-joint nullable) plus the
+        # self-describing named + root-relative view (root = mid-hip) for downstream consumers.
         pose_3d = {
-            "keypoints_world_m": points.tolist(),
+            "keypoints_world_m": [
+                points[j].tolist() if finite[j] else None for j in range(points.shape[0])
+            ],
             "confidence": np.clip(confidences, 0.0, 1.0).tolist(),
             "mean_reprojection_error_px": errors.tolist(),
         }
