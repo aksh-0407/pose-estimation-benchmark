@@ -13,7 +13,6 @@ from core.contract import validate_group1_frame
 from identity.common.metrics import (
     colocated_identity_metrics,
     cross_camera_agreement,
-    evaluate_ground_truth,
     identity_collision_metrics,
     identity_fragmentation_proxy,
     teleport_proxy,
@@ -35,7 +34,7 @@ from identity.p5_global_id.stitching import (
     remap_ids,
     solve_flow,
 )
-from identity.common.geometry import upper_body_ground_estimate
+from identity.common.geometry import upper_body_ground_estimate, pixel_to_plane_xy
 from identity.p5_global_id.role_proxy import OnlineRoleProxy
 from identity.p5_global_id.track_manager import TrackManager
 from core.calibration import current_calibration_dir
@@ -55,13 +54,134 @@ def _write_json(path: Path, payload) -> None:
         handle.write("\n")
 
 
-def _read_jsonl(path: str | Path) -> list[dict]:
-    rows = []
-    with Path(path).open("r", encoding="utf-8") as handle:
-        for line in handle:
-            if line.strip():
-                rows.append(json.loads(line))
-    return rows
+def _single_view_hip_positions(
+    records: list[dict], projections: dict, id_remap: dict,
+    min_conf: float = 0.3, min_z_frames: int = 5,
+) -> dict[tuple[str, int], np.ndarray]:
+    """1F: for each FINAL global id, learn a STICKY hip height (median hip-z over its
+    multi-camera triangulated pose_3d frames), then for single-camera frames back-project
+    that frame's hip PIXEL onto the per-id height plane -> a stable hip-on-ground xy. Keyed
+    by (final_id, frame); only single-camera frames of ids with enough triangulated hips
+    get an entry (the caller uses it only where no triangulated hip exists that frame).
+    """
+
+    hip_z: dict[str, list[float]] = defaultdict(list)
+    obs: dict[tuple[str, int], list[tuple[str, np.ndarray]]] = defaultdict(list)
+    for record in records:
+        cam = str(record.get("camera_id", "unknown"))
+        fi = int(record["frame_index"])
+        for player in record.get("players", []):
+            gid = player.get("global_player_id")
+            if not gid:
+                continue
+            final = id_remap.get(gid, gid)
+            kw = (player.get("pose_3d") or {}).get("keypoints_world_m")
+            if kw:
+                for j in (11, 12):
+                    v = kw[j] if j < len(kw) else None
+                    if v is not None and np.isfinite(v[2]):
+                        hip_z[final].append(float(v[2]))
+            pose2 = player.get("pose_2d") or {}
+            kps = np.asarray(pose2.get("keypoints_px", []), dtype=float)
+            conf = np.asarray(pose2.get("confidence", []), dtype=float)
+            if kps.shape[:1] == (26,) and conf.shape == (26,):
+                sel = [j for j in (11, 12) if conf[j] >= min_conf]
+                if sel:
+                    obs[(final, fi)].append((cam, kps[sel].mean(axis=0)))
+    sticky = {g: float(np.median(zs)) for g, zs in hip_z.items() if len(zs) >= min_z_frames}
+    out: dict[tuple[str, int], np.ndarray] = {}
+    for (gid, fi), cams in obs.items():
+        if len(cams) == 1 and gid in sticky:
+            cam, hip_px = cams[0]
+            P = projections.get(cam)
+            if P is None:
+                continue
+            xy = pixel_to_plane_xy(hip_px, np.asarray(P, dtype=float), sticky[gid])
+            if np.isfinite(xy).all():
+                out[(gid, fi)] = xy
+    return out
+
+
+def _partial_singlecam_ids(records: list[dict], id_remap: dict, min_visible_kpts: int) -> set[str]:
+    """IMPACT-2 (emission level): the set of FINAL global ids that are SINGLE-camera
+    across the whole delivery AND predominantly partial (median confident-keypoint count
+    below ``min_visible_kpts`` — a head-only view of the keeper, a cut-off umpire). Such a
+    detection has an unreliable ground position and mints a rival id / ghost. The caller
+    DROPS these (detections go unlabelled) — drop-only, never a relabel, so unlike the
+    rejected tracklet lock this can never put an id on the wrong person. Full-body
+    single-camera peripherals (many confident keypoints) are spared by the keypoint floor.
+    """
+
+    cameras: dict[str, set[str]] = defaultdict(set)
+    visible: dict[str, list[int]] = defaultdict(list)
+    for record in records:
+        cam = str(record.get("camera_id", "unknown"))
+        for player in record.get("players", []):
+            gid = player.get("global_player_id")
+            if not gid:
+                continue
+            final = id_remap.get(gid, gid)
+            cameras[final].add(cam)
+            conf = np.asarray((player.get("pose_2d") or {}).get("confidence", []), dtype=float)
+            visible[final].append(int(np.sum(conf > 0.3)))
+    return {
+        gid for gid, cams in cameras.items()
+        if len(cams) == 1 and visible[gid]
+        and float(np.median(visible[gid])) < min_visible_kpts
+    }
+
+
+def _velocity_gate_ground_rows(
+    ground_rows_by_frame: dict[int, list[dict]],
+    *,
+    frame_rate_fps: float,
+    max_mps: float,
+    max_consec_drops: int,
+) -> tuple[dict[int, list[dict]], int]:
+    """A3 emitted-track velocity gate (drop-only). Walk each global id's emitted ground
+    track in frame order; drop any frame whose implied speed from the LAST KEPT frame
+    exceeds ``max_mps`` (a physical cricketer never exceeds ~10-11 m/s). The gap between
+    frames scales the allowance, so an id re-appearing after an absence may move
+    proportionally. After ``max_consec_drops`` consecutive drops the gate RE-ANCHORS to
+    the current position (a sustained move / re-acquisition is accepted rather than the
+    whole tail deleted). Never moves or relabels a position — only removes teleport frames.
+    Returns the filtered rows-by-frame (frames with no surviving row are omitted) and the
+    number of dropped emissions.
+    """
+
+    # id -> ordered [(frame, xy, row)]
+    series: dict[str, list[tuple[int, np.ndarray, dict]]] = defaultdict(list)
+    for frame_index in sorted(ground_rows_by_frame):
+        for row in ground_rows_by_frame[frame_index]:
+            series[row["global_player_id"]].append(
+                (frame_index, np.asarray(row["ground_xy"], dtype=float), row)
+            )
+
+    dropped: set[tuple[str, int]] = set()
+    for gid, points in series.items():
+        points.sort(key=lambda item: item[0])
+        last_frame, last_pos, _ = points[0]  # always keep the first frame
+        consec = 0
+        for frame_index, pos, _row in points[1:]:
+            gap = max(1, frame_index - last_frame)
+            speed = float(np.linalg.norm(pos - last_pos)) * frame_rate_fps / gap
+            if speed <= max_mps:
+                last_frame, last_pos, consec = frame_index, pos, 0
+            elif consec >= max_consec_drops:
+                # sustained divergence -> accept as a genuine relocation, re-anchor
+                last_frame, last_pos, consec = frame_index, pos, 0
+            else:
+                dropped.add((gid, frame_index))
+                consec += 1
+
+    if not dropped:
+        return ground_rows_by_frame, 0
+    filtered: dict[int, list[dict]] = {}
+    for frame_index, rows in ground_rows_by_frame.items():
+        kept = [r for r in rows if (r["global_player_id"], frame_index) not in dropped]
+        if kept:
+            filtered[frame_index] = kept
+    return filtered, len(dropped)
 
 
 def run_global_id(
@@ -72,7 +192,6 @@ def run_global_id(
     config: P4Config,
     cameras: list[str] | None = None,
     expected_frames: int = 600,
-    ground_truth: str | Path | None = None,
 ) -> dict:
     input_run_dir = Path(input_run_dir)
     output_run_dir = Path(output_run_dir)
@@ -87,6 +206,36 @@ def run_global_id(
     missing_rows = sorted(set(records_by_frame) - set(correspondence_by_frame))
     if missing_rows:
         raise ValueError(f"P3 correspondences are missing {len(missing_rows)} prediction frames")
+
+    # Triangulated-hip emission source (Phase-1A). The 04 lift writes the RANSAC-
+    # triangulated pelvis (mean of COCO hips 11/12) projected to z=0 as
+    # ``pelvis_ground_xy`` in lift3d.jsonl, keyed by (binding_id, frame). When the
+    # flag is set we emit that single robust multi-view point instead of averaging
+    # per-camera foot rays and then fragments (the ground-teleport source). Missing
+    # file (e.g. 04 ran with --id-source global) -> warn and fall back to feet.
+    hip_ground_by_binding_frame: dict[tuple[str, int], np.ndarray] = {}
+    if config.p4a.emit_ground_source == "triangulated_hip":
+        lift3d_path = input_run_dir / "diagnostics" / "lift3d.jsonl"
+        if not lift3d_path.exists():
+            print(
+                f"WARNING: emit_ground_source=triangulated_hip but {lift3d_path} is "
+                "missing (04 lift must run with --id-source binding); emitting feet.",
+                flush=True,
+            )
+        else:
+            with lift3d_path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    if not line.strip():
+                        continue
+                    row = json.loads(line)
+                    frame_index = int(row["frame_index"])
+                    for binding in row.get("bindings", []):
+                        binding_id = binding.get("binding_id")
+                        pelvis_xy = binding.get("pelvis_ground_xy")
+                        if binding_id is not None and pelvis_xy is not None:
+                            hip_ground_by_binding_frame[(str(binding_id), frame_index)] = (
+                                np.asarray(pelvis_xy, dtype=float)
+                            )
 
     manager = TrackManager(config)
     role_proxy: OnlineRoleProxy | None = None
@@ -106,7 +255,7 @@ def run_global_id(
         )
     # Keep object references outside contract records for final ID backfill.
     player_track_references: list[tuple[dict, GlobalTrack]] = []
-    ground_observations: list[tuple[GlobalTrack, int, np.ndarray]] = []
+    ground_observations: list[tuple[GlobalTrack, int, np.ndarray, str | None]] = []
     for frame_index in sorted(records_by_frame):
         camera_records = records_by_frame[frame_index]
         correspondences = row_to_correspondences(correspondence_by_frame[frame_index], camera_records)
@@ -138,7 +287,8 @@ def run_global_id(
                     emitted = track.kalman.pos_world_xy.copy()
                 else:
                     emitted = correspondence.ground_xy.copy()
-                ground_observations.append((track, frame_index, emitted))
+                binding_id = getattr(correspondence, "binding_id", None)
+                ground_observations.append((track, frame_index, emitted, binding_id))
         for camera_id, record in camera_records.items():
             for player_index, player in enumerate(record.get("players", [])):
                 if (camera_id, player_index) not in touched:
@@ -252,9 +402,14 @@ def run_global_id(
 
     # Ground-plane track table from the online (P4a) assignments.
     ground_positions_accumulator: dict[tuple[str, int], list[np.ndarray]] = defaultdict(list)
-    for track, frame_index, ground_xy in ground_observations:
+    # (global_player_id, frame) -> binding_id, so the emit path can look up the
+    # triangulated hip for this track/frame (Phase-1A hip emission).
+    binding_by_gid_frame: dict[tuple[str, int], str] = {}
+    for track, frame_index, ground_xy, binding_id in ground_observations:
         if track.global_player_id is not None:
             ground_positions_accumulator[(track.global_player_id, frame_index)].append(ground_xy)
+            if binding_id is not None:
+                binding_by_gid_frame[(track.global_player_id, frame_index)] = str(binding_id)
     ground_positions = {
         key: np.mean(np.asarray(values, dtype=float), axis=0)
         for key, values in ground_positions_accumulator.items()
@@ -336,17 +491,63 @@ def run_global_id(
                         player["global_player_id"] = None
                         player["track_state"] = "tentative"
 
+    # IMPACT-2: drop single-camera predominantly-partial ids (head-only / cut-off ghosts)
+    # at emission — drop-only, never relabel (see _partial_singlecam_ids).
+    dropped_partial_ids: set[str] = set()
+    if config.p4a.drop_partial_singlecam:
+        dropped_partial_ids = _partial_singlecam_ids(records, id_remap, config.p4a.partial_min_visible_kpts)
+        for record in records:
+            for player in record.get("players", []):
+                pid = player.get("global_player_id")
+                if pid is not None and id_remap.get(pid, pid) in dropped_partial_ids:
+                    player["global_player_id"] = None
+                    player["track_state"] = "tentative"
+
+    # 1F: single-camera hip-on-sticky-plane positions (only when hip emission is on).
+    single_view_hip: dict[tuple[str, int], np.ndarray] = {}
+    if config.p4a.emit_ground_source == "triangulated_hip" and config.p4a.single_view_hip_fallback:
+        single_view_hip = _single_view_hip_positions(records, metric_projections, id_remap)
+
     stitched_ground: dict[tuple[str, int], list[np.ndarray]] = defaultdict(list)
     for (player_id, frame_index), point in ground_positions.items():
         final_id = id_remap.get(player_id, player_id)
-        if final_id in dropped_short_ids:
+        if final_id in dropped_short_ids or final_id in dropped_partial_ids:
             continue
-        stitched_ground[(final_id, frame_index)].append(point)
+        emit_point = point
+        if config.p4a.emit_ground_source == "triangulated_hip":
+            # Prefer the single robust triangulated-hip point over the averaged
+            # foot rays; fall back to the foot position when the hip was not
+            # triangulable this frame (single-camera / <2 views).
+            binding_id = binding_by_gid_frame.get((player_id, frame_index))
+            hip_xy = (
+                hip_ground_by_binding_frame.get((binding_id, frame_index))
+                if binding_id is not None else None
+            )
+            if hip_xy is not None:
+                emit_point = hip_xy
+            elif single_view_hip:
+                # 1F: no triangulated hip this frame (single-camera) -> hip pixel
+                # back-projected onto the id's sticky hip-height plane.
+                sv = single_view_hip.get((final_id, frame_index))
+                if sv is not None:
+                    emit_point = sv
+        stitched_ground[(final_id, frame_index)].append(emit_point)
     ground_rows_by_frame: dict[int, list[dict]] = defaultdict(list)
     for (player_id, frame_index), points in stitched_ground.items():
         ground_rows_by_frame[frame_index].append(
             {"global_player_id": player_id, "ground_xy": np.mean(points, axis=0).tolist()}
         )
+
+    # A3: drop teleport frames from the emitted ground tracks (drop-only, never relabel).
+    if config.p4a.emit_velocity_gate:
+        ground_rows_by_frame, n_gated = _velocity_gate_ground_rows(
+            dict(ground_rows_by_frame),
+            frame_rate_fps=config.frame_rate_fps,
+            max_mps=config.p4a.emit_velocity_max_mps,
+            max_consec_drops=config.p4a.emit_velocity_max_consec_drops,
+        )
+        if n_gated:
+            print(f"  [A3] velocity gate dropped {n_gated} teleport emission(s)")
 
     for record in records:
         validate_group1_frame(record, final_handoff=False)
@@ -551,9 +752,8 @@ def run_global_id(
         **colocated_metrics,
         "dominant_tracks": dominant_tracks,
         "completeness": completeness,
+        "partial_singlecam_dropped": len(dropped_partial_ids),
     }
-    if ground_truth is not None:
-        metrics["ground_truth"] = evaluate_ground_truth(records, _read_jsonl(ground_truth))
 
     manifest = {
         "schema_version": "global_id_run/v1",
@@ -566,7 +766,6 @@ def run_global_id(
         "delivery_id": delivery_id,
         "expected_frames": expected_frames,
         "config": config.to_dict(),
-        "ground_truth": str(ground_truth) if ground_truth is not None else None,
         "inputs": [
             {
                 "prediction_jsonl": str(item.path),

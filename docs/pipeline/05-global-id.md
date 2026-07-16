@@ -2,6 +2,22 @@
 
 > **Stage 05** (was P4) — code `src/identity/p5_global_id/`, config `configs/05_global_id.yaml`.
 
+> **Status update (2026-07-16) — new flag-gated options (all default-off, byte-identical):**
+> - **`p4a.emit_ground_source: foot|triangulated_hip` (1A)** — emit the 04-triangulated pelvis
+>   (`pelvis_ground_xy`, projected to z=0) as the ground position instead of averaging per-camera foot
+>   rays then fragments. The user's hip-root-projected-to-ground definition. ~teleport-neutral on the
+>   8-set (residual teleports are single-camera frames — see below); requires 04 `--id-source binding`.
+> - **`p4a.drop_partial_singlecam` (IMPACT-2)** — DROP a global id that is single-camera across the
+>   delivery AND predominantly partial (median <`partial_min_visible_kpts`=8 confident keypoints; a
+>   head-only view / cut-off umpire). Drop-only, never a relabel → structurally cannot mint a
+>   wrong-person id. 8_init: 4 ghosts dropped, agreement held; 40_full: 13 dropped, agreement held,
+>   collisions 0. (A P3-binding version was ineffective — P5 re-spawned the ghost — so it lives here.)
+> - **REJECTED (do not revisit): tracklet-id lock** — stabilising the per-camera id by post-hoc
+>   per-tracklet relabel put a stable *wrong-person* id on a player; removed. Any flicker fix must act
+>   at cross-camera assignment, not relabelling.
+> - **Teleport source:** 88% of emitted teleports are single-camera frames → the ghost-marker tail is a
+>   single-camera-emission problem (1F single-view sticky-hip lift / A3 velocity-gate, in progress).
+
 ## Role & intuition
 
 05 turns per-frame cross-camera correspondences into **persistent global identities** (`P001…`)

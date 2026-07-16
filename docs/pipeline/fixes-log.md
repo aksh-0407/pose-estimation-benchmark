@@ -9,6 +9,121 @@ it states the purpose, the implementation (files and flags), the measured result
 frozen baseline across the 8-delivery evaluation set (`CCPL080626...`), and the verdict. It
 follows the conventions of `../../wip/methods_log.md`.
 
+## Current-era entries (post-restructure, `src/` layout)
+
+### 2026-07-16 — Session analyses & 40-confirmations (see wip/session_2026-07-16_summary.md)
+
+- **IMPACT-2 partial-detection drop (`p4a.drop_partial_singlecam`, P5 emission, default-off):** drops a
+  single-camera predominantly-partial (median <8 confident kpts) global id at emission — DROP-ONLY,
+  never relabel (cannot repeat the lock's wrong-person failure). 8_init: 4 ghosts dropped, ids 89→85,
+  agreement held, collisions 0. 40_full: **13 ghosts dropped (462→449), agreement 0.8831→0.8832 (held),
+  collisions 0, coloc 0.** First tried at P3-binding level → ineffective (P5 re-spawned the ghost);
+  moved to P5. Awaiting user mosaic verdict before enabling.
+- **Cap fix 40-CONFIRMED:** `graph_llr_positive_cap 1.5→3.5` on all 40 `40_full`: agreement
+  0.853→0.883 (+0.030), central-player under-merge 11%→6%, coloc 5→0, collisions 0. Generalises the
+  8-set result. Stays landed (the one enabled change).
+- **1D stabilization-order (8_init):** stab-first (2D One-Euro → triangulate → 3D-smooth, the current
+  default) BEATS triangulate-raw-then-3D-smooth on every axis — agreement 0.9160 vs 0.9114, 3D-joint
+  jitter 0.0105 vs 0.0117 m, teleports 258 vs 280, reproj tied. VERDICT: keep stab-first; the
+  "2D-stab distorts the 3D" worry is not borne out (removing per-view jitter pre-triangulation prevents
+  3D depth-swimming). `tools/diagnosis/…` toggle via main `--no-enable-stabilization`.
+- **1B per-camera robustness (40):** `tools/diagnosis/camera_robustness.py`. Per-camera reprojection
+  cam_06 8.5px (cleanest) … cam_03 12.1 / cam_07 12.9px (highest-disagreement); ~1.5× spread → no
+  pathological camera. Leave-one-camera-out hip shift 5.7–7.0 cm → triangulation robust to any single
+  camera. Monocular(2-view)-vs-multiview ~8 cm mean / 30 cm p95 → multi-view meaningfully tighter.
+- **Teleport source (8_init cap-3.5):** 88% of the 33 emitted teleports (>25 m/s) are at SINGLE-camera
+  frames → the residual haywire ghost markers are a single-camera-emission problem (1F/A3 territory).
+  Cause now pinned by the 1F A/B below: **NOT plane-height** (changing the single-camera position source
+  barely moves the teleport count) → it is anchor-switch / id-level jump → **A3 velocity-gate** is the fix,
+  not 1F.
+- **1F single-view sticky-hip lift (`p4a.single_view_hip_fallback`, default-off): ❌ NEGATIVE — do not
+  enable.** Learns a per-id sticky hip-height (median triangulated hip-z over its multi-cam frames) and,
+  on single-camera frames, back-projects the hip pixel onto that plane instead of the foot fallback.
+  8_init A/B (05-only off the shared cap3.5+robust 04; identical 46781 track-steps, only emitted position
+  differs): FOOT teleports>25 = **33** (p95 1.4) · HIP(1A) 32 (p95 1.8) · **HIP+1F 35 (p95 2.0)** ·
+  agreement 0.9160 across all three. 1F slightly *increases* teleports and p95 — a single-view hip on a
+  sticky plane swings with torso lean, noisier than feet (which are physically on the ground). The
+  `max = 1220 m/s` outlier is **identical in all three arms** → the dominant teleport is an id-level jump,
+  independent of position source. Flag stays as a default-off option; **next teleport work = A3 per-tracklet
+  emission velocity-gate**, not a better hip source. 3 unit tests, 212 green (built, kept, not enabled).
+- **`emit_kalman_posterior` (advertised ISSUE-5 teleport fix): latent NO-OP.** With the flag on and
+  `emit_ground_source=foot`, the emitted `ground_tracks.jsonl` is **byte-identical 8/8** to the flag-off run
+  (cmp) — the `track.kalman.pos_world_xy` branch at runner.py:233 never changes emission, so it does not
+  suppress the teleport it was built for. Flagged for a later fix; not blocking (default-off, nothing relies
+  on it). This is what motivated a *hard* gate (A3) over the soft Kalman path.
+- **A3 emitted-track velocity gate (`p4a.emit_velocity_gate`, default-off): ✅ 40-CONFIRMED WIN — drops
+  teleport frames, drop-only. Awaiting only the before/after mosaic before recommending enable.** After the per-frame emitted ground
+  positions are built, each id's track is walked in frame order and any frame whose implied speed from the
+  last kept frame exceeds `emit_velocity_max_mps` (default 12; real cricketer ≤ ~11 m/s) is DROPPED; gap-scaled
+  so a re-appearing id may move proportionally; re-anchors after `emit_velocity_max_consec_drops` (5)
+  consecutive drops so a genuine relocation is not deleted. Never moves/relabels a position → cannot repeat the
+  rejected lock's wrong-person failure (same safety class as IMPACT-2).
+
+  8_init A/B (05-only off shared cap3.5+robust 04; FOOT source, isolates the gate):
+
+  | | teleports >25 | p95 | max m/s | distinct ids | agreement |
+  |---|---|---|---|---|---|
+  | FOOT (base) | **33** | 1.4 | **1220.5** | 89 | 0.9160 |
+  | A3-ON | **0** | 1.4 | **11.8** | 89 | 0.9160 |
+
+  Teleports 33→0, catastrophic 1220→11.8 m/s, **p95 / distinct-id count / agreement all unchanged**, only
+  145/46781 steps (0.3%) dropped. **Flag-off byte-identical 8/8** (cmp vs pre-A3 code). 5 unit tests, 217 green.
+
+  **40-CONFIRMED (all 40 `40_full`, 05-only off cap35/04, FOOT source):**
+
+  | | teleports >25 | p95 | max m/s | distinct ids | agreement |
+  |---|---|---|---|---|---|
+  | cap35 FOOT (base) | **367** | 1.5 | **2224.7** | 462 | 0.8831 |
+  | cap35 + A3 | **0** | 1.4 | **11.9** | 462 | 0.8831 |
+
+  All 40: teleports 367→0, catastrophic 2224→11.9 m/s, **distinct-id count (462) and agreement (0.8831)
+  unchanged**, p95 held, only 1313/237179 steps (0.55%) dropped. Also verified on the hip-emission stack
+  tracks the mosaic shows: M2_1_12_1 16→0 (max 1184→11.6), M1_1_14_5 11→0 (max 1220→11.8), no ids lost.
+  Generalises the 8-set perfectly — the most surgical, lowest-collateral change of the campaign. The one
+  remaining gate before recommending enable is the human mosaic verdict (before/after render for M2 + 14_5).
+  (Box clone `~/pipetrack` was behind on A3 code; synced config.py+runner.py before the 40-run — first
+  attempt produced an empty tree from the unknown config key, re-run after sync was clean.)
+
+### 2026-07-16 — Lock global-id per P2 tracklet (diagnosis-07 flicker): REJECTED, code removed
+
+- **Idea:** stabilise the per-camera emitted id within a `(camera, local_track_id)` tracklet (517 2D
+  id-switches across 40). Tried (a) full-tracklet confidence-weighted majority vote, (b) despike (only
+  a brief id-run flanked by the SAME id both sides). Per-(camera,frame) uniqueness guard kept
+  same-camera collisions 0.
+- **8-delivery numbers:** majority = switches 65→20 (−69%) but **agreement 0.9160→0.8881 (−0.028)**;
+  despike = switches 65→39 (−40%), agreement 0.9160→**0.9144 (−0.0016)**, 70 relabels.
+- **REJECTED on user mosaic review:** the lock assigns a stable but **wrong-person id** (a body-paint
+  colour on the wrong player) — a regression baseline never exhibited. Per-tracklet/per-camera
+  stabilisation can override the correct cross-camera id; no flicker win justifies wrong-person ids.
+- **Action:** all lock code removed (helpers, `p4a.lock_id_per_tracklet`/`lock_id_min_segment_frames`,
+  call site, metric, tests, A/B configs). 205 tests, grep-clean. **Do not revisit tracklet-id locking**;
+  any flicker fix must act at the cross-camera assignment level, not as a post-hoc per-tracklet relabel.
+
+### 2026-07-16 — P3 facing-pair under-merge: `graph_llr_positive_cap` 1.5 → 3.5 (ACCEPTED, pending 40-conf)
+
+- **Problem (measured by new `tools/diagnosis/coverage_audit.py`):** central players (bowler/striker/
+  non-striker/keeper) sit in 3–4 cameras (≈34% of player-locations; periphery is genuinely 1-camera),
+  but **16% of ≥3-camera locations were under-merged by P3 into ≤2 cameras** — worst 36% on `_14_3`.
+  Offenders are the co-observing FACING pairs 02-06 / 03-05 / 01-04 (+ cam_07). Edge dump
+  (`03_association/diagnostics/tracklet_graph.json`) showed these merges miss the 2.0 threshold by a
+  hair (llr_total 1.70–1.96): ground MAXED at the 1.5 cap, appearance=0 (colour dead), motion=0
+  (static), posture 0.2–0.4 (fundamentally weak — similar-height players), while ground agreement is
+  TIGHT (0.29–0.47 m). The flat cap throttled genuinely-strong tight-ground evidence.
+- **What did NOT work (ruled out with evidence):** widening `graph_facing_gate_scale` 1.3→2.0 and
+  lowering `graph_llr_merge_single` 1.2→1.0 gave BYTE-IDENTICAL 03 output — the edges aren't gated by
+  distance/threshold, they're below the corroboration window. Gate/threshold tuning is dead here.
+- **Fix:** raise `graph_llr_positive_cap` (per-cue "same" evidence cap) in `configs/03_association.yaml`.
+  Full-chain cap curve on 8 (agreement / under-merge / coloc / teleports; collisions 0 throughout):
+  1.5→.880/16%/2/299 · 2.0→.894/13%/1/298 · 2.5→.904/10%/1/277 · 3.0→.911/7%/0/277 ·
+  **3.5→.916/7%/0/258 (PEAK)** · 3.75→.909/8%/0/243 · ≥4.0 = 3.75 (cap non-binding). 3.5 admits the
+  real tight-ground merges but clips the over-confident ground-alone merge (raw LLR 3.5–3.75) that is
+  FALSE (agreement turns over at 3.75).
+- **Why safe:** `_cluster_compatible` (tracklet_graph.py:827) hard-blocks merging two chunks that ever
+  share a camera-frame (>3-frame overlap) → two co-visible people can never fuse regardless of cap;
+  `graph_llr_veto=-4.5` blocks confident posture contradictions. Same-camera collisions stayed 0 and
+  agreement rose monotonically to the peak — the recovered merges are split-identities, not distinct
+  players. **Verdict: ACCEPTED on 8_init; awaiting 40-delivery confirmation + mosaic sign-off.**
+
 ## Executive Summary
 
 - **Baseline established and frozen** (`pipetrack_v6.0`): full chain from the 8-delivery

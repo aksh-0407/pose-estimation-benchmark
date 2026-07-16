@@ -141,6 +141,50 @@ class P4AConfig:
     # reported track; it also removes the double-averaging in the emit path. False keeps
     # the legacy raw-observation emit byte-for-byte.
     emit_kalman_posterior: bool = False
+    # Emitted ground position source. "foot" (default, byte-identical) uses the
+    # z0_reproj / foot-plane ground estimate averaged over cameras then fragments —
+    # the legacy path the ground-teleport diagnosis blames (two averaging layers over
+    # grazing-foot rays; docs/diagnosis/04-issue-emitted-ground-teleports.md).
+    # "triangulated_hip" instead emits the 04 lift's triangulated pelvis (mean of the
+    # RANSAC-triangulated COCO hips, `pelvis_ground_xy` in lift3d.jsonl) projected to
+    # z=0 — one robust multi-view point per (binding, frame), no camera/fragment
+    # averaging. Falls back to the foot position for any frame with no triangulable
+    # hip (single-camera / <2 views). Requires the 04 lift to have run with
+    # --id-source binding (so lift3d.jsonl is keyed by binding_id); otherwise it logs
+    # a warning and behaves as "foot".
+    emit_ground_source: str = "foot"
+    # IMPACT-2 partial-detection suppression (emission level, so P5 cannot re-spawn the
+    # ghost the way a P3-binding suppression let it). After id assignment, any global id
+    # that is SINGLE-camera across the whole delivery AND whose detections are
+    # predominantly partial (median confident-keypoint count < partial_min_visible_kpts,
+    # e.g. a head-only view of the keeper, or a cut-off umpire) is DROPPED (its detections
+    # go unlabelled/tentative). Drop-only — it NEVER relabels a detection, so unlike the
+    # rejected tracklet lock it cannot put an id on the wrong person. Full-body
+    # single-camera peripherals (many confident keypoints) are spared. False = disabled.
+    drop_partial_singlecam: bool = False
+    partial_min_visible_kpts: int = 8
+    # 1F single-view sticky-hip lift (only meaningful with emit_ground_source=triangulated_hip).
+    # 88% of emitted teleports are at single-camera frames, where the hip cannot be triangulated
+    # and the emitted position falls back to a noisy foot / fixed-0.93 m-plane estimate. When true,
+    # each id's STICKY hip height is learned (median hip-z over its multi-camera triangulated frames)
+    # and, for single-camera frames, the hip PIXEL is back-projected onto that per-id height plane
+    # (geometry.pixel_to_plane_xy) — a stable hip-on-ground position instead of the foot fallback.
+    # False = disabled (byte-identical).
+    single_view_hip_fallback: bool = False
+    # A3 emitted-track velocity gate (drop-based). The 8_init teleport A/B showed no emission
+    # position SOURCE (foot / triangulated_hip / single-view-hip / Kalman posterior) removes the
+    # rare >25 m/s emitted teleports (max 1220 m/s): they are id-level jumps in the association-fed
+    # raw observation, not a position-source artefact. When true, each global id's emitted ground
+    # track is walked in frame order and any frame whose implied speed from the LAST KEPT frame
+    # exceeds emit_velocity_max_mps is DROPPED (its ground row removed) — a real cricketer never
+    # exceeds ~10-11 m/s, so 12 m/s spares all true motion while killing teleports. Drop-only: it
+    # never moves/relabels a position, so (like the accepted IMPACT-2 drop) it cannot put a marker
+    # in a wrong place. To avoid deleting a genuinely relocated/re-acquired track, after
+    # emit_velocity_max_consec_drops consecutive drops the gate RE-ANCHORS to the current position
+    # (accepts a sustained move). False = disabled (byte-identical emit).
+    emit_velocity_gate: bool = False
+    emit_velocity_max_mps: float = 12.0
+    emit_velocity_max_consec_drops: int = 5
     role_params: dict[str, dict[str, float]] = field(default_factory=_default_role_params)
 
     def __post_init__(self) -> None:
@@ -190,6 +234,19 @@ class P4AConfig:
             raise ValueError("lost_window_max_frames must be a positive integer")
         if type(self.min_emit_frames) is not int or self.min_emit_frames < 0:
             raise ValueError("min_emit_frames must be a non-negative integer")
+        if self.emit_ground_source not in ("foot", "triangulated_hip"):
+            raise ValueError("emit_ground_source must be 'foot' or 'triangulated_hip'")
+        if type(self.drop_partial_singlecam) is not bool:
+            raise ValueError("drop_partial_singlecam must be a boolean")
+        if type(self.partial_min_visible_kpts) is not int or self.partial_min_visible_kpts < 0:
+            raise ValueError("partial_min_visible_kpts must be a non-negative integer")
+        if type(self.single_view_hip_fallback) is not bool:
+            raise ValueError("single_view_hip_fallback must be a boolean")
+        if type(self.emit_velocity_gate) is not bool:
+            raise ValueError("emit_velocity_gate must be a boolean")
+        _positive("emit_velocity_max_mps", self.emit_velocity_max_mps)
+        if type(self.emit_velocity_max_consec_drops) is not int or self.emit_velocity_max_consec_drops < 0:
+            raise ValueError("emit_velocity_max_consec_drops must be a non-negative integer")
         for name in ("confidence_high", "confidence_discard", "pose_descriptor_ema"):
             _range(name, getattr(self, name), 0.0, 1.0)
         if self.confidence_discard > self.confidence_high:

@@ -51,6 +51,48 @@ def test_skeleton_ransac_rejects_bad_view():
     assert errors[0] < 1e-7
 
 
+def _translation_cameras(txs):
+    return np.stack([
+        np.array([[1, 0, 0, tx], [0, 1, 0, 0], [0, 0, 1, 0]], dtype=float) for tx in txs
+    ])
+
+
+def test_irls_refit_downweights_biased_inlier_camera():
+    # 4 stereo views of the true point [0, 0, 5]; one view carries a small y-bias
+    # that is well inside the RANSAC reprojection gate, so it stays an inlier and
+    # pulls the unweighted L2 re-fit off the true y. The Huber M-estimator should
+    # down-weight it and land closer to truth.
+    projections = _translation_cameras([0.0, -1.0, 1.0, 2.0])
+    truth = np.array([0.0, 0.0, 5.0])
+    obs = np.array([[tx / 5.0, 0.0] for tx in [0.0, -1.0, 1.0, 2.0]])
+    obs[3, 1] += 0.05  # biased-but-inlier camera
+    keypoints = np.concatenate([obs, np.ones((4, 1))], axis=1)[:, None, :]  # (4, 1, 3)
+
+    p_plain, _, _ = triangulate_skeleton_ransac(
+        keypoints, projections, reprojection_threshold_px=1.0,
+    )
+    p_robust, _, _ = triangulate_skeleton_ransac(
+        keypoints, projections, reprojection_threshold_px=1.0,
+        robust_refit=True, robust_huber_px=0.01,
+    )
+    err_plain = float(np.linalg.norm(p_plain[0] - truth))
+    err_robust = float(np.linalg.norm(p_robust[0] - truth))
+    assert err_robust < err_plain
+    assert abs(p_robust[0, 1]) < abs(p_plain[0, 1])  # y pulled back toward 0
+
+
+def test_irls_refit_matches_plain_on_clean_data():
+    # With no outlier, IRLS converges back to the L2 solution (does no harm).
+    projections = _translation_cameras([0.0, -1.0, 1.0, 2.0])
+    obs = np.array([[tx / 5.0, 0.0] for tx in [0.0, -1.0, 1.0, 2.0]])
+    keypoints = np.concatenate([obs, np.ones((4, 1))], axis=1)[:, None, :]
+    p_plain, _, _ = triangulate_skeleton_ransac(keypoints, projections)
+    p_robust, _, _ = triangulate_skeleton_ransac(
+        keypoints, projections, robust_refit=True, robust_huber_px=8.0,
+    )
+    np.testing.assert_allclose(p_robust[0], p_plain[0], atol=1e-6)
+
+
 def test_fill_occluded_joints_interpolates_temporal_gap():
     import numpy as np
     from identity.common.triangulation import fill_occluded_joints

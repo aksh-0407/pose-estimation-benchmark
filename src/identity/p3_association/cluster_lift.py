@@ -112,6 +112,8 @@ def lift_frame(
     min_views: int = 2,
     cheirality: bool = False,
     compute_cov: bool = False,
+    robust_refit: bool = False,
+    robust_huber_px: float = 8.0,
 ) -> FrameLift | None:
     """Triangulate one identity-frame from its member cameras' (17, 3) keypoints."""
 
@@ -125,6 +127,8 @@ def lift_frame(
         reprojection_threshold_px=reprojection_threshold_px,
         min_views=min_views,
         cheirality=cheirality,
+        robust_refit=robust_refit,
+        robust_huber_px=robust_huber_px,
     )
     lift = FrameLift(points3d, confidences, errors)
     if compute_cov:

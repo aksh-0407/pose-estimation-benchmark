@@ -90,6 +90,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="G1: row-equilibrated DLT conditioning (flag-gated A/B)")
     parser.add_argument("--parallax-order", action="store_true",
                         help="G3: try high-parallax RANSAC seed pairs first (flag-gated A/B)")
+    parser.add_argument("--robust-refit", action="store_true",
+                        help="Phase-1C: IRLS-Huber M-estimator polish on the per-joint inlier "
+                             "re-fit (down-weights marginal-inlier cameras). Off = byte-identical.")
+    parser.add_argument("--robust-huber-px", type=float, default=8.0,
+                        help="Huber threshold (px reprojection residual) for --robust-refit.")
     parser.add_argument("--suppression-path", default=None,
                         help="P5b suppression.json; suppressed global ids are not lifted "
                              "(default: probes <input>/../06_roles/suppression.json; Wave-6)")
@@ -154,6 +159,8 @@ def triangulate_canonical_run(
     suppression_path: str | Path | None = None,
     hartley: bool = False,
     parallax_order: bool = False,
+    robust_refit: bool = False,
+    robust_huber_px: float = 8.0,
 ) -> dict[str, Any]:
     input_run_dir, output_run_dir = Path(input_run_dir), Path(output_run_dir)
     # Wave-6 (P5b): suppressed peripheral ids are excluded from the lift entirely.
@@ -243,6 +250,8 @@ def triangulate_canonical_run(
                 min_views=min_views,
                 cheirality=cheirality,
                 compute_cov=True,
+                robust_refit=robust_refit,
+                robust_huber_px=robust_huber_px,
             )
             if lift is None:
                 continue
@@ -572,6 +581,8 @@ def main(argv: list[str] | None = None) -> int:
             suppression_path=args.suppression_path,
             hartley=args.hartley,
             parallax_order=args.parallax_order,
+            robust_refit=args.robust_refit,
+            robust_huber_px=args.robust_huber_px,
         )
         print(f"P6: triangulated {metrics['fully_valid_identity_frames']} identity-frames")
         return 0

@@ -1,9 +1,10 @@
-"""Unit-testable proxy and ground-truth metrics for P2--P4 tracking.
+"""Unit-testable proxy metrics for P2--P4 tracking.
 
 Proxy metrics are explicitly named as such: they measure geometric consistency
-and identity fragmentation, not labelled tracking accuracy. The optional
-ground-truth evaluator supplies conventional MOTA/IDF1-style numbers when labels
-become available.
+and identity fragmentation, not labelled tracking accuracy. There is no
+per-player identity or 3D-location ground truth for this footage, so all metrics
+here are calibration/geometry-anchored proxies; the final quality judgement is
+human review of the rendered mosaics.
 """
 
 from __future__ import annotations
@@ -13,7 +14,6 @@ from itertools import combinations
 from typing import Any, Iterable
 
 import numpy as np
-from scipy.optimize import linear_sum_assignment
 
 
 def numeric_summary(values: Iterable[float]) -> dict[str, float | int | None]:
@@ -344,101 +344,6 @@ def teleport_proxy(
         "max_speed_mps": float(max_speed_mps),
         "teleport_event_count": events,
         "teleport_examples": examples,
-    }
-
-
-def bbox_iou_xywh(left: Iterable[float], right: Iterable[float]) -> float:
-    lx, ly, lw, lh = [float(value) for value in left]
-    rx, ry, rw, rh = [float(value) for value in right]
-    x1, y1 = max(lx, rx), max(ly, ry)
-    x2, y2 = min(lx + lw, rx + rw), min(ly + lh, ry + rh)
-    intersection = max(0.0, x2 - x1) * max(0.0, y2 - y1)
-    union = max(0.0, lw * lh) + max(0.0, rw * rh) - intersection
-    return intersection / union if union > 0.0 else 0.0
-
-
-def evaluate_ground_truth(
-    prediction_records: Iterable[dict[str, Any]],
-    ground_truth_rows: Iterable[dict[str, Any]],
-    *,
-    iou_threshold: float = 0.5,
-) -> dict[str, Any]:
-    """Evaluate labelled boxes with deterministic IoU matching.
-
-    Ground-truth rows must contain ``frame_index``, ``camera_id``, ``bbox`` (or
-    ``bbox_xywh_px``), and ``gt_id``. IDF1 uses the standard global assignment of
-    matched prediction/GT identity pair counts.
-    """
-
-    predictions: dict[tuple[int, str], list[tuple[str, list[float]]]] = defaultdict(list)
-    for record in prediction_records:
-        key = (int(record["frame_index"]), str(record["camera_id"]))
-        for player in record.get("players", []):
-            if player.get("global_player_id") and player.get("bbox_xywh_px") is not None:
-                predictions[key].append((str(player["global_player_id"]), player["bbox_xywh_px"]))
-
-    truth: dict[tuple[int, str], list[tuple[str, list[float]]]] = defaultdict(list)
-    for row in ground_truth_rows:
-        bbox = row.get("bbox_xywh_px", row.get("bbox"))
-        if bbox is None or row.get("gt_id") is None:
-            raise ValueError("ground truth rows require gt_id and bbox/bbox_xywh_px")
-        truth[(int(row["frame_index"]), str(row["camera_id"]))].append((str(row["gt_id"]), bbox))
-
-    false_positives = false_negatives = identity_switches = matches = 0
-    last_prediction_for_gt: dict[tuple[str, str], str] = {}
-    identity_pair_counts: Counter[tuple[str, str]] = Counter()
-    for key in sorted(set(predictions) | set(truth)):
-        pred, gt = predictions[key], truth[key]
-        if not pred or not gt:
-            false_positives += len(pred)
-            false_negatives += len(gt)
-            continue
-        cost = np.ones((len(gt), len(pred)), dtype=float)
-        for gi, (_, gt_bbox) in enumerate(gt):
-            for pi, (_, pred_bbox) in enumerate(pred):
-                cost[gi, pi] = 1.0 - bbox_iou_xywh(gt_bbox, pred_bbox)
-        rows, cols = linear_sum_assignment(cost)
-        accepted = [(gi, pi) for gi, pi in zip(rows, cols) if 1.0 - cost[gi, pi] >= iou_threshold]
-        matches += len(accepted)
-        false_negatives += len(gt) - len(accepted)
-        false_positives += len(pred) - len(accepted)
-        for gi, pi in accepted:
-            gt_id, pred_id = gt[gi][0], pred[pi][0]
-            gt_key = (key[1], gt_id)
-            previous = last_prediction_for_gt.get(gt_key)
-            if previous is not None and previous != pred_id:
-                identity_switches += 1
-            last_prediction_for_gt[gt_key] = pred_id
-            identity_pair_counts[(gt_id, pred_id)] += 1
-
-    gt_total = sum(len(items) for items in truth.values())
-    pred_total = sum(len(items) for items in predictions.values())
-    gt_ids = sorted({pair[0] for pair in identity_pair_counts})
-    pred_ids = sorted({pair[1] for pair in identity_pair_counts})
-    idtp = 0
-    if gt_ids and pred_ids:
-        matrix = np.zeros((len(gt_ids), len(pred_ids)), dtype=float)
-        for (gt_id, pred_id), count in identity_pair_counts.items():
-            matrix[gt_ids.index(gt_id), pred_ids.index(pred_id)] = count
-        assigned_gt, assigned_pred = linear_sum_assignment(-matrix)
-        idtp = int(matrix[assigned_gt, assigned_pred].sum())
-    idfp, idfn = pred_total - idtp, gt_total - idtp
-    denominator = 2 * idtp + idfp + idfn
-    return {
-        "schema_version": "tracking_ground_truth_metrics/v1",
-        "iou_threshold": iou_threshold,
-        "ground_truth_detections": gt_total,
-        "prediction_detections": pred_total,
-        "matches": matches,
-        "false_positives": false_positives,
-        "false_negatives": false_negatives,
-        "identity_switches": identity_switches,
-        "mota": 1.0 - (false_positives + false_negatives + identity_switches) / gt_total
-        if gt_total else None,
-        "idf1": 2 * idtp / denominator if denominator else None,
-        "idtp": idtp,
-        "idfp": idfp,
-        "idfn": idfn,
     }
 
 

@@ -70,7 +70,17 @@ graph_min_covis_frames: 10
 graph_covis_full_frames: 40
 graph_llr_merge_threshold: 2.0
 graph_llr_veto: -4.5
-graph_llr_positive_cap: 1.5
+# Phase-3 (2026-07-16): raised 1.5 -> 3.5. On the co-observing facing pairs (01-04,
+# 02-06, 03-05) appearance/motion abstain and ground is the only strong cue; the old
+# 1.5 cap throttled genuinely-TIGHT ground agreement (0.3-0.5 m) so correct 2-view
+# central-player merges missed the 2.0 threshold (16% of >=3-camera locations were
+# under-merged). 3.5 is the measured agreement peak on 8_init (0.880->0.916, under-merge
+# 16%->7%, coloc 2->0, collisions 0); it admits the real tight-ground merges but clips
+# the over-confident ground-alone merges (raw LLR 3.5-3.75) that are false (agreement
+# turns over at 3.75+). Safe because _cluster_compatible hard-blocks merging chunks that
+# share a camera-frame (two co-visible people can never fuse). A/B: tools/diagnosis/
+# coverage_audit.py + 05 global_id_metrics agreement panel. Pending 40-delivery confirm.
+graph_llr_positive_cap: 3.5
 graph_llr_ground_neg_clip: 2.0
 graph_move_margin: 0.5
 graph_refine_passes: 2

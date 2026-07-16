@@ -148,6 +148,55 @@ def depth_signs(point_xyz: np.ndarray, projection_matrices: np.ndarray) -> np.nd
     return signs
 
 
+def irls_huber_refit(
+    point_xyz: np.ndarray,
+    points_xy: np.ndarray,
+    projection_matrices: np.ndarray,
+    confidences: np.ndarray,
+    inlier_mask: np.ndarray,
+    *,
+    huber_delta_px: float = 8.0,
+    max_iters: int = 5,
+    tol_m: float = 1e-4,
+) -> np.ndarray:
+    """Refine a triangulated point by IRLS with a Huber loss on reprojection residuals.
+
+    The RANSAC inlier re-fit is an *unweighted* least-squares (L2) solve over the
+    inlier views, so one view that is an inlier only just under the reprojection gate
+    still pulls the point as hard as a pixel-accurate view. This applies the standard
+    robust-triangulation fix (Lee & Civera 2020) — the same IRLS-Huber estimator the
+    repo already ships for the ground plane (:func:`geometry.robust_fuse_ground`) — to
+    the free-space per-joint solve: each view's confidence weight is multiplied by a
+    Huber factor ``min(1, delta / r_i)`` on its pixel residual ``r_i`` and the DLT is
+    re-run (it already applies ``sqrt(weight)`` per row, so this is one reweighted DLT
+    per iteration, no new linear algebra). Operates on the inlier views only; returns
+    the input point unchanged on any degeneracy (so it can never make a solve worse).
+    """
+
+    idx = np.flatnonzero(inlier_mask)
+    if idx.size < 2 or not np.isfinite(point_xyz).all():
+        return point_xyz
+    pts = np.asarray(points_xy, dtype=float)[idx]
+    projs = np.asarray(projection_matrices, dtype=float)[idx]
+    base_conf = np.maximum(np.asarray(confidences, dtype=float)[idx], 1e-8)
+    point = np.asarray(point_xyz, dtype=float).copy()
+    for _ in range(max_iters):
+        errors = reprojection_errors_for_point(point, pts, projs)
+        weights = np.where(
+            np.isfinite(errors),
+            np.where(errors <= huber_delta_px, 1.0, huber_delta_px / np.maximum(errors, 1e-9)),
+            0.0,
+        )
+        refined = triangulate_point_dlt(pts, projs, base_conf * weights, min_views=2)
+        if not np.isfinite(refined).all():
+            return point
+        step = float(np.linalg.norm(refined - point))
+        point = refined
+        if step < tol_m:
+            break
+    return point
+
+
 def ransac_triangulate_point(
     points_xy: np.ndarray,
     projection_matrices: np.ndarray,
@@ -157,6 +206,8 @@ def ransac_triangulate_point(
     cheirality: bool = False,
     hartley: bool = False,
     parallax_order: bool = False,
+    robust_refit: bool = False,
+    robust_huber_px: float = 8.0,
 ) -> TriangulationResult:
     """Triangulate with pairwise RANSAC and re-fit on inlier views.
 
@@ -260,6 +311,14 @@ def ransac_triangulate_point(
         best_inliers = np.isfinite(errors) & (errors <= reprojection_threshold_px) & (confidences > 0)
         if cheirality:
             best_inliers &= depth_signs(best_point, projection_matrices) > 0
+
+    if robust_refit and int(best_inliers.sum()) >= min_views and np.isfinite(best_point).all():
+        # M-estimator polish over the inlier views (down-weights marginal-inlier
+        # cameras); flag-gated, off = the legacy unweighted inlier re-fit above.
+        best_point = irls_huber_refit(
+            best_point, points_xy, projection_matrices, confidences, best_inliers,
+            huber_delta_px=robust_huber_px,
+        )
 
     errors = reprojection_errors_for_point(best_point, points_xy, projection_matrices)
     if int(best_inliers.sum()) == 0:
@@ -613,13 +672,17 @@ def triangulate_skeleton_ransac(
     cheirality: bool = False,
     hartley: bool = False,
     parallax_order: bool = False,
+    robust_refit: bool = False,
+    robust_huber_px: float = 8.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Triangulate a skeleton from shape (V, J, 3) keypoints.
 
     ``hartley``/``parallax_order`` (G1/G3, flag-gated off = byte-identical) are
     forwarded per joint to :func:`ransac_triangulate_point`. Batched fast paths
     (W10-PERF, bit-identical) handle the 2-view and the generic multi-view cases;
-    ``parallax_order=True`` falls back to the per-joint reference loop.
+    ``parallax_order=True`` or ``robust_refit=True`` fall back to the per-joint
+    reference loop (the IRLS-Huber polish lives only in that path, so the batched
+    kernels stay untouched and the flag-off dispatch is bit-identical to today).
     """
 
     keypoints_by_view = np.asarray(keypoints_by_view, dtype=float)
@@ -629,6 +692,7 @@ def triangulate_skeleton_ransac(
         and keypoints_by_view.shape[0] == 2
         and keypoints_by_view.shape[2] >= 3
         and min_views <= 2
+        and not robust_refit
         and projection_matrices.shape == (2, 3, 4)
     ):
         return _skeleton_two_view_batched(
@@ -640,6 +704,7 @@ def triangulate_skeleton_ransac(
         and keypoints_by_view.shape[0] >= 3
         and keypoints_by_view.shape[2] >= 3
         and not parallax_order
+        and not robust_refit
         and projection_matrices.shape == (keypoints_by_view.shape[0], 3, 4)
     ):
         return _skeleton_multi_view_batched(
@@ -666,6 +731,8 @@ def triangulate_skeleton_ransac(
             cheirality=cheirality,
             hartley=hartley,
             parallax_order=parallax_order,
+            robust_refit=robust_refit,
+            robust_huber_px=robust_huber_px,
         )
         points3d[joint_index] = result.point_xyz
         confidences[joint_index] = result.confidence

@@ -192,7 +192,9 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
                    "--butter-cutoff-hz", str(args.tri_butter_cutoff_hz)]
                 + (["--cheirality"] if args.tri_cheirality else [])
                 + (["--native-skeleton"] if args.tri_native_skeleton else [])
-                + (["--dense-fill"] if args.tri_dense_fill else []),
+                + (["--dense-fill"] if args.tri_dense_fill else [])
+                + (["--robust-refit", "--robust-huber-px", str(args.tri_robust_huber_px)]
+                   if args.tri_robust_refit else []),
                 args.python, log,
             )
         elif stage == "05_global_id":
@@ -385,6 +387,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tri-butter-cutoff-hz", type=float, default=6.0)
     parser.add_argument("--tri-native-skeleton", action=argparse.BooleanOptionalAction, default=True,
                         help="Fix F15: triangulate all 26 Halpe keypoints (default off = COCO-17).")
+    parser.add_argument("--tri-robust-refit", action=argparse.BooleanOptionalAction, default=False,
+                        help="Phase-1C: IRLS-Huber M-estimator polish on the per-joint triangulation "
+                             "(down-weights marginal-inlier cameras). Off = byte-identical.")
+    parser.add_argument("--tri-robust-huber-px", type=float, default=8.0,
+                        help="Huber threshold (px) for --tri-robust-refit.")
     parser.add_argument("--tri-dense-fill", action=argparse.BooleanOptionalAction, default=True,
                         help="Fix C6: gap-gate temporal fills on real frame numbers (default off).")
     parser.add_argument("--artifacts-root", default=None,

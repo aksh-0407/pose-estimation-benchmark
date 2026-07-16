@@ -103,8 +103,10 @@ skeleton-gait embedding cue (needs sign-off), G4 inter-cue LLR correlation, per-
 - **Full 40_full run** — `raw/40_full` symlinks are set up + verified on L40S; needs P1 (26-kpt) +
   the pipeline on all 40, then the panel.
 - **decide-in-3D A/B** (pending A0), on 8 then 40.
-- **Identity ground truth → IDF1/MOTA/HOTA** — `metrics.py::evaluate_ground_truth` is ready; label a
-  few hundred frames on 2–3 hard deliveries (`_7`, `M2_1_12_1`, `_6`). Until then tuning is proxy-guided.
+- ~~Identity ground truth → IDF1/MOTA/HOTA~~ **DROPPED (2026-07-15):** no ground truth exists or is
+  planned — labelling/fine-tuning on labelled cricket frames is off the table. `evaluate_ground_truth`
+  was removed. Tuning is proxy-guided (calibration/geometry panel) and the final judgement is human
+  mosaic review.
 - **Mosaic sign-off** — arbitrate roles end-orientation (striker vs non-striker end confirmed only on
   `_2`) and keeper-pick ambiguity (P002-vs-P003 class); spot-check more clips.
 - **Vedant's `global_id/` rewrite (parked, needs sign-off)** — a parallel `track_manager` lineage

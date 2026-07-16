@@ -23,11 +23,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default=None)
     parser.add_argument("--camera", action="append", default=None)
     parser.add_argument("--expected-frames", type=int, default=600)
-    parser.add_argument(
-        "--ground-truth",
-        default=None,
-        help="Optional JSONL rows: frame_index, camera_id, bbox/bbox_xywh_px, gt_id.",
-    )
     return parser
 
 
@@ -41,7 +36,6 @@ def main(argv: list[str] | None = None) -> int:
         config=load_global_id_config(args.config),
         cameras=args.camera,
         expected_frames=args.expected_frames,
-        ground_truth=args.ground_truth,
     )
     quality = metrics.get("quality_verdict", {})
     print(

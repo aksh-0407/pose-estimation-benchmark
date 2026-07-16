@@ -4,6 +4,15 @@ Detailed, current documentation of every stage: what it does, how it's implement
 been tried, and its current measured state. Read [`../architecture.md`](../architecture.md) first
 for the shared concepts (rig, calibration, contract, metrics).
 
+> **Latest (2026-07-16 session — see `../../wip/session_2026-07-16_summary.md` + `fixes-log.md`):**
+> ENABLED: `graph_llr_positive_cap 1.5→3.5` in [03](03-association.md) — 40-confirmed facing-pair fix
+> (agreement 0.853→0.883, under-merge 11→6%, coloc 5→0). Flag-gated & default-off (awaiting verdict):
+> `emit_ground_source: triangulated_hip` (1A) and `drop_partial_singlecam` (IMPACT-2, drops head-only
+> ghosts) in [05](05-global-id.md); `--tri-robust-refit` (1C) in [04](04-lift.md). REJECTED: tracklet-id
+> lock (wrong-person ids). Analyses: stabilize-first ordering confirmed best ([01](01-stabilization.md));
+> no pathological camera; 88% of teleports are single-camera (1F next). New tools:
+> `tools/diagnosis/{coverage_audit,camera_robustness}.py`.
+
 Each stage consumes an `--input-run-dir` and writes an `--output-run-dir` (canonical run
 directory: `predictions/*.jsonl` + `diagnostics/` + `*_metrics.json`). The whole chain is driven
 by `src/main.py` (`python -m main`, phase-select via `--from-stage`/`--until-stage`).

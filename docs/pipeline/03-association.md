@@ -117,6 +117,25 @@ plane through the ground point — works on facing pairs without triangulation).
 - **Hard ground gates can split a correct merge** — the tight facing-pair gate (2.5 m) under foot-
   pixel noise can break a true 2-view merge into two IDs (under-merge).
 
+## Status update (2026-07-16)
+
+- **ID-1 (facing-pair under-merge) — PARTIALLY FIXED and 40-CONFIRMED.** Root-caused with the new
+  `tools/diagnosis/coverage_audit.py`: central players sit in 3–4 cameras but ~16% of ≥3-cam locations
+  were under-merged; edge dump showed the facing-pair merges miss the 2.0 threshold by a hair because
+  ground was capped at 1.5 while appearance/motion abstain. **Fix: `graph_llr_positive_cap 1.5 → 3.5`**
+  (this file's config) — the measured agreement peak (4.0+ over-merges). 40_full: agreement
+  0.853→0.883, under-merge 11%→6%, coloc 5→0, collisions 0. Fix #3 (parallax-adaptive gate) below is
+  effectively realised by this cap change; gate-scale/threshold tuning were tried and are **dead levers**
+  here (byte-identical output). See `fixes-log.md`.
+- **03-1 (C07 image size) — VERIFIED NO BUG.** `load_image_sizes_from_drive` returns cam_07 (3776×960)
+  and it is threaded into the epipole test, the feet check, and keypoints_norm; the `config.image_w/h`
+  default is dead (no consumers). Fix #5 below is a no-op.
+- **ID-5 (splittable clustering)** and **Fix #1 (pose-shape primary cue)** remain open — but note the
+  cap change captured most of the *safe* facing-pair headroom, and a rejected experiment (post-hoc
+  per-tracklet id lock) showed identity must not be stabilised by relabelling. The partial-detection
+  ghost fix (`drop_partial_singlecam`) now lives in **P5 emission**, not here (P3 binding suppression
+  was re-spawned by P5) — see [05-global-id.md](05-global-id.md).
+
 ## Issues
 
 - **ID-1 (★★★) Cross-camera under-merge on facing pairs.** X-cam agreement **0.50 on _7**,

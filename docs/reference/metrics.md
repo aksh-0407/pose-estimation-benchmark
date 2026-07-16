@@ -51,10 +51,26 @@ From `tools/diagnosis/eval_ground_accuracy.py` and the 04 lift (triangulation):
 ## Temporal quality
 
 - **temporal jitter** — mean frame-to-frame joint displacement (the "how noisy" number),
-  measured on 2D keypoints and on 3D/ground trajectories. `src/identity/common/metrics.py`
-  provides `temporal_jitter`, `reprojection_error`, `mpjpe`/`p_mpjpe`.
+  measured on 2D keypoints and on 3D/ground trajectories via the diagnostic tools under
+  `tools/diagnosis/` (e.g. `emit_smoothness.py`, `occupancy_and_3d.py`). Reprojection error is
+  computed geometrically in `src/identity/common/triangulation.py`
+  (`reprojection_errors_for_point`) and summarised per cluster in `metrics.py`. There is no MPJPE /
+  P-MPJPE (those require 3D ground truth, which does not exist for this footage).
 - **emitted-trajectory jump p95** — worst per-frame position jump after the Kalman-posterior
   emit (halved vs the raw re-mean; worst case cut from 14.0 m to 0.36 m on the hardest clip).
+
+## Diagnostic tools (2026-07-16, read-only, no GT)
+
+- **`tools/diagnosis/coverage_audit.py`** — true per-location camera coverage (single-link cluster the
+  raw pre-association detections by ground proximity, count distinct cameras) vs the P3 achieved cluster
+  size, to separate *detection-recall* gaps from *association under-merge*, plus same-camera collisions
+  and the unbound camera-pair tally (tests the facing-pair hypothesis). This tool root-caused the ID-1
+  facing-pair under-merge and the `graph_llr_positive_cap` fix.
+- **`tools/diagnosis/camera_robustness.py`** — per-camera reprojection contribution (which camera
+  disagrees most with the multi-view 3D consensus), leave-one-camera-out hip-shift (robustness to losing
+  any one camera), and monocular(2-view)-vs-multiview dispersion. On this rig: no pathological camera
+  (cam_06 ~8.5 px best, cam_03/cam_07 ~12–13 px worst), triangulation robust to any single camera
+  (5–7 cm), multi-view ~8 cm tighter than 2-view.
 
 ## How to use them
 

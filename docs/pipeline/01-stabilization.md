@@ -2,6 +2,15 @@
 
 > **Stage 01** (was P1.5) — code `src/identity/p1_stabilization/`, config `configs/01_stabilization.yaml`.
 
+> **Status update (2026-07-16) — stabilization-order A/B (keeps this stage's ordering).** Tested
+> stabilize-first (2D One-Euro here → triangulate → 3D-smooth in 04, the current default) vs
+> triangulate-raw-then-3D-smooth (`main --no-enable-stabilization`). Stab-first wins on every axis on
+> 8_init: cross-camera agreement 0.9160 vs 0.9114, 3D-joint jitter 0.0105 vs 0.0117 m, teleports 258 vs
+> 280, reprojection tied. Removing per-view pixel jitter *before* triangulation prevents 3D
+> depth-swimming a post-hoc 3D smoother can't fully recover — so the "2D stabilization distorts the 3D
+> coordinates" concern is not borne out. **Keep stabilize-first.** (SmoothNet as a learned complement to
+> One-Euro remains an open option — see [00-inference.md](00-inference.md) fixes.)
+
 ## Role & intuition
 
 Off-the-shelf 2D keypoints jitter frame-to-frame even when a player is standing still, and that

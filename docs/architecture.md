@@ -81,8 +81,9 @@ every stage. Everything is invoked as a module: `python -m main`,
 
 ## Metrics & proxies (read jointly, never singly)
 
-No per-player identity ground truth exists yet, so identity quality is read as a **joint panel**
-of proxies (`src/identity/common/metrics.py`):
+There is no per-player identity or 3D-location ground truth for this footage (and none is planned —
+the final quality judgement is human review of the rendered mosaics), so identity quality is read as
+a **joint panel** of calibration/geometry-anchored proxies (`src/identity/common/metrics.py`):
 
 - **cross_camera_agreement** — for different-camera detection pairs whose *independent*
   calibration ground projections coincide (< 1.5 m), the fraction sharing a `global_player_id`.
@@ -96,8 +97,9 @@ of proxies (`src/identity/common/metrics.py`):
 - **confirmed_frame_completeness** (id-persistence), **pair_link_churn**, **cycle_consistency**,
   **single_camera_rate** — association/tracking health.
 
-A ground-truth MOTA/IDF1/HOTA evaluator is implemented (`evaluate_ground_truth`) but unused
-until frames are labelled ([`wip/to_do.md`](../wip/to_do.md) §B).
+Conventional labelled metrics (MOTA/IDF1/HOTA, MPJPE/P-MPJPE) are deliberately **not** used: no
+ground truth exists for this footage and none is planned, so quality is decided by the proxy panel
+above plus human mosaic review.
 
 ## The one-line causal chain
 

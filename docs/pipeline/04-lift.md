@@ -2,6 +2,16 @@
 
 > **Stage 04** — the 3D lift, now run **before** global-id (Associate→Triangulate→Track). Code: `src/identity/p4_lift/run_triangulation.py`.
 
+> **Status update (2026-07-16) — `--robust-refit` (1C, flag-gated, default-off, byte-identical):**
+> an optional IRLS-Huber M-estimator polish on the per-joint inlier re-fit (down-weights a
+> marginal-inlier camera on its pixel residual), the principled "robust average" alternative to a naive
+> median — the repo already ships the same estimator for the ground plane (`geometry.robust_fuse_ground`).
+> Forces the per-joint reference loop so the batched kernels stay bit-identical when off. 8_init: reproj
+> p95 6.61→6.56 px (marginal — RANSAC+DLT is already robust). `main --tri-robust-refit` /
+> `--tri-robust-huber-px`. Per-camera reprojection / leave-one-camera-out robustness now measurable via
+> `tools/diagnosis/camera_robustness.py` (no single bad camera on this rig; hip robust to dropping any
+> one camera by 5–7 cm).
+
 ## Role & intuition
 
 This stage turns the multi-view 2D keypoints of one identified player into a single **3D world
