@@ -1,14 +1,14 @@
-"""Cluster-level 3D lift + purity signals (F9b/F9c — the 04 (binding lift) core).
+"""Cluster-level 3D lift + purity signals (F9b/F9c - the 04 (binding lift) core).
 
 Shared by the standalone 04 (binding lift) stage (``triangulate_predictions --id-source binding``)
 and the in-runner feedback hook (``graph_lift_feedback``). Given per-frame member
 keypoints for one identity key (a P3 ``binding_id`` or a provisional cluster), it:
 
 * triangulates the full skeleton per frame (RANSAC DLT, the repo's standard lift);
-* derives the **purity signature**: a chimera — two people welded into one binding —
+* derives the **purity signature**: a chimera - two people welded into one binding  - 
   fails torso reprojection *consistently and one-sidedly* (the intruding camera's
   member carries the bias), which clean clusters do not;
-* pools a **bone-ratio descriptor** and a metric **stature** per key — the identity
+* pools a **bone-ratio descriptor** and a metric **stature** per key - the identity
   evidence Waves 3/4 use for the shape cue and the split moves.
 
 Everything here is read-only over the association outputs; nothing feeds back into

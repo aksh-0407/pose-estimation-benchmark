@@ -1,4 +1,4 @@
-"""Singer-acceleration Kalman filter on the 2D ground plane (P4a global tracking).
+"""Singer-acceleration Kalman filter on the 2D ground plane (global-id online tracking).
 
 State is ``[x, y, vx, vy, ax, ay]`` in world metres. The Singer model gives
 role-aware manoeuvrability (a bowler turns harder than a stationary umpire).
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.linalg import expm
 
-# 95th percentile of chi-squared with 2 DOF — the default ground-plane gate.
+# 95th percentile of chi-squared with 2 DOF - the default ground-plane gate.
 CHI2_95_2DOF = 5.991
 
 
@@ -24,7 +24,7 @@ class RoleParams:
     measurement_noise: float  # position-measurement std (m)
 
 
-# Canonical defaults; P4Config may override per deployment.
+# Canonical defaults; GlobalIdConfig may override per deployment.
 ROLE_PARAMS: dict[str, RoleParams] = {
     "bowler":       RoleParams(alpha=2.0, sigma_a=3.0, measurement_noise=0.3),
     "striker":      RoleParams(alpha=1.5, sigma_a=2.5, measurement_noise=0.3),
@@ -104,7 +104,7 @@ class SingerGroundKalman:
 
         A per-measurement 2x2 covariance (the P3 ground covariance: anisotropic,
         distance-dependent) makes the filter trust a near well-triangulated foot
-        more than a far single-camera grazing projection — the root anti-teleport
+        more than a far single-camera grazing projection - the root anti-teleport
         lever. ``None`` keeps the fixed per-role R (legacy behaviour).
         """
 
@@ -136,7 +136,7 @@ class SingerGroundKalman:
         """Swap the motion model, inflating P to avoid overconfidence.
 
         C3: the Singer transition has UNIT eigenvalues on position/velocity, so the
-        discrete Lyapunov equation has no bounded solution — the previous "steady
+        discrete Lyapunov equation has no bounded solution - the previous "steady
         state" branch raised on every call and silently fell back to a uniform x4.
         Inflate the stable blocks explicitly instead: velocity to the new model's
         per-manoeuvre-horizon driving scale, acceleration to its driving sigma.
@@ -156,7 +156,7 @@ class SingerGroundKalman:
         """Prevent covariance blow-up during long Lost windows.
 
         Scale by the LARGER of the two position variances so BOTH x and y stay
-        bounded — the previous version broke after the first over-threshold axis and
+        bounded - the previous version broke after the first over-threshold axis and
         could leave the other axis unbounded when both exceeded the cap.
         """
 

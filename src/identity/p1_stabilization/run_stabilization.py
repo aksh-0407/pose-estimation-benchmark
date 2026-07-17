@@ -1,4 +1,4 @@
-"""CLI entry point for 01 (stabilization) — 2D keypoint temporal stabilization.
+"""CLI entry point for 01 (stabilization) - 2D keypoint temporal stabilization.
 
 Sits between P1 (2D inference) and P2 (per-camera tracking):
 

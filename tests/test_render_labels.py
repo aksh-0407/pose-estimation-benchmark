@@ -1,4 +1,4 @@
-"""Tests for W7-RENDER: collision-aware chips, body paint, identity palette."""
+"""Tests for the render overlays: collision-aware chips, body paint, identity palette."""
 from __future__ import annotations
 
 import numpy as np

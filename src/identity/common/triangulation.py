@@ -90,7 +90,7 @@ def reprojection_errors_for_point(
 ) -> np.ndarray:
     """Reproject one 3D point into all views and return pixel errors.
 
-    Vectorized (W10-PERF): one batched matmul across views replaces the
+    Vectorized: one batched matmul across views replaces the
     per-view python loop; per-element arithmetic is unchanged, so results are
     bit-identical to the loop version (verified on real P3 outputs).
     """
@@ -118,7 +118,7 @@ def depth_signs(point_xyz: np.ndarray, projection_matrices: np.ndarray) -> np.nd
     """Sign of the projective depth of one 3D point in each view (+1 in front, -1 behind).
 
     Primary test: sign agreement of the homogeneous scale ``w`` with that of the
-    world origin (the pitch centre — in front of every camera on this rig), which is
+    world origin (the pitch centre - in front of every camera on this rig), which is
     invariant to ANY projection-matrix convention (scale sign, world handedness).
     Falls back to the Hartley-Zisserman ``sign(det M) * sign(w)`` formula when a
     camera sits on the origin (synthetic rigs), which assumes a proper rotation.
@@ -131,7 +131,7 @@ def depth_signs(point_xyz: np.ndarray, projection_matrices: np.ndarray) -> np.nd
         return signs
     homogeneous = np.append(point_xyz, 1.0)
     # Reference-point form: a point is in front of a camera iff its homogeneous
-    # scale w shares the sign of a KNOWN in-front point's w — the convention
+    # scale w shares the sign of a KNOWN in-front point's w - the convention
     # factor (matrix scale, world handedness) cancels. The world origin is the
     # pitch centre on this rig, in front of every camera; when a camera sits ON
     # the reference (w_ref ~ 0, synthetic rigs), fall back to the det(M) formula,
@@ -164,8 +164,8 @@ def irls_huber_refit(
     The RANSAC inlier re-fit is an *unweighted* least-squares (L2) solve over the
     inlier views, so one view that is an inlier only just under the reprojection gate
     still pulls the point as hard as a pixel-accurate view. This applies the standard
-    robust-triangulation fix (Lee & Civera 2020) — the same IRLS-Huber estimator the
-    repo already ships for the ground plane (:func:`geometry.robust_fuse_ground`) — to
+    robust-triangulation fix (Lee & Civera 2020) - the same IRLS-Huber estimator the
+    repo already ships for the ground plane (:func:`geometry.robust_fuse_ground`) - to
     the free-space per-joint solve: each view's confidence weight is multiplied by a
     Huber factor ``min(1, delta / r_i)`` on its pixel residual ``r_i`` and the DLT is
     re-run (it already applies ``sqrt(weight)`` per row, so this is one reweighted DLT
@@ -244,7 +244,7 @@ def ransac_triangulate_point(
     else:
         candidate_pairs = list(combinations(valid_indices, 2))
     if parallax_order and len(candidate_pairs) > 1:
-        # G3: rank seed pairs by the angle between their viewing rays through the
+        # Rank seed pairs by the angle between their viewing rays through the
         # observations (via a provisional 2-view point). High parallax first.
         def _pair_parallax(pair: tuple[int, int]) -> float:
             left, right = pair
@@ -338,7 +338,7 @@ def point_covariance_3d(
     """3x3 covariance of a triangulated point, linearized at the solution (F9b).
 
     ``cov = sigma^2 (J^T W J)^{-1}`` with J the stacked 2x3 reprojection Jacobians of
-    the inlier views and ``sigma^2`` the weighted residual variance — the standard
+    the inlier views and ``sigma^2`` the weighted residual variance - the standard
     first-order uncertainty of a multi-view triangulation. Elongated along the ray
     direction on low-parallax (facing-pair) view sets, which is exactly the signal a
     downstream consumer needs to distrust depth there. None when under-determined.
@@ -395,7 +395,7 @@ def _skeleton_two_view_batched(
     cheirality: bool,
     hartley: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Exact 2-view fast path (W10-PERF): for V==2 the pairwise RANSAC collapses
+    """Exact 2-view fast path: for V==2 the pairwise RANSAC collapses
     analytically to one DLT per joint (candidate == refit == fallback), so ALL
     joints are solved in a single batched SVD. Bit-identical to the per-joint
     path (same row order, same LAPACK kernel per matrix; verified on real data).
@@ -538,7 +538,7 @@ def _skeleton_multi_view_batched(
     cheirality: bool,
     hartley: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Exact batched replica of the per-joint pairwise RANSAC (W10-PERF).
+    """Exact batched replica of the per-joint pairwise RANSAC.
 
     Candidate pairs are evaluated in the same lexicographic order as
     ``combinations(valid_indices, 2)`` per joint; the best-candidate update rule,
@@ -679,7 +679,7 @@ def triangulate_skeleton_ransac(
 
     ``hartley``/``parallax_order`` (G1/G3, flag-gated off = byte-identical) are
     forwarded per joint to :func:`ransac_triangulate_point`. Batched fast paths
-    (W10-PERF, bit-identical) handle the 2-view and the generic multi-view cases;
+    (bit-identical) handle the 2-view and the generic multi-view cases;
     ``parallax_order=True`` or ``robust_refit=True`` fall back to the per-joint
     reference loop (the IRLS-Huber polish lives only in that path, so the batched
     kernels stay untouched and the flag-off dispatch is bit-identical to today).
@@ -751,7 +751,7 @@ _COCO17_PARENT = {
     15: 13, 16: 14,                   # ankles <- knees
 }
 
-# Halpe-26 = COCO-17 + head/neck/hip + big toes/small toes/heels (F15: the feet are
+# Halpe-26 = COCO-17 + head/neck/hip + big toes/small toes/heels (the feet are
 # true ground-contact landmarks, so triangulating them tightens the 3D ground story).
 _HALPE26_PARENT = {
     **_COCO17_PARENT,
@@ -772,8 +772,8 @@ def fill_occluded_joints(
 
     A joint triangulates only when >= 2 cameras see it, so a briefly-occluded or
     frame-edge joint is NaN in scattered frames while its neighbours are solid. This
-    fills those holes **temporally** — linear interpolation between the nearest valid
-    frames within ``max_gap_frames`` (hold at sequence ends) — which is the logical
+    fills those holes **temporally** - linear interpolation between the nearest valid
+    frames within ``max_gap_frames`` (hold at sequence ends) - which is the logical
     extrapolation for a joint that was and will again be observed. Filled entries carry
     reduced confidence (``fill_confidence_scale``) so downstream weights them less.
 
@@ -826,7 +826,7 @@ def fill_from_skeletal_prior(
     Last-resort extrapolation for a joint temporal-fill could not recover (never seen
     across the sequence in that gap): offset the (valid) parent joint by the bone vector
     taken from ``reference_pose`` (the identity's most-complete triangulated frame),
-    scaled to the identity's median bone length. Very low confidence — it is a prior,
+    scaled to the identity's median bone length. Very low confidence - it is a prior,
     not a measurement.
     """
 

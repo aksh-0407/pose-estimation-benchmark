@@ -5,7 +5,7 @@ from dataclasses import replace
 import numpy as np
 
 from identity.p3_association.associator import Correspondence, Detection3
-from identity.p5_global_id.config import P4AConfig, P4Config
+from identity.p5_global_id.config import GlobalTrackingConfig, GlobalIdConfig
 from identity.p5_global_id.global_track import CONFIRMED, TENTATIVE
 from identity.p5_global_id.track_manager import TrackManager
 
@@ -18,8 +18,8 @@ def _correspondence(frame: int, xy=(0.0, 0.0), confidence=0.8) -> Correspondence
     return Correspondence(frame, {"cam_01": detection}, np.asarray(xy, float), confidence, False)
 
 
-def _config(**p4a_overrides) -> P4Config:
-    return P4Config(p4a=replace(P4AConfig(), **p4a_overrides))
+def _config(**p4a_overrides) -> GlobalIdConfig:
+    return GlobalIdConfig(tracking=replace(GlobalTrackingConfig(), **p4a_overrides))
 
 
 def test_tentative_track_confirms_after_configured_hits():
@@ -237,7 +237,7 @@ def test_binding_keeps_one_id_when_membership_flickers():
     track = manager.tracks[0]
     assert track.global_player_id == "P001"
 
-    # Frames 2-4: the correspondence "splits" — only one camera at a time, but
+    # Frames 2-4: the correspondence "splits" - only one camera at a time, but
     # the binding persists, so no new track may appear.
     for frame, cameras in ((2, ("cam_01",)), (3, ("cam_04",)), (4, ("cam_01",))):
         assignments = manager.update(

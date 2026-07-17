@@ -252,7 +252,7 @@ class Track:
 
     def _medoid_incremental(self, members: list[PoseVector]) -> PoseVector:
         """O(K) medoid: reuse the cached pairwise cosines, computing only the pairs
-        involving the newly-appended member. Bit-identical to `_medoid_full` — the
+        involving the newly-appended member. Bit-identical to `_medoid_full` - the
         cosine is symmetric, values are memoised (not recomputed), and every row sum
         adds the same per-pair values in the same member order with the same
         first-minimum tie-break."""

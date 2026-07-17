@@ -266,7 +266,7 @@ def detect_batch(model, images: list[np.ndarray], cand: Candidate) -> list[np.nd
 
 def _drop_tile_clipped(boxes: np.ndarray, tile: tuple[int, int, int, int],
                        frame_wh: tuple[int, int], margin: float = 4.0) -> np.ndarray:
-    """Drop boxes touching an INTERIOR tile border — they are partial-person
+    """Drop boxes touching an INTERIOR tile border - they are partial-person
     fragments; the neighbouring tile or the full-frame pass owns the whole person.
     Borders shared with the frame edge are legitimate truncations and are kept."""
     if len(boxes) == 0:
@@ -418,7 +418,7 @@ def main() -> None:
     args = parse_args()
     frames_by_cam = discover_frames(args)
     if not frames_by_cam:
-        sys.exit("no frames discovered — check --data-root/--drive-root/--deliveries")
+        sys.exit("no frames discovered - check --data-root/--drive-root/--deliveries")
     total = sum(len(v) for v in frames_by_cam.values())
     print(f"discovered {len(frames_by_cam)} camera streams, {total} sampled frames", flush=True)
     out_dir = Path(args.out).expanduser()

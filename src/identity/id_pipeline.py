@@ -1,17 +1,19 @@
-"""Batch driver for the PipeTrack identity portion (P3 -> P4) on all deliveries.
+"""Batch driver for the identity inner loop (association then global ID) on all deliveries.
 
-Re-runs cross-camera association (P3) and global-ID tracking (P4) for one or more
-deliveries, reusing the on-disk P2 tracklets, then prints a joint metric panel and
-(optionally) diffs it against a frozen baseline snapshot. BLAS threads are capped
-per stage so eight deliveries can fan out across cores without oversubscription
-(the lesson logged in ``wip/3d_location_methods_log.md``).
+Re-runs cross-camera association (03) and global-ID tracking (05) for one or more
+deliveries, reusing the on-disk per-camera tracking (02) output, then prints a joint
+metric panel and (optionally) diffs it against a frozen baseline snapshot. BLAS
+threads are capped per stage so eight deliveries can fan out across cores without
+oversubscribing them (see docs/pipeline/fixes-log.md for the history).
+
+Default trees target the 8-delivery working set (data/derived/8_init/pipetrack_v9).
 
 Example (all 8, reuse a tree's tracking -> association/global_id, diff a baseline)::
 
     python -m identity.id_pipeline \
-        --input-tree data/derived/runs/pipetrack_v8 \
-        --output-tree data/derived/runs/pipetrack_v8-id \
-        --baseline data/derived/runs/pipetrack_v8/_baseline_snapshot \
+        --input-tree data/derived/8_init/pipetrack_v9 \
+        --output-tree data/derived/8_init/pipetrack_v9-id \
+        --baseline data/derived/8_init/pipetrack_v9/_baseline_snapshot \
         --jobs 8
 
 ``--panel-only`` skips running and just reads whatever metrics already exist under
@@ -41,14 +43,14 @@ ALL_DELIVERIES = [
     "CCPL080626M2_1_12_1",
 ]
 
-# Columns read jointly — no single one is optimized in isolation.
+# Columns read jointly - no single one is optimized in isolation.
 PANEL_COLUMNS = [
     ("agreement", "cross_camera_agreement_rate", "{:.3f}"),
     ("ids", "distinct_global_id_count", "{:d}"),
     ("teleports", "teleport_event_count", "{:d}"),
     ("collisions", "same_camera_identity_collision_frames", "{:d}"),
-    ("single_cam", "single_camera_rate", "{:.3f}"),          # from P3 metrics
-    ("churn", "pair_link_churn_rate", "{:.3f}"),             # from P3 metrics
+    ("single_cam", "single_camera_rate", "{:.3f}"),          # from association metrics
+    ("churn", "pair_link_churn_rate", "{:.3f}"),             # from association metrics
     ("verdict", "quality_verdict.verdict", "{}"),
 ]
 
@@ -171,9 +173,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--deliveries", default=None,
                         help="Comma-separated delivery ids (default: all 8).")
-    parser.add_argument("--input-tree", default="data/derived/runs/pipetrack_v8",
-                        help="Tree holding the P2 inputs (deliveries/<D>/02_tracking).")
-    parser.add_argument("--output-tree", default="data/derived/runs/pipetrack_v8-id",
+    parser.add_argument("--input-tree", default="data/derived/8_init/pipetrack_v9",
+                        help="Tree holding the per-camera tracking inputs "
+                             "(deliveries/<D>/02_tracking).")
+    parser.add_argument("--output-tree", default="data/derived/8_init/pipetrack_v9-id",
                         help="Tree to write association/global_id into.")
     parser.add_argument("--drive-root", default="data/raw/8_init",
                         help="Dataset raw/footage root (default: data/raw/8_init).")
@@ -184,7 +187,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
                         help="Interpreter for the pipeline stages (use the pose-lab env).")
     parser.add_argument("--jobs", type=int, default=4, help="Parallel deliveries.")
     parser.add_argument("--skip-p3", action="store_true",
-                        help="Reuse existing P3 output; only re-run P4.")
+                        help="Reuse existing association (03) output; only re-run "
+                             "global ID (05).")
     parser.add_argument("--panel-only", action="store_true",
                         help="Do not run; just read + print the metric panel.")
     parser.add_argument("--baseline", default=None,

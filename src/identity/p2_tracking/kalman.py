@@ -52,7 +52,7 @@ class KalmanBoxTracker:
         self._P = _symmetrize(self._F @ self._P @ self._F.T + self._Q())
 
     def update(self, bbox_xywh: list[float]) -> None:
-        # C2: a re-acquired track is being measured again — restore nominal
+        # A re-acquired track is being measured again - restore nominal
         # process noise (mark_missed inflates it 1.5x per missed frame; without
         # this reset a 10-frame gap left _q ~ 57 for the track's whole life).
         self._q = 1.0

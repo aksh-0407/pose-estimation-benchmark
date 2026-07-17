@@ -2,7 +2,7 @@
 #
 # Runs between P1 (2D inference) and P2 (per-camera tracking). It links each
 # camera's detections into short micro-tracks (IoU association, purely for
-# smoothing — NOT identity) and applies a One-Euro filter with a confidence-gated
+# smoothing - NOT identity) and applies a One-Euro filter with a confidence-gated
 # spike clamp to the per-keypoint pixel trajectories, reducing frame-to-frame
 # jitter before it propagates into tracking / association / triangulation.
 #

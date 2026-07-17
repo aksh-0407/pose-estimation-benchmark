@@ -59,7 +59,7 @@ def test_epoched_never_duplicates_single_slots():
     assert len(keepers) <= 1
 
 
-# ------------------------------------------------------- Wave-6 suppression
+# ------------------------------------------------- peripheral suppression
 def test_suppression_decide_protects_core_and_drops_bad_peripherals():
     from identity.p6_roles.suppress_peripherals import DEFAULTS, decide
 

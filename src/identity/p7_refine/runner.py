@@ -8,7 +8,7 @@ byte-identical to the input.
 
 Being keyed purely on ``global_player_id`` + ``pose_3d``, the same runner works against any
 stage that carries a triangulated pose (e.g. a future lift-first ``04_lift`` keyed on
-``binding_id``) — it is deliberately decoupled from the pipeline ordering.
+``binding_id``) - it is deliberately decoupled from the pipeline ordering.
 """
 
 from __future__ import annotations
@@ -47,11 +47,11 @@ def _infer_match_id(delivery_id: str) -> str:
         raise ValueError(f"cannot infer match_id from delivery_id: {delivery_id}")
     return match.group("match_id")
 
-_HIP_JOINTS = [11, 12, 19]  # l_hip, r_hip, mid-hip — the manager's "wobbly" joints
+_HIP_JOINTS = [11, 12, 19]  # l_hip, r_hip, mid-hip - the manager's "wobbly" joints
 
 # Same canonical prediction filename contract the other stages use. Discovery is inlined
 # (rather than importing the P2 tracker) to keep this stage free of the tracking / scipy
-# import chain — the refinement is deliberately decoupled from pipeline ordering.
+# import chain - the refinement is deliberately decoupled from pipeline ordering.
 _CANONICAL_PREDICTION_RE = re.compile(
     r"^(?P<capture_group>bt_\d{2})__(?P<delivery_id>.+)__(?P<camera_id>cam_\d{2})\.jsonl$"
 )

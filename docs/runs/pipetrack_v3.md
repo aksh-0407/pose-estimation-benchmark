@@ -6,7 +6,7 @@
 - Archived: 2026-07-14T02:30:48.992683+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance
-(no manifest found — pre-driver-era tree; directory listing below)
+(no manifest found - pre-driver-era tree; directory listing below)
 - top-level entries: _baseline_snapshot, ab_baseline, ab_candidate, ab_gate, ab_graph, deliveries, p2, p3, p4
 
 ## Per-delivery metric panel

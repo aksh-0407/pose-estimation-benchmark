@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""P5b (Wave 6): role-aware suppression of low-confidence peripheral identities.
+"""Role-aware suppression of low-confidence peripheral identities (stage 06).
 
 The four core roles (bowler, striker, non-striker, wicketkeeper) are NEVER
 suppressed. Peripheral identities (umpires, fielders, unknowns) are suppressed
-only when their track quality is clearly bad — the user directive: when
+only when their track quality is clearly bad - the user directive: when
 low-confidence poses/tracking of peripheral players hinder the output, drop
 them rather than extrapolate. A well-tracked umpire stays.
 
-Reads a P4 run dir (+ sibling P5 roles.json), writes ``suppression.json`` next
-to roles.json:
+Reads a global-id (05) run dir plus the sibling 06_roles/roles.json, and writes
+``suppression.json`` next to roles.json:
 
     {"schema_version": "suppression/v1", "enabled": true,
      "suppressed": {"P009": {"reasons": ["kp_conf 0.28 < 0.35"], ...}}, ...}
@@ -47,9 +47,9 @@ DEFAULTS = {
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--input-run-dir", required=True, help="P4 run dir")
+    ap.add_argument("--input-run-dir", required=True, help="global-id (05) run dir")
     ap.add_argument("--roles-path", default=None,
-                    help="roles.json (default: <input>/../p5/roles.json)")
+                    help="roles.json (default: <input>/../06_roles/roles.json)")
     ap.add_argument("--output-path", default=None,
                     help="suppression.json (default: next to roles.json)")
     ap.add_argument("--config", default=None, help="YAML with the suppress_* keys")
@@ -68,7 +68,7 @@ def load_config(path: str | None) -> dict:
 
 
 def track_quality(run_dir: Path) -> dict[str, dict]:
-    """Per-global-id quality aggregates from the P4 predictions."""
+    """Per-global-id quality aggregates from the global-id (05) predictions."""
 
     stats: dict[str, dict] = defaultdict(lambda: {
         "kp_conf": [], "det_conf": [], "frames": set(),
@@ -139,7 +139,7 @@ def write_terminal_predictions(
 ) -> int:
     """Write the terminal per-camera output (``06_roles/predictions``): the global-id
     records with ``role`` stamped and suppressed identities dropped. This is the merged
-    downstream handoff — pose_2d + pose_3d + pose_3d_named + global_player_id + role.
+    downstream handoff - pose_2d + pose_3d + pose_3d_named + global_player_id + role.
     """
     suppressed_ids = set(suppressed)
     pred_out = out_run_dir / "predictions"

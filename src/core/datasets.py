@@ -1,7 +1,7 @@
 """Dataset registry + path resolution.
 
 One layout under a single ``DATA_ROOT`` (``--data-root`` / env ``PIPETRACK_DATA`` /
-default ``data``), identical on every machine — only the base differs (laptop ``data/``
+default ``data``), identical on every machine - only the base differs (laptop ``data/``
 == L40S ``~/bits-pose-data/``). See ``configs/datasets.yaml`` for the tree and the
 per-dataset ``calibration_source`` (both matches share one calibration session, so
 ``40_full`` borrows ``8_init``'s calibration).
@@ -89,7 +89,7 @@ def calibration_root_for(footage_root: str | os.PathLike[str]) -> Path:
     """Calibration dataset root for a given footage dataset root.
 
     ``footage_root`` is ``<DATA_ROOT>/raw/<dataset>``; calibration lives at the
-    sibling ``<DATA_ROOT>/raw/<calibration_source(dataset)>`` — so a borrowing
+    sibling ``<DATA_ROOT>/raw/<calibration_source(dataset)>`` - so a borrowing
     dataset (40_full) transparently reads 8_init's calibration without threading
     a second root through every stage.
     """

@@ -63,4 +63,4 @@ the root joint in world metres, every joint relative to the root, keyed by name.
 
 World convention: **X = right, Y = forward, Z = up**, metres, `z = 0` at the turf
 (pitch-centre origin). UE export (`identity.export.export_ue_packets`) additionally
-emits `keypoints3d_ue_cm` (X↔Y swap, ×100).
+emits `keypoints3d_ue_cm` (X-Y swap, ×100).

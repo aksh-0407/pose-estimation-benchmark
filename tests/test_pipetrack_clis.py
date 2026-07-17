@@ -10,7 +10,7 @@ from core.contract import example_group1_frame, validate_group1_frame
 from identity.p3_association.config import P3AssociationConfig
 from identity.p3_association.runner import run_association
 from identity.p4_lift.run_triangulation import triangulate_canonical_run
-from identity.p5_global_id.config import P4AConfig, P4Config
+from identity.p5_global_id.config import GlobalTrackingConfig, GlobalIdConfig
 from identity.p5_global_id.runner import run_global_id
 
 
@@ -109,7 +109,7 @@ def test_p3_p4_p6_canonical_run_smoke(tmp_path: Path):
         p4_run,
         drive_root,
         DELIVERY,
-        P4Config(p4a=replace(P4AConfig(), confirm_hits=2, confidence_high=0.4)),
+        GlobalIdConfig(tracking=replace(GlobalTrackingConfig(), confirm_hits=2, confidence_high=0.4)),
         expected_frames=3,
     )
     assert p4_metrics["distinct_global_id_count"] == 1
@@ -178,7 +178,7 @@ def test_lift_before_global_id_chain(tmp_path: Path):
     p5_run = tmp_path / "05"
     run_global_id(
         p4_lift, p5_run, drive_root, DELIVERY,
-        P4Config(p4a=replace(P4AConfig(), confirm_hits=2, confidence_high=0.4)),
+        GlobalIdConfig(tracking=replace(GlobalTrackingConfig(), confirm_hits=2, confidence_high=0.4)),
         expected_frames=3,
     )
     p5_player = json.loads(

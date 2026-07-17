@@ -2,9 +2,9 @@
 
 Two modes (config ``matching_mode``):
 
-* ``pairwise_anchor`` — Vedant's sticky-anchor star matching, kept for A/B
+* ``pairwise_anchor`` - the original sticky-anchor star matching, kept for A/B
   comparison and as a fallback.
-* ``multiway_cycle`` (default) — geometry-guided multi-view clustering. All
+* ``multiway_cycle`` (default) - geometry-guided multi-view clustering. All
   pairwise epipolar/triangulation matches feed a *constrained agglomerative
   clustering*: components merge only when the foot point triangulated over the
   whole candidate cluster reprojects within tolerance into every member view
@@ -70,19 +70,19 @@ class Detection3:
     ground_xy: np.ndarray | None = None
     appearance: np.ndarray | None = None
     # True when ground_xy came from an upper-body height-plane estimate because
-    # the feet were cut off / occluded — carries extra positional uncertainty.
+    # the feet were cut off / occluded - carries extra positional uncertainty.
     ground_approx: bool = False
-    # Temporally-smoothed foot-contact pixel for the EMITTED position only (F7). Set by
+    # Temporally-smoothed foot-contact pixel for the EMITTED position only. Set by
     # a per-(camera, tracklet) smoothing pre-pass; None => use the per-frame foot. Never
     # feeds the clustering gate, so identity stays invariant.
     emit_foot_px: np.ndarray | None = None
     # Native-skeleton keypoints (Halpe-26 when the P1 model provides them). Carries the
     # heel/toe ground-contact landmarks for foot_contact_mode v3; None on COCO-17-only
-    # runs. Emit-path only — never feeds the clustering gate.
+    # runs. Emit-path only - never feeds the clustering gate.
     native_keypoints_px: np.ndarray | None = None
     native_keypoint_conf: np.ndarray | None = None
-    # Wave-5b: True when another detection in the SAME camera overlaps this one
-    # (bbox IoU >= contested_iou) — the camera cannot separate the two players, so
+    # True when another detection in the SAME camera overlaps this one
+    # (bbox IoU >= contested_iou) - the camera cannot separate the two players, so
     # its ground/appearance/posture evidence for both is down-weighted or muted.
     contested: bool = False
 
@@ -102,15 +102,15 @@ class Correspondence:
     # Same physical player => same binding_id for the whole delivery, across all
     # cameras. None in per-frame mode and for unbound leftovers.
     binding_id: str | None = None
-    # Billboard (ground-anchored monocular) posture aggregate of the binding — the
+    # Billboard (ground-anchored monocular) posture aggregate of the binding - the
     # facing-pair-capable body-shape cue, unlike pose_descriptor which needs
     # triangulation parallax. Emitted only when P3 ``emit_posture`` is on (F6b);
-    # consumed by the P4a teleport veto and re-entry gate.
+    # consumed by the global-id stage's teleport veto and re-entry gate.
     posture: "PostureAggregate | None" = None
     # 2x2 world-frame covariance of ground_xy (F9a): Gauss-Newton posterior for
     # multi-view z0_reproj clusters, inflated homography-Jacobian model for
     # single-camera ones. Emitted only when P3 ``emit_ground_cov`` is on; the
-    # measurement-noise input for P4's uncertainty-aware Kalman R (F10).
+    # measurement-noise input for P4's uncertainty-aware Kalman R.
     ground_cov: np.ndarray | None = None
 
 
@@ -119,7 +119,7 @@ class TemporalLinkMemory:
     """Short-term evidence that two P2 tracklets represent the same player.
 
     H4: with ``decay`` < 1, pair counts are multiplied by it every frame so the
-    support reflects RECENT agreement — without decay one early wrong
+    support reflects RECENT agreement - without decay one early wrong
     co-clustering self-reinforces forever (per-frame mode only; the default
     tracklet-graph mode does not use this memory). 1.0 = legacy, no decay.
     """
@@ -143,7 +143,7 @@ class TemporalLinkMemory:
 
     def update(self, correspondences: list[Correspondence], config: P3AssociationConfig) -> None:
         if self.decay < 1.0:
-            # H4: age all pair evidence so support reflects recent agreement and an
+            # Age all pair evidence so support reflects recent agreement and an
             # early wrong co-clustering cannot self-reinforce indefinitely.
             for key in list(self.counts):
                 aged = self.counts[key] * self.decay
@@ -617,7 +617,7 @@ def _bbox_iou_xywh(a, b) -> float:
 def mark_contested_detections(
     detections_by_cam: dict[str, list[Detection3]], iou_thr: float
 ) -> dict[str, list[Detection3]]:
-    """Flag same-camera detection pairs whose bboxes overlap >= iou_thr (Wave-5b).
+    """Flag same-camera detection pairs whose bboxes overlap >= iou_thr.
 
     Cross-camera overlap is meaningless (different viewpoints), so the comparison is
     strictly within each camera's detection list for one frame.
@@ -834,7 +834,7 @@ def _pose_descriptor_for_members(members, dets_per_cam, proj_matrices, camera_ce
 
 def _airborne_2d_proxy(detection: Detection3, config) -> bool:
     """Cheap causal airborne flag (F9a): both confident ankles well above the bbox
-    bottom means the feet are off the ground and the z=0 projection lands long —
+    bottom means the feet are off the ground and the z=0 projection lands long  - 
     inflate the emitted covariance rather than trusting the grazing-angle point.
     (Replaced by the 3D-lift ankle-height flag once 04 (binding lift) runs.)"""
 
@@ -864,9 +864,9 @@ def _finalize_ground_cov(cov, members_detections, config) -> np.ndarray | None:
     airborne = [_airborne_2d_proxy(det, config) for det in members_detections]
     if airborne and sum(airborne) * 2 > len(airborne):  # majority of views airborne
         cov = cov * float(config.airborne_cov_scale)
-    # Wave-5b: when EVERY member view is contested the relative solve weights cancel
+    # When EVERY member view is contested the relative solve weights cancel
     # out (uniform scaling), so the posterior cov alone does not reflect the merged-box
-    # ambiguity — inflate it explicitly so P4's measurement-R treats it as uncertain.
+    # ambiguity - inflate it explicitly so P4's measurement-R treats it as uncertain.
     contested = [getattr(det, "contested", False) for det in members_detections]
     if contested and all(contested):
         cov = cov * float(config.contested_sigma_scale) ** 2
@@ -915,7 +915,7 @@ def _build_correspondence(cluster_id, members, dets_per_cam, proj_matrices, conf
             detection, proj_matrices[camera_id], config
         )
         if config.single_cam_height_emit:
-            # C5: back-project the emit foot onto its landmark-height plane — the
+            # Back-project the emit foot onto its landmark-height plane - the
             # single lone-camera case where z=0 projection overshoots by ~0.94 m
             # mean / 1.3 m p95 at grazing angles (methods-log M5). Emit-only.
             pixel, height = _emit_foot_and_height(detection, config)

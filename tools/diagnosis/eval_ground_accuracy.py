@@ -5,10 +5,10 @@ No per-player ground truth exists, so this reports two calibration-anchored prox
 DO move with emitted-position quality (unlike ``ground_spread_m``, which only measures
 member disagreement):
 
-* ``emitted_reproj_px`` — project each cluster's emitted ``ground_xy`` (z=0) into every
+* ``emitted_reproj_px`` - project each cluster's emitted ``ground_xy`` (z=0) into every
   member camera and compare to that member's foot pixel. Lower = the reported point
   better explains all the views it was built from. Computed for multi-camera clusters.
-* ``dist_to_triangulated_foot_m`` — distance from the emitted ``ground_xy`` to the
+* ``dist_to_triangulated_foot_m`` - distance from the emitted ``ground_xy`` to the
   calibration-optimal RANSAC-triangulated foot (>=3 views, tri reproj < 12 px). Lower =
   closer to the geometry-optimal point. This is the fairer accuracy proxy.
 

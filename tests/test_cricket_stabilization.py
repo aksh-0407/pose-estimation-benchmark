@@ -170,7 +170,7 @@ def test_runner_disabled_is_passthrough(tmp_path: Path):
 
 
 def test_runner_disabled_is_byte_identical_for_any_key_order(tmp_path: Path):
-    # Regression (Wave 0): the writer must not re-order keys — a P1 producer that
+    # Regression (Wave 0): the writer must not re-order keys - a P1 producer that
     # writes insertion-ordered JSON (e.g. the rtmpose-x run) must round-trip
     # byte-for-byte through the disabled stage, or every flags-off A/B breaks.
     pred_dir = tmp_path / "p1" / "predictions"

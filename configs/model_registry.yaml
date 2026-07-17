@@ -183,27 +183,6 @@ models:
       - https://arxiv.org/abs/2312.07526
       - https://github.com/open-mmlab/mmpose/tree/main/projects/rtmo
 
-  - id: yolo26x_pose
-    name: Ultralytics YOLO26x-pose
-    family: Ultralytics YOLO Pose
-    role: fast_body17_fallback
-    framework: ultralytics
-    skeleton: coco_17
-    input_size: [640, 640]
-    checkpoint: models/yolo26x_pose/weights/yolo26x-pose.pt
-    config: ultralytics_pose
-    export_targets: [onnx, tensorrt, openvino, coreml, tflite]
-    license: AGPL-3.0 or enterprise license required for closed products
-    status: verify_availability
-    expected_strengths:
-      - Production-friendly API and export path
-      - Good fast baseline
-    expected_risks:
-      - Body-only COCO-17
-      - License must be checked for commercial deployment
-    sources:
-      - https://docs.ultralytics.com/tasks/pose
-
   - id: vitpose_h
     name: ViTPose-H
     family: ViTPose

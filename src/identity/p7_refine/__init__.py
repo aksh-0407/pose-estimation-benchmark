@@ -1,1 +1,1 @@
-"""07 (refinement) — physics-constrained, smooth 3D skeleton refinement (post-identity)."""
+"""07 (refinement) - physics-constrained, smooth 3D skeleton refinement (post-identity)."""

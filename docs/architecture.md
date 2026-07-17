@@ -14,7 +14,7 @@ event/officiating) consume our per-player 3D + identity + role via the JSON cont
 
 ## The camera rig & facing-pair geometry
 
-Seven cameras, captured in three groups (`src/core/dataset.py`):
+Seven cameras, captured in three groups (`src/core/frames.py`):
 
 | Group | Cameras | Resolution |
 |---|---|---|
@@ -23,7 +23,7 @@ Seven cameras, captured in three groups (`src/core/dataset.py`):
 | `bt_03` | cam_03, cam_06 | 2560×1440 |
 
 The co-observing pairs are **facing pairs**, cameras viewing the *same* ground strip from
-opposite sides: **C1↔C4, C2↔C6, C3↔C5** (cam_07 unpaired). They are derived from calibration,
+opposite sides: **C1-C4, C2-C6, C3-C5** (cam_07 unpaired). They are derived from calibration,
 not hardcoded (`derive_facing_pairs`, `src/identity/common/geometry.py`): a mutual-best match on
 anti-parallel optical axes with nearest ground look-at points. Facing pairs have **low-parallax,
 near-degenerate epipolar geometry**, the epipolar cue is dropped when the baseline is degenerate

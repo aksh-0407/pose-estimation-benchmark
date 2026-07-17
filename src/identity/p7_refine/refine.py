@@ -12,7 +12,7 @@ and makes it *physically valid* and *smooth*, addressing the manager's three ask
      from their temporal neighbours (predict-and-substitute), never trusted raw.
 
 Everything is offline / whole-clip (non-causal zero-phase smoothing is allowed), and
-operates purely on 3D positions — it never reads or writes any identity field, so IDs
+operates purely on 3D positions - it never reads or writes any identity field, so IDs
 are untouched by construction.
 """
 
@@ -120,7 +120,7 @@ def estimate_canonical_bones(
     are pooled so the skeleton is bilaterally symmetric. The result is then clamped to the
     absolute human range (``limits``): a median outside its range is a triangulation
     artefact (bad / chimera identity), not a real limb, so it is capped instead of being
-    locked in — the emitted skeleton can never exceed physics. Every bone always gets a
+    locked in - the emitted skeleton can never exceed physics. Every bone always gets a
     length (its anatomical ``default`` when there are no reliable samples), so a full
     skeleton can always be rebuilt.
     """
@@ -315,7 +315,7 @@ def moving_average_smooth(sequence_xyz: np.ndarray, window: int) -> np.ndarray:
 
     Last year's proven smoother (a 5-frame moving average). Applied per joint per axis
     over each contiguous finite segment; NaN gaps are preserved, never bridged. A centred
-    window is symmetric, so it introduces no phase lag — the offline-quality property we
+    window is symmetric, so it introduces no phase lag - the offline-quality property we
     want. Segments shorter than the window are left untouched.
     """
 
@@ -354,7 +354,7 @@ def fk_smooth(sequence: np.ndarray, bones, target, *, params: "RefineParams") ->
     Smooth the root trajectory (heavier -> steady hips) and each bone's unit-direction
     channel (lighter -> genuine limb motion) independently, renormalize the directions,
     then rebuild with the fixed canonical lengths. The result is *exactly* constant bone
-    length AND smooth — a plain xyz low-pass cannot achieve both, because filtering joint
+    length AND smooth - a plain xyz low-pass cannot achieve both, because filtering joint
     positions re-breaks the lengths.
     """
 
@@ -374,7 +374,7 @@ def fk_smooth(sequence: np.ndarray, bones, target, *, params: "RefineParams") ->
 
     # Extra smoothing for the chain-end bone groups (face/foot/mid). A short extremity bone
     # turns small direction noise into large visible jitter, so each group is low-passed
-    # harder than the main limbs — heaviest for the ~rigid face and foot, moderate for the
+    # harder than the main limbs - heaviest for the ~rigid face and foot, moderate for the
     # forearm/shank so a real swing or stride is de-noised but not lagged.
     for group, window, cutoff in (
         (_FACE_BONES, params.face_window, params.face_cutoff_hz),
@@ -455,7 +455,7 @@ def refine_identity_sequence(
 
 
 def _most_complete(sequence: np.ndarray) -> np.ndarray:
-    """The frame with the most finite joints — the skeletal-prior reference pose."""
+    """The frame with the most finite joints - the skeletal-prior reference pose."""
     seq = np.asarray(sequence, dtype=float)
     if seq.shape[0] == 0:
         return np.full((seq.shape[1], 3), np.nan)

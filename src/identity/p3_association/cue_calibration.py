@@ -2,16 +2,16 @@
 
 There is no identity ground truth, so calibration is bootstrapped from geometry:
 
-* **same-player anchors** — cross-camera tracklet pairs whose ground projections
+* **same-player anchors** - cross-camera tracklet pairs whose ground projections
   agree tightly for many frames while no other player is nearby (unambiguous by
   isolation, e.g. the bowler's run-up or the square-leg umpire);
-* **different-player pairs** — co-visible cross-camera tracklet pairs whose ground
+* **different-player pairs** - co-visible cross-camera tracklet pairs whose ground
   projections stay metres apart.
 
 From those two populations every cue (ground residual, appearance distance,
 posture z) gets robust same/different Gaussians, and cue values are scored as
 log-likelihood ratios. A cue that cannot separate the populations on THIS footage
-gets a d' near zero and its clipped LLR contributes almost nothing — cues degrade
+gets a d' near zero and its clipped LLR contributes almost nothing - cues degrade
 to abstention instead of lying, which is the safety property the association
 solver relies on.
 """
@@ -268,7 +268,7 @@ def fit_pair_distribution(
 ) -> CueDistribution | None:
     """Fit one camera-pair's same/different distribution with the shared floors.
 
-    Returns ``None`` when either side is too thin — the caller must abstain for
+    Returns ``None`` when either side is too thin - the caller must abstain for
     that pair rather than borrow another pair's colour statistics.
     """
 

@@ -69,7 +69,7 @@ def _root(J):
 
 
 def _draw_tracked(ax, J, title, center, half, color):
-    """One player, camera tracking their root — fixed ~2*half window so detail stays big."""
+    """One player, camera tracking their root - fixed ~2*half window so detail stays big."""
     ax.clear()
     ax.set_xlim(center[0] - half, center[0] + half)
     ax.set_ylim(center[1] - half, center[1] + half)
@@ -131,8 +131,8 @@ def main() -> int:
             f = frames[i]
             Ja, Jb = seq_a.get(f, {}), seq_b.get(f, {})
             center = _root(Ja) if Ja else (_root(Jb) if Jb else np.zeros(3))
-            _draw_tracked(axb, Jb, f"BEFORE — {gid} f{f}", center, args.half, colors[gid])
-            _draw_tracked(axa, Ja, f"AFTER — {gid} f{f}", center, args.half, colors[gid])
+            _draw_tracked(axb, Jb, f"BEFORE - {gid} f{f}", center, args.half, colors[gid])
+            _draw_tracked(axa, Ja, f"AFTER - {gid} f{f}", center, args.half, colors[gid])
 
         ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=50)
         out = out_dir / args.delivery / f"end{ends[gid]}_{gid}.mp4"

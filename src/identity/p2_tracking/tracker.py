@@ -85,7 +85,7 @@ class CameraTracker:
                     within = (maha_ok or dist <= floor) and dist <= self.config.gate_max_distance_px
                     if not within:
                         continue
-                    # C1: the gate used to be dead code — iou_cost stayed 1.0, which
+                    # The gate used to be dead code - iou_cost stayed 1.0, which
                     # no acceptance path can pass, so a fast mover that outruns his
                     # own bbox (the sprinting bowler) always fragmented. A passed
                     # gate now yields a normalized motion cost (< 1 so IoU-only
@@ -258,7 +258,7 @@ class CameraTracker:
             for i in um_d2:
                 hit.add(id(self._spawn(low[i], frame_index)))
 
-        # age every live track that was NOT hit this frame (incl. DORMANT — they advance via the
+        # age every live track that was NOT hit this frame (incl. DORMANT - they advance via the
         # top-of-frame predict, mark_missed only updates counters/state, never re-predicts)
         for t in self.tracks:
             if id(t) not in hit and t.state in (CONFIRMED, TENTATIVE, DORMANT):

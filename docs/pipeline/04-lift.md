@@ -126,15 +126,15 @@ DLT is already robust, kept as an option, not enabled. See [fixes-log](fixes-log
 
 ---
 
-## 6. Known issues (severity ★)
+## 6. Known issues (severity, 1 low to 3 high)
 
-- **V2-L1 (★★) Single-camera to no 3D pose.** ~39% of player-frames; no triangulation from one ray.
-- **T-1 (★★) 3D produced but not yet *consumed* by identity.** 05 passes it through but tracks on the
+- **V2-L1 (severity 2/3) Single-camera to no 3D pose.** ~39% of player-frames; no triangulation from one ray.
+- **T-1 (severity 2/3) 3D produced but not yet *consumed* by identity.** 05 passes it through but tracks on the
   ground plane; using the reprojection/cycle-consistency split signal + 3D position is the decide-in-3D
   A/B, not a sequencing bug.
-- **V2-L3 (★) Flat z = 0 airborne error**, the ground point forced to z = 0 lands beyond the true
+- **V2-L3 (severity 1/3) Flat z = 0 airborne error**, the ground point forced to z = 0 lands beyond the true
   position at a grazing angle.
-- **T-2 (★) Skeletal-prior fabrication risk** for never-seen joints on long single-view stretches.
+- **T-2 (severity 1/3) Skeletal-prior fabrication risk** for never-seen joints on long single-view stretches.
 
 ---
 
@@ -146,19 +146,19 @@ DLT is already robust, kept as an option, not enabled. See [fixes-log](fixes-log
 | #1 decide-in-3D |  **PARTIAL** | the covariance path above is the *measurement* half | full 3D tracking (3D KF + 3D re-ID) **NOT DONE** |
 | 1C robust IRLS-Huber refit |  **BUILT** (used in candidate stack) | `--tri-robust-refit` | ~neutral (reproj p95 6.61 to 6.56); kept as option |
 | #5 offline Butterworth filter |  **AVAILABLE** | `--smoother butterworth` | opt-in for the offline render path |
-| #2 single-view PnP lift | ⬜ **NOT DONE** |, | the ~39% single-camera coverage gap ([BUG-7](known-bugs.md)); 1F sticky-hip was a **rejected** narrower attempt |
-| #4 airborne handling | ⬜ **NOT DONE** |, | z=0 grazing error on jumps |
-| #6 gate skeletal-prior fill | ⬜ **NOT DONE** |, | fabrication risk on long single-view stretches |
+| #2 single-view PnP lift | **NOT DONE** |, | the ~39% single-camera coverage gap ([BUG-7](known-bugs.md)); 1F sticky-hip was a **rejected** narrower attempt |
+| #4 airborne handling | **NOT DONE** |, | z=0 grazing error on jumps |
+| #6 gate skeletal-prior fill | **NOT DONE** |, | fabrication risk on long single-view stretches |
 
 ## 8. Candidate fixes (priority-ordered)
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Decide in 3D**, consume 04's `pelvis_ground_xy` + covariance as 05's measurement, add a 3D pose-shape re-ID, and use reprojection/cycle-consistency as the chimera-split signal. Behind `--track-in-3d`, A/B-gated. | ★★★ | The richest geometric signal is produced *before* identity is finalised; consuming it unlocks 3D-aware tracking + splittable clustering (ID-5). | Medium (wiring) | VoxelPose [2207.10955] |
-| 2 | **Single-view to canonical-skeleton lift (PnP)** for the ~39% single-camera frames: fit the player's learned canonical 3D skeleton to the lone 2D view at its ground position. | ★★ | Half of coverage is single-camera; a PnP fit gives a plausible full 3D pose where triangulation can't. | Medium-High | UPose3D [2404.14634] |
-| 3 | **Uncertainty-aware triangulation**, propagate 2D keypoint covariance into the DLT weights and emit a per-joint 3D covariance for 05's Kalman R. | ★★ | Weighting by real uncertainty (not just √conf) is the modern robust recipe and gives 05 principled measurement noise. | Medium | LOSTU [2311.11171] |
-| 4 | **Airborne handling**, take the ground position from the triangulated **pelvis vertical projection** (robust to a raised foot); flag airborne frames and inflate their covariance. | ★ | Removes the z = 0 grazing-angle error on jumps/strides. | Low-Medium | Pose2Sim |
-| 5 | **Gate skeletal-prior fill**, cap how long a joint may be prior-filled and flag it, or prefer the single-view PnP lift. | ★ | Avoids emitting fabricated limbs on long single-view stretches. | Low |, |
+| 1 | **Decide in 3D**, consume 04's `pelvis_ground_xy` + covariance as 05's measurement, add a 3D pose-shape re-ID, and use reprojection/cycle-consistency as the chimera-split signal. Behind `--track-in-3d`, A/B-gated. | severity 3/3 | The richest geometric signal is produced *before* identity is finalised; consuming it unlocks 3D-aware tracking + splittable clustering (ID-5). | Medium (wiring) | VoxelPose [2207.10955] |
+| 2 | **Single-view to canonical-skeleton lift (PnP)** for the ~39% single-camera frames: fit the player's learned canonical 3D skeleton to the lone 2D view at its ground position. | severity 2/3 | Half of coverage is single-camera; a PnP fit gives a plausible full 3D pose where triangulation can't. | Medium-High | UPose3D [2404.14634] |
+| 3 | **Uncertainty-aware triangulation**, propagate 2D keypoint covariance into the DLT weights and emit a per-joint 3D covariance for 05's Kalman R. | severity 2/3 | Weighting by real uncertainty (not just √conf) is the modern robust recipe and gives 05 principled measurement noise. | Medium | LOSTU [2311.11171] |
+| 4 | **Airborne handling**, take the ground position from the triangulated **pelvis vertical projection** (robust to a raised foot); flag airborne frames and inflate their covariance. | severity 1/3 | Removes the z = 0 grazing-angle error on jumps/strides. | Low-Medium | Pose2Sim |
+| 5 | **Gate skeletal-prior fill**, cap how long a joint may be prior-filled and flag it, or prefer the single-view PnP lift. | severity 1/3 | Avoids emitting fabricated limbs on long single-view stretches. | Low |, |
 
 Cross-phase: fix 1 here is the enabler for 03's splittable clustering and 05's 3D tracking, see
 [`wip/open-work.md`](../../wip/open-work.md).

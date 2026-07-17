@@ -3,6 +3,11 @@
 > **Stage 05** (was P4), turns per-frame cross-camera correspondences into **persistent global
 > identities** (`P001…`) that survive occlusion, camera hand-offs, and gaps for the whole delivery , 
 > the ids the mosaic colours by. Code: `src/identity/p5_global_id/`, config `configs/05_global_id.yaml`.
+>
+> Config naming: the YAML sections are `tracking:` (online global-id tracking) and `stitching:`;
+> the pre-restructure spellings `p4a:`/`p4b:` are still accepted by the loader, and archived run
+> manifests carry the old key names. In code the config classes are `GlobalIdConfig` /
+> `GlobalTrackingConfig` / `StitchingConfig`.
 
 ---
 
@@ -166,19 +171,19 @@ classic global data-association method of [Zhang, Li & Nevatia, CVPR 2008](https
 
 ---
 
-## 6. Known issues (severity ★)
+## 6. Known issues (severity, 1 low to 3 high)
 
-- **ID-2 (★★★) Fragmentation / over-segmentation.** 18-25 distinct ids vs a ~13 roster;
-  `stitched_id_switch_proxy=0` ⇒ 05b under-merges.
-- **ID-3 (★★) Teleports.** 7-155/clip historically, **now eliminated by A3 (`emit_velocity_gate`)** at
+- **ID-2 (severity 3/3) Fragmentation / over-segmentation.** 18-25 distinct ids vs a ~13 roster;
+  `stitched_id_switch_proxy=0` means 05b under-merges.
+- **ID-3 (severity 2/3) Teleports.** 7-155/clip historically, **now eliminated by A3 (`emit_velocity_gate`)** at
   the emission level; the underlying mis-assignment (below) remains.
 - **ISSUE-4, covariance-R is ON in production** (`use_measurement_covariance`), so R is not distance-blind.
   Whether it *measurably helps* is **inconclusive** (OFF-vs-ON: teleports 258 to 269, agreement noise-level) , 
   keep/disable is a human decision, not resolved by the agent.
-- **KP-1 (★★) `emit_kalman_posterior` ineffective as a teleport guard**, on in production, teleports
+- **KP-1 (severity 2/3) `emit_kalman_posterior` ineffective as a teleport guard**, on in production, teleports
   persist; see [known-bugs](known-bugs.md).
-- **ID-2b (★) Conservative 05b gates**, too tight to bridge real occlusion gaps.
-- **05-1 (★) Overfitting risk**, constants tuned on one short delivery.
+- **ID-2b (severity 1/3) Conservative 05b gates**, too tight to bridge real occlusion gaps.
+- **05-1 (severity 1/3) Overfitting risk**, constants tuned on one short delivery.
 
 ---
 
@@ -197,20 +202,20 @@ earlier drafts read the code defaults (off) not the YAML (on). Verified from run
 | 1A hip emission |  **BUILT, neutral** (off in prod) | `emit_ground_source: triangulated_hip` | ~teleport-neutral; option |
 | IMPACT-2 partial-drop |  **BUILT, 40-conf clean** (off in prod) | `drop_partial_singlecam` | 13 ghosts dropped, agreement held; awaiting mosaic verdict |
 | `emit_kalman_posterior` |  **ON but INEFFECTIVE** | `emit_kalman_posterior: true` | active (differs 8/8) yet teleports persist, [known-bugs BUG-1](known-bugs.md) |
-| #3 track-in-3D (full) | ⬜ **NOT DONE** |, | needs the 3D KF + 3D re-ID wiring |
-| #4 loosen 05b stitching | ⬜ **NOT DONE** |, | `stitched_id_switch_proxy≈0` (under-merges) |
-| #7 identity ground truth | ⬜ **NOT DONE** |, | all identity metrics are proxies without it |
+| #3 track-in-3D (full) | **NOT DONE** |, | needs the 3D KF + 3D re-ID wiring |
+| #4 loosen 05b stitching | **NOT DONE** |, | `stitched_id_switch_proxy≈0` (under-merges) |
+| #7 identity ground truth | **NOT DONE** |, | all identity metrics are proxies without it |
 
 ## 8. Candidate fixes (priority-ordered)
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Distance/uncertainty-dependent R** into the Singer Kalman (from 04's triangulation covariance or a homography-Jacobian model) instead of a fixed R. | ★★★ | Distance-blind R is the *root* enabler of the mis-assignments; A3 only masks the emitted symptom. | Medium | Lee & Civera [2008.01258] |
-| 2 | **Adaptive lost-window + stronger re-ID at re-entry** (mature pose-shape / learned ReID + kinematic prediction), scaled by track maturity and density. | ★★★ | Fragmentation (ID-2) is re-entry failing; a longer window + real re-ID key fixes it. | Medium | Deep OC-SORT [2302.11813] |
-| 3 | **Track in 3D**, run the tracker on 04's 3D pose/position (3D Singer KF + 3D pose-shape re-ID) rather than the 2D ground only. | ★★ | The 3D skeleton is the richest disambiguator; removes many crowd mis-assignments. | Medium-High | VoxelPose [2207.10955] |
-| 4 | **Loosen 05b bridging where occupancy proves two segments can't be simultaneous**, and add a pose/ReID descriptor to the stitch cost. | ★★ | 05b under-merges; occupancy + a real descriptor safely bridges more gaps. | Medium | min-cost-flow [Zhang 2008] |
-| 5 | **Fix or retire `emit_kalman_posterior`**, run the isolated off-vs-on A/B; if inert, repair the branch or remove the misleading `true` from the production config. | ★★ | An advertised teleport guard that doesn't guard is a latent trap. | Low |, |
-| 6 | **Get identity ground truth** (hand-label a few hundred frames on 2-3 deliveries incl. `_7`/M2) to report real MOTA/IDF1/HOTA instead of proxies. | ★★ | Every identity number today is a proxy; without labels, tuning is guesswork. | Medium (labelling) | HOTA [2009.07736] |
+| 1 | **Distance/uncertainty-dependent R** into the Singer Kalman (from 04's triangulation covariance or a homography-Jacobian model) instead of a fixed R. | severity 3/3 | Distance-blind R is the *root* enabler of the mis-assignments; A3 only masks the emitted symptom. | Medium | Lee & Civera [2008.01258] |
+| 2 | **Adaptive lost-window + stronger re-ID at re-entry** (mature pose-shape / learned ReID + kinematic prediction), scaled by track maturity and density. | severity 3/3 | Fragmentation (ID-2) is re-entry failing; a longer window + real re-ID key fixes it. | Medium | Deep OC-SORT [2302.11813] |
+| 3 | **Track in 3D**, run the tracker on 04's 3D pose/position (3D Singer KF + 3D pose-shape re-ID) rather than the 2D ground only. | severity 2/3 | The 3D skeleton is the richest disambiguator; removes many crowd mis-assignments. | Medium-High | VoxelPose [2207.10955] |
+| 4 | **Loosen 05b bridging where occupancy proves two segments can't be simultaneous**, and add a pose/ReID descriptor to the stitch cost. | severity 2/3 | 05b under-merges; occupancy + a real descriptor safely bridges more gaps. | Medium | min-cost-flow [Zhang 2008] |
+| 5 | **Fix or retire `emit_kalman_posterior`**, run the isolated off-vs-on A/B; if inert, repair the branch or remove the misleading `true` from the production config. | severity 2/3 | An advertised teleport guard that doesn't guard is a latent trap. | Low |, |
+| 6 | **Get identity ground truth** (hand-label a few hundred frames on 2-3 deliveries incl. `_7`/M2) to report real MOTA/IDF1/HOTA instead of proxies. | severity 2/3 | Every identity number today is a proxy; without labels, tuning is guesswork. | Medium (labelling) | HOTA [2009.07736] |
 
 Cross-phase: ID-2 / ID-3 sit just under 03's ID-1 / ID-5; several fixes depend on the 04 triangulation
 covariance, see [`wip/open-work.md`](../../wip/open-work.md).

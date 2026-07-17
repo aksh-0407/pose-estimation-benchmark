@@ -32,7 +32,7 @@ p4,p5,p6_3d}`. 40 deliveries (M1 overs 14/16/17; M2 overs 11/12 + innings-2 over
 **Rig geometry** (for questions): world origin = pitch centre, +Y toward the far end, z=0 =
 ground/turf; stump mid-bases at (0, ±10.08 m). cam_01/cam_04 are the **end-on** pair looking
 down the pitch; cam_02/03 east, cam_05/06 west; cam_07 oblique panoramic. **Facing (co-observing)
-pairs: cam_01↔cam_04, cam_02↔cam_06, cam_03↔cam_05**, these look head-on at each other, so their
+pairs: cam_01-cam_04, cam_02-cam_06, cam_03-cam_05**, these look head-on at each other, so their
 epipolar geometry is near-degenerate (this matters a lot below). Calibration is
 centimetre-accurate (ball reprojection p95 ≤ 4.5 px), team-confirmed one session for both matches.
 
@@ -74,7 +74,7 @@ trustworthy positional channel; the flat ground dot is not.** (`docs/diagnosis/0
 19-87 % of multi-camera ground clusters carry >1 ID. The odd-camera-out is systematically
 the **hard camera: cam_04 (end-on, grazing) and cam_07 (panoramic)**. Concrete:
 `M1_1_16_2`, cam_04 calls a player P011/P013 while cam_01/02/06 all call him P005. Why: on
-the facing pair cam_01↔cam_04 the epipolar geometry is degenerate, kit colour is dead
+the facing pair cam_01-cam_04 the epipolar geometry is degenerate, kit colour is dead
 (d′≈0), bone-ratios abstain, so only the **ground-distance** cue is live, and it is exactly
 the cue that's noisy on a grazing camera. The hard cameras have no strong binding cue.
 (`docs/diagnosis/05-...`)
@@ -119,7 +119,7 @@ we've root-caused to a mean-over-fragments emission step, a targeted 05 fix, not
 (2.2, 2.3)
 
 **Q: Same player has different IDs in different cameras, why?**
-A: The two "facing" cameras (esp. cam_01↔cam_04, end-on) have degenerate geometry, and our
+A: The two "facing" cameras (esp. cam_01-cam_04, end-on) have degenerate geometry, and our
 only strong ID cue there, ground distance, is noisy because a grazing camera's foot
 projection is ~1 m off. Colour and body-proportion cues are dead on identical-kit footage. So
 the hard camera's tracklet doesn't bind and gets its own ID. (2.4)

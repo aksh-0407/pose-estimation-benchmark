@@ -1,4 +1,4 @@
-"""Role assignment (P5) — heuristic v0, designed to be replaced piecewise.
+"""Role assignment (P5) - heuristic v0, designed to be replaced piecewise.
 
 Contract: :func:`assign_roles` maps each global id's fused ground trajectory to a
 role from the P4 taxonomy (bowler, striker, non_striker, wicketkeeper, umpire,
@@ -8,14 +8,14 @@ the logic here can be upgraded rule-by-rule without touching any caller.
 
 Heuristics in v0 (all positional/kinematic, no appearance, no ball data):
 
-* **bowler** — the fastest sustained early run along the pitch axis (the run-up;
+* **bowler** - the fastest sustained early run along the pitch axis (the run-up;
   the one signal in this family that is near-unambiguous).
-* **wicketkeeper** — persistently BEHIND the striker's-end stumps, on the pitch
+* **wicketkeeper** - persistently BEHIND the striker's-end stumps, on the pitch
   line, low average speed.
-* **umpire** — persistently behind the bowling-end stumps on the pitch line.
-* **striker / non_striker** — nearest long-lived ids to the striker's-end and
+* **umpire** - persistently behind the bowling-end stumps on the pitch line.
+* **striker / non_striker** - nearest long-lived ids to the striker's-end and
   bowling-end creases respectively that are not already claimed above.
-* **fielder** — everyone else with enough track to judge; short-lived ids stay
+* **fielder** - everyone else with enough track to judge; short-lived ids stay
   ``unknown``.
 
 Known limits (v0): no leg umpire (falls out as fielder), batsmen crossing ends
@@ -66,7 +66,7 @@ def _windowed_axis_speed(
                 break
             if gap < window_frames // 2:
                 continue
-            # H2: the bowler runs WITH the bowling direction; abs() let any
+            # The bowler runs WITH the bowling direction; abs() let any
             # fast axis-aligned sprint (a fielder, a runner) win the crown.
             along = float((point_b - point_a) @ axis)
             best = max(best, along * frame_rate_fps / gap)
@@ -163,7 +163,7 @@ def assign_roles(
 
 # Epoch-scored v1 role solver (merged 2026-07-13, defects fixed same day).
 # Slots reflect the real per-delivery roster: 1 bowler, 1 striker, 1 non-striker,
-# 1 wicketkeeper, 2 umpires (bowler's end + square leg) — everyone else fields.
+# 1 wicketkeeper, 2 umpires (bowler's end + square leg) - everyone else fields.
 EPOCH_SLOTS = (
     "bowler",
     "striker",
@@ -196,7 +196,7 @@ def _slot_cost(stat: dict, slot: str) -> float:
 
     Conventions (bowling axis = +along): striker bats at the +end (crease
     +8.84, stumps +10.06); the bowler delivers from the -end; the keeper stands
-    BEHIND the striker's stumps — anywhere from up-at-the-stumps to ~15 m back
+    BEHIND the striker's stumps - anywhere from up-at-the-stumps to ~15 m back
     for pace, so being further back is only mildly penalised; the bowler's-end
     umpire stands behind the -end stumps on the line; the square-leg umpire
     stands level with the striker's crease, 12-25 m lateral.
@@ -269,7 +269,7 @@ def assign_roles_epoched(
 
     Uniqueness is enforced in two layers: within an epoch by the Hungarian solve
     (one track per slot), and across the delivery by a final greedy resolution on
-    accumulated latch strength — a slot is held by at most ONE track and a track
+    accumulated latch strength - a slot is held by at most ONE track and a track
     holds at most ONE slot, so duplicate bowlers/keepers cannot leak through the
     per-epoch latch dictionaries (defect fixed vs the original draft; the two
     umpires are two SLOTS with distinct geometry, not one slot assigned twice).

@@ -2,8 +2,9 @@
 
 Built once per delivery from the calibrated 3x4 projection matrices. The
 calibration "stats" that set the Huber transition come from
-:class:`P3AssociationConfig` (Vedant's auto-compute returned hard-coded values
-because reverse-projecting perfect survey points yields zero error).
+:class:`P3AssociationConfig`; they are fixed empirical constants because the
+original auto-compute reverse-projected perfect survey points and always
+returned zero error.
 """
 
 from __future__ import annotations

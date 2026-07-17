@@ -36,7 +36,7 @@ in beside this file (`emit_smoothness.py`, `jump_classify.py`, `occupancy_and_3d
    camera disagrees with the other three). 19-87 % of multi-camera ground clusters carry
    more than one global id. The odd-camera-out is consistently the geometrically hard camera:
    **cam_04 (end-on, grazing)** and **cam_07 (panoramic)**. The single biggest disagreeing
-   pair across all 40 is the facing pair **cam_01↔cam_04**. Concrete: on `M1_1_16_2` cam_04
+   pair across all 40 is the facing pair **cam_01-cam_04**. Concrete: on `M1_1_16_2` cam_04
    labels a player P011/P013 while cam_01/02/06 all call him P005. See
    `05-issue-cross-camera-split-identity.md`.
 

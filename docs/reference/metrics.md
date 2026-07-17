@@ -17,7 +17,7 @@ ground plane, the calibration is centimetre-accurate and can be trusted.
 Reported in `association_metrics.json` and `global_id_metrics.json`:
 
 - **cross-camera agreement rate**, fraction of frames where independent bbox-bottom ground
-  projections agree on the clustering. Low agreement ⇒ the same player is split across
+  projections agree on the clustering. Low agreement means the same player is split across
   cameras (under-merge). Ranges ~0.50-0.98 across deliveries.
 - **distinct global-ID count**, total IDs minted. A cricket scene has ~13-15 people
   (≤7 visible per camera); counts of 18-25 indicate **over-segmentation / fragmentation**.

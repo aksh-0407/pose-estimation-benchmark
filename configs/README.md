@@ -1,4 +1,4 @@
-# configs/ — live pipeline configuration (v8.1 stack)
+# configs/ - live pipeline configuration (v8.1 stack)
 
 One numbered YAML per identity stage, matching the `src/identity/pN_<stage>/` packages and the
 `data/derived/runs/<id>/deliveries/<D>/0N_<stage>/` run-dir layout. `src/main.py` defaults to
@@ -12,7 +12,7 @@ these; override per stage with `--pN-config`.
 | `05_global_id.yaml` | 05 global identity | Singer-KF + min-cost-flow stitch + colocated merge |
 | `06_roles.yaml` | 06 roles | v1.2 epoch solver + Wave-6 peripheral suppression |
 
-Stage **04 (3D lift)** has no YAML — its parameters are CLI flags on
+Stage **04 (3D lift)** has no YAML - its parameters are CLI flags on
 `src/identity/p4_lift/run_triangulation.py` (set by `src/main.py`).
 
 Shared: `keypoint_mappings.yaml` (COCO-17 / Halpe-26 skeletons), `model_envs.yaml` +

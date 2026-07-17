@@ -144,15 +144,15 @@ one-frame false detection never mints an identity).
 
 ---
 
-## 6. Known issues (severity ★)
+## 6. Known issues (severity, 1 low to 3 high)
 
-- **02-1 (★★★) CV motion model under manoeuvre.** Non-linear player motion breaks CV gating  to 
+- **02-1 (severity 3/3) CV motion model under manoeuvre.** Non-linear player motion breaks CV gating  to 
   fragmentation that 05 must stitch. *Evidence:* fragmentation proxy 5-19; distinct-ID inflation.
-- **02-2 (★★) Pose-cosine re-ID matures slowly.** With colour dead, short-gap re-entries fail and
+- **02-2 (severity 2/3) Pose-cosine re-ID matures slowly.** With colour dead, short-gap re-entries fail and
   mint fragments.
-- **02-3 (★★) No camera-motion compensation.** Any non-static camera degrades gating.
-- **02-4 (★) Global gate constants**, no per-camera/density adaptation.
-- **02-5 (★) Fixed dormant window (60 frames)**, a well-established player lost briefly can still be
+- **02-3 (severity 2/3) No camera-motion compensation.** Any non-static camera degrades gating.
+- **02-4 (severity 1/3) Global gate constants**, no per-camera/density adaptation.
+- **02-5 (severity 1/3) Fixed dormant window (60 frames)**, a well-established player lost briefly can still be
   deleted and re-born as a new id.
 
 ---
@@ -183,11 +183,11 @@ in [`../methods_log.md`](../methods_log.md) Part A.
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Adopt OC-SORT's observation-centric modules** (momentum + recovery + smoothing) over the plain CV Kalman. | ★★★ | Built for non-linear motion + occlusion (SOTA on DanceTrack), exactly cricket's regime. | Medium | OC-SORT [2203.14360] |
-| 2 | **Add camera-motion compensation (BoT-SORT CMC)** + its refined Kalman/IoU-ReID. | ★★ | Removes camera-jitter degradation. | Medium | BoT-SORT [2206.14651] |
-| 3 | **Learned, kit-robust ReID embedding** as the re-acquisition key (Deep-OC-SORT-style) to replace the slow pose gallery. | ★★ | The dead colour + slow pose gallery is the re-ID weakness; a body ReID net matures instantly per crop. | Medium-High | Deep OC-SORT [2302.11813] |
-| 4 | **Sports-tuned association (Deep-EIoU)**, expansion-IoU + deep features for fast, similar-looking athletes. | ★★ | Purpose-built for the cricket-like setting. | Medium | Deep-EIoU [2306.13074] |
-| 5 | **Adaptive gates + dormant window** scaled by track maturity and local density. | ★ | One global constant can't fit all cameras/densities. | Low-Medium | UCMCTrack [2312.08952] |
+| 1 | **Adopt OC-SORT's observation-centric modules** (momentum + recovery + smoothing) over the plain CV Kalman. | severity 3/3 | Built for non-linear motion + occlusion (SOTA on DanceTrack), exactly cricket's regime. | Medium | OC-SORT [2203.14360] |
+| 2 | **Add camera-motion compensation (BoT-SORT CMC)** + its refined Kalman/IoU-ReID. | severity 2/3 | Removes camera-jitter degradation. | Medium | BoT-SORT [2206.14651] |
+| 3 | **Learned, kit-robust ReID embedding** as the re-acquisition key (Deep-OC-SORT-style) to replace the slow pose gallery. | severity 2/3 | The dead colour + slow pose gallery is the re-ID weakness; a body ReID net matures instantly per crop. | Medium-High | Deep OC-SORT [2302.11813] |
+| 4 | **Sports-tuned association (Deep-EIoU)**, expansion-IoU + deep features for fast, similar-looking athletes. | severity 2/3 | Purpose-built for the cricket-like setting. | Medium | Deep-EIoU [2306.13074] |
+| 5 | **Adaptive gates + dormant window** scaled by track maturity and local density. | severity 1/3 | One global constant can't fit all cameras/densities. | Low-Medium | UCMCTrack [2312.08952] |
 
 Cross-phase: 02 fragmentation is the upstream half of the problem 05 tries to stitch, see
 [05-global-id](05-global-id.md).

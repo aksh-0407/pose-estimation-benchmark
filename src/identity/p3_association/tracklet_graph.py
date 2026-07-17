@@ -8,18 +8,18 @@ cues (kit colour, ground-anchored posture) contribute meaningfully.
 
 Pipeline (all offline over one delivery, deterministic):
 
-1. ``observe_frame`` — per detection: ground point + covariance + billboard posture
+1. ``observe_frame`` - per detection: ground point + covariance + billboard posture
    sample; per cross-camera detection pair within a wide sample gate: ground
    residual/Mahalanobis, appearance distance, isolation. Tracklets are split into
    *chunks* at kinematically impossible ground jumps so a P2 identity switch can
    never weld two players together.
-2. ``harvest_calibration`` — bootstrap same-player anchors (tight ground agreement
+2. ``harvest_calibration`` - bootstrap same-player anchors (tight ground agreement
    + spatial isolation) and different-player pairs (consistently metres apart),
    fit per-cue LLR distributions (see :mod:`identity.p3_association.cue_calibration`).
-3. ``solve`` — fuse per-pair aggregated cues into edge LLRs, then constrained
+3. ``solve`` - fuse per-pair aggregated cues into edge LLRs, then constrained
    agglomerative clustering (cannot-link: same-camera temporal overlap) with a
    local move-refinement pass. Every cluster becomes a persistent ``binding_id``.
-4. ``emit_frame`` — rebuild per-frame correspondences from the bindings, so the
+4. ``emit_frame`` - rebuild per-frame correspondences from the bindings, so the
    correspondence stream P4 consumes is temporally stable by construction.
 """
 
@@ -80,7 +80,7 @@ def _approximated(det: Detection3, projection: np.ndarray, config: P3Association
     )
     if estimate is None:
         # Feet unusable AND no upper-body anchor this frame: no position at all
-        # beats a garbage bbox-bottom projection — one garbage frame is enough to
+        # beats a garbage bbox-bottom projection - one garbage frame is enough to
         # shatter a chunk at a purity split and orphan everything after it.
         return dc_replace(det, ground_xy=np.full(2, np.nan), ground_approx=True)
     return dc_replace(det, ground_xy=estimate[0], ground_approx=True)
@@ -92,12 +92,12 @@ def apply_feet_approximation(
     image_h_by_cam: dict[str, int],
     config: P3AssociationConfig,
 ) -> dict[int, dict[str, list[Detection3]]]:
-    """Re-anchor detections whose feet are unusable — STICKY per P2 tracklet.
+    """Re-anchor detections whose feet are unusable - STICKY per P2 tracklet.
 
     A bbox that reaches the frame's bottom edge with no confident ankle means the
     feet are cut off: the bbox-bottom ground projection is garbage (it projects
     the FRAME edge, not the player). An upper-body landmark of known typical
-    height intersected with its height plane lands directly above the feet —
+    height intersected with its height plane lands directly above the feet  - 
     most accurate exactly for the close-to-camera subjects that get cut off.
 
     The decision is made ONCE per tracklet (majority vote over its frames), never
@@ -153,7 +153,7 @@ class _ChunkState:
     ground_by_frame: dict[int, np.ndarray] = field(default_factory=dict)
     cov_by_frame: dict[int, np.ndarray] = field(default_factory=dict)
     posture: PostureAccumulator = field(default_factory=PostureAccumulator)
-    # F11: sampled (17, 3) [x, y, conf] keypoints per frame for the cluster-level
+    # Sampled (17, 3) [x, y, conf] keypoints per frame for the cluster-level
     # shape lift; populated only when graph_shape_enabled (every graph_lift_stride
     # frames), so memory stays bounded.
     kp_samples: dict[int, np.ndarray] = field(default_factory=dict)
@@ -272,6 +272,10 @@ class TrackletGraphBuilder:
         self.config = config
         self.projections = projections
         self._chunks: dict[ChunkKey, _ChunkState] = {}
+        # Frozen frame-sets per chunk for overlap tests, keyed by (chunk, frame
+        # count). Chunk frame lists only ever grow, so the length uniquely
+        # fingerprints the content and a grown chunk simply gets a new entry.
+        self._frame_set_cache: dict[tuple[ChunkKey, int], frozenset] = {}
         self._current_chunk: dict[tuple[str, str], int] = {}
         self._last_seen: dict[tuple[str, str], tuple[int, np.ndarray]] = {}
         # (frame, cam, local_track_id) -> chunk, so emission is independent of
@@ -290,16 +294,20 @@ class TrackletGraphBuilder:
         self._syn_of_det: dict[tuple[int, str, int], str] = {}
         self._support_lookup: dict[tuple[ChunkKey, ChunkKey], int] = {}
         self.diagnostics: dict[str, int] = defaultdict(int)
-        # Facing (co-observing, low-parallax) camera pairs derived from calibration —
+        # Facing (co-observing, low-parallax) camera pairs derived from calibration  - 
         # the same relationship the runner uses. Used to widen the hard-distance gate
-        # on exactly those pairs where a tight gate splits a correct merge (ID-1).
+        # on exactly those pairs where a tight gate splits a correct merge.
         self._facing_pairs: set[frozenset[str]] = set()
         if self.config.graph_facing_gate_scale > 1.0 and len(projections) >= 2:
             try:
                 self._facing_pairs = {
                     frozenset(pair) for pair in derive_facing_pairs(projections)
                 }
-            except Exception:
+            except Exception as exc:
+                # Continue without the widened gate, but say so: silently losing
+                # the facing pairs disables graph_facing_gate_scale entirely.
+                print(f"WARN: facing-pair derivation failed ({exc}); "
+                      "facing-gate widening disabled for this run", flush=True)
                 self._facing_pairs = set()
 
     def _hard_dist_gate(self, cam_a: str, cam_b: str) -> float:
@@ -363,8 +371,8 @@ class TrackletGraphBuilder:
                         var_floor_m=self.config.ground_var_floor_m,
                     )
                 chunk.cov_by_frame[frame_index] = cov
-                # Wave-5b: overlapping same-camera boxes produce crops/skeletons that
-                # mix the two players — poison for every identity descriptor. Skip
+                # Overlapping same-camera boxes produce crops/skeletons that
+                # mix the two players - poison for every identity descriptor. Skip
                 # descriptor sampling for contested detections (the geometry above
                 # keeps its own, separately down-weighted, covariance).
                 mute_descriptors = (
@@ -407,8 +415,8 @@ class TrackletGraphBuilder:
             samples.dist_m.append(distance)
             m2 = ground_mahalanobis_sq(ground_a, cov_a, ground_b, cov_b)
             samples.maha.append(float(np.sqrt(m2)) if np.isfinite(m2) else float("nan"))
-            # Wave-5b: appearance from a merged two-player crop is identity poison on
-            # BOTH sides of the pair sample — skip it (geometry samples stay).
+            # Appearance from a merged two-player crop is identity poison on
+            # BOTH sides of the pair sample - skip it (geometry samples stay).
             if not (
                 self.config.contested_mute_appearance
                 and (getattr(det_a, "contested", False) or getattr(det_b, "contested", False))
@@ -417,7 +425,7 @@ class TrackletGraphBuilder:
                 if app is not None:
                     samples.appearance.append(float(app))
             # Isolation for anchor bootstrapping: nearest OTHER PERSON. Only the
-            # pair's own two cameras can vouch for that — a detection in a third
+            # pair's own two cameras can vouch for that - a detection in a third
             # camera may be this very player, but one camera never sees one person
             # twice, so same-camera neighbours are guaranteed different people.
             midpoint = 0.5 * (ground_a + ground_b)
@@ -473,7 +481,7 @@ class TrackletGraphBuilder:
             + self.config.ground_sigma_px_bbox_frac * max(bbox_h, 0.0)
         )
         if getattr(det, "contested", False):
-            # Wave-5b: a merged-box foot pixel is unreliable — widen this view's
+            # A merged-box foot pixel is unreliable - widen this view's
             # ground covariance so pair Mahalanobis evidence leans on clean cameras.
             sigma *= float(self.config.contested_sigma_scale)
         return sigma
@@ -545,7 +553,7 @@ class TrackletGraphBuilder:
         )
 
         if len(same_pairs) < 3 and self.config.anchor_relax_enabled:
-            # F8: a crowded delivery may hold no player isolated by 3 m for long
+            # A crowded delivery may hold no player isolated by 3 m for long
             # enough; retry once with looser same-player gates before losing every
             # delivery-fitted cue. Adopted only when it actually finds more anchors.
             relaxed = self._collect_calibration_pairs(
@@ -560,7 +568,7 @@ class TrackletGraphBuilder:
             # Per-frame samples within one pair are correlated; fewer than three
             # independent anchor pairs cannot support a trustworthy same-player
             # distribution. Prefer a cross-delivery prior calibration fitted on a
-            # clean clip of the same match (F8) when configured; else keep the
+            # clean clip of the same match when configured; else keep the
             # conservative physical defaults.
             if self.config.calibration_fallback_path:
                 calibration = CueCalibration.load(self.config.calibration_fallback_path)
@@ -808,7 +816,16 @@ class TrackletGraphBuilder:
         return edges
 
     def _overlap_frames(self, key_a: ChunkKey, key_b: ChunkKey) -> int:
-        return len(set(self._chunks[key_a].frames) & set(self._chunks[key_b].frames))
+        return len(self._frames_set(key_a) & self._frames_set(key_b))
+
+    def _frames_set(self, key: ChunkKey) -> frozenset:
+        frames = self._chunks[key].frames
+        cache_key = (key, len(frames))
+        cached = self._frame_set_cache.get(cache_key)
+        if cached is None:
+            cached = frozenset(frames)
+            self._frame_set_cache[cache_key] = cached
+        return cached
 
     def _cluster_compatible(self, members_a: list[ChunkKey], members_b: list[ChunkKey],
                             llr_lookup: dict[tuple[ChunkKey, ChunkKey], float]) -> bool:
@@ -903,7 +920,7 @@ class TrackletGraphBuilder:
 
         # Only clusters with real identity evidence EARN a binding id: seen by
         # two cameras, or one long stable single-camera track (an umpire). Short
-        # fragments emit as unbound low-confidence detections — P4 absorbs or
+        # fragments emit as unbound low-confidence detections - P4 absorbs or
         # ignores them instead of minting a fresh global id per fragment (the
         # mechanism that produced 54 ids for ~9 people on shattered-P2 clips).
         clusters_raw = sorted(
@@ -938,7 +955,7 @@ class TrackletGraphBuilder:
 
         A facing-pair split leaves TWO clusters for one physical player (e.g.
         {C1,C4} and {C2,C6}) whose cross edges were killed by the facing-pair
-        ground bias — no pairwise pass can ever rejoin them. This pass finds
+        ground bias - no pairwise pass can ever rejoin them. This pass finds
         cluster pairs that are CO-LOCATED over many frames, checks the billboard
         stature agrees, then runs the decisive geometric test the user
         prescribed: triangulate the UNION of both clusters' member views. A
@@ -1187,7 +1204,7 @@ class TrackletGraphBuilder:
         self-calibrated on this delivery (same = temporal halves of one cluster;
         diff = simultaneously co-visible distinct clusters). Merges only when
         geometry does not disagree, shape actively agrees, stature is consistent,
-        and the pair is the mutual best — and abstains entirely when the shape
+        and the pair is the mutual best - and abstains entirely when the shape
         distributions cannot be fitted.
         """
 
@@ -1340,7 +1357,7 @@ class TrackletGraphBuilder:
         A cluster whose lifted torso residuals carry the chimera signature has an
         intruder; the per-camera residual bias names the intruding camera. That
         camera's chunks are EVICTED into fresh singleton clusters directly (a
-        deterministic split — leaving it to refinement would let the innocent
+        deterministic split - leaving it to refinement would let the innocent
         chunks scatter first, since the intruder poisons their within-cluster
         scores too), and the offending pair LLRs are vetoed down to
         ``graph_chimera_veto_llr`` so no later pass (refine / rescue / attach /
@@ -1412,7 +1429,7 @@ class TrackletGraphBuilder:
                         continue
                     candidate = cluster_members[candidate_id]
                     # A move needs real evidence volume behind it, same floor as
-                    # rescues — a thin edge must not relocate a tracklet.
+                    # rescues - a thin edge must not relocate a tracklet.
                     support = sum(
                         self._support_lookup.get(_pair_key(key, other), 0)
                         for other in candidate
@@ -1467,7 +1484,7 @@ class TrackletGraphBuilder:
         rescue_grade: dict[tuple[ChunkKey, ChunkKey], bool] = {}
         for edge in edges:
             # A rescue is a below-threshold attachment justified by constraint
-            # structure; it still needs real evidence volume — a handful of
+            # structure; it still needs real evidence volume - a handful of
             # co-visible frames must not move a tracklet between identities.
             rescue_grade[_pair_key(edge.key_a, edge.key_b)] = (
                 edge.llr_ground > 0.0
@@ -1512,7 +1529,7 @@ class TrackletGraphBuilder:
         When P2 shatters (low light, sprints), a player's camera-track breaks into
         many short chunks with too little pairwise co-visibility for normal edges.
         But the player's multi-camera binding still traces a fused trajectory
-        through every one of those fragments — the same information the ghost
+        through every one of those fragments - the same information the ghost
         markers draw. A fragment is attached when it rides one binding's
         trajectory (median distance within the gate for most of its life),
         no same-camera overlap contradicts it, posture does not veto it, and no
@@ -1567,7 +1584,7 @@ class TrackletGraphBuilder:
                     # build must not ride a nearby trajectory. Use the fragment's
                     # best-supported posture aggregate (most samples), not just its
                     # first chunk, whose aggregate is often undefined for a short
-                    # fragment — so the veto actually gets a chance to fire.
+                    # fragment - so the veto actually gets a chance to fire.
                     fragment_posture = max(
                         (postures.get(k) for k in keys),
                         key=lambda agg: (
@@ -1591,7 +1608,7 @@ class TrackletGraphBuilder:
                 best_distance, best_target = candidates[0]
                 if len(candidates) > 1 and candidates[1][0] < max(
                     best_distance * 1.5, best_distance + 0.5
-                ):  # H6: multiplicative-only margin degenerates at ~0 distance
+                ):  # multiplicative-only margin degenerates at ~0 distance
                     self.diagnostics["fragment_attach_ambiguous"] += 1
                     continue
                 cluster_members[best_target] = sorted(cluster_members[best_target] + keys)

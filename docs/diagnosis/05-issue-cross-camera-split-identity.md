@@ -39,17 +39,17 @@ one of two:
 
 - **cam_04 (end-on, down the pitch)**, dominates every top pair (01-04, 02-04, 03-04,
   04-05, 04-06). Two compounding reasons:
-  - **Facing-pair epipolar degeneracy.** cam_01↔cam_04 is a *facing pair* (co-observing, near
+  - **Facing-pair epipolar degeneracy.** cam_01-cam_04 is a *facing pair* (co-observing, near
     head-on). The epipolar constraint is near-degenerate, so the geometry cue that normally
     binds two cameras' detections is weak exactly here. This is the documented "facing-pair
-    ceiling" (`docs/critical-analysis/status-report.md` §3.2). cam_01↔cam_04 is the single
+    ceiling" (`docs/critical-analysis/status-report.md` §3.2). cam_01-cam_04 is the single
     biggest disagreeing pair across all 40 (5030 events).
   - **Grazing ground projection.** End-on, a player's bbox-bottom projects to the ground with
     ~1 m depth error, so the ground-distance cue that P3 fuses is noisy for cam_04 to its
     tracklet's ground position does not land close enough to the cluster to bind.
 - **cam_07 (panoramic 3775×960, oblique)**, players are tiny (10-20 px), pose confidence is
   low, appearance is uninformative, and it sees a different slice of the field. Its tracklets
-  frequently fail to associate (`M2_2_3_5`: cam_07 to P016 vs cam_05 to P009). cam_05↔cam_07 is
+  frequently fail to associate (`M2_2_3_5`: cam_07 to P016 vs cam_05 to P009). cam_05-cam_07 is
   a top pair on the M2_2_3 clips.
 
 ## Why the existing cues do not catch it (from the campaign record, re-confirmed)

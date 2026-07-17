@@ -3,7 +3,7 @@
 This is NOT identity tracking (that is P2). It only needs enough short-range temporal
 correspondence to give the smoother a per-detection trajectory: greedy IoU association
 across consecutive frames with a small gap bridge. It never spans a real occlusion or
-crosses cameras, so it cannot introduce identity errors — a mislink just means two
+crosses cameras, so it cannot introduce identity errors - a mislink just means two
 detections are smoothed together for a frame or two.
 """
 

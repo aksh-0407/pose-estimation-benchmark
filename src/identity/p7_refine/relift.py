@@ -4,7 +4,7 @@ Root cause it solves (real case: an umpire whose full body is in cam_01 but only
 upper body is in cam_04): the 2D pose model still emits lower-body keypoints for cam_04,
 crammed at the image edge with low confidence. Stage-04 triangulation gates only on
 ``conf > 0``, so it pairs cam_01's good legs with cam_04's *hallucinated* legs and the 3D
-legs stretch along the depth ray — a pose that reprojects perfectly in both views yet is
+legs stretch along the depth ray - a pose that reprojects perfectly in both views yet is
 physically impossible.
 
 The fix reasons per joint about which cameras *reliably* see it (by confidence), then:
@@ -15,7 +15,7 @@ The fix reasons per joint about which cameras *reliably* see it (by confidence),
     the umpire's legs hang straight down and still reproject correctly in cam_01;
   * 0 reliable views -> left NaN for the temporal / skeletal-prior fill downstream.
 
-Pure numpy (no scipy) so it runs anywhere. Never reads or writes identity — it only
+Pure numpy (no scipy) so it runs anywhere. Never reads or writes identity - it only
 recomputes ``pose_3d`` for the already-assigned player cluster.
 """
 
@@ -80,14 +80,14 @@ def ray_bone_length_point(
         return anchor + v / n * bone_length
     candidates = [center + lam * direction for lam in front]
     if prev is not None and np.isfinite(prev).all():
-        return min(candidates, key=lambda x: float(np.linalg.norm(x - anchor if False else x - prev)))
-    anchor_depth = -float(direction @ (center - anchor)) / a  # λ of anchor's closest point
+        return min(candidates, key=lambda x: float(np.linalg.norm(x - prev)))
+    anchor_depth = -float(direction @ (center - anchor)) / a  # lambda of anchor's closest point
     return min(candidates, key=lambda x: abs(float((x - center) @ direction) / a - anchor_depth))
 
 
 def _reliable(conf: float, pixel, image_size, conf_min: float, margin: float) -> bool:
     """A view reliably sees a joint iff its confidence clears the floor (the trustworthy
-    signal — a hallucinated edge keypoint is low-confidence even when nominally in-frame).
+    signal - a hallucinated edge keypoint is low-confidence even when nominally in-frame).
     Grossly out-of-bounds points are also rejected as a cheap extra guard."""
     if not np.isfinite(conf) or conf < conf_min:
         return False
@@ -165,7 +165,7 @@ def relift_frame(
             pose[root_index] = fallback_pose[root_index]
             conf_out[root_index] = max(conf_out[root_index], 0.2)
 
-    # Pass B: BFS over bones — fill still-missing joints from their placed parent + one ray.
+    # Pass B: BFS over bones - fill still-missing joints from their placed parent + one ray.
     for parent, child in bones:
         if np.isfinite(pose[child]).all() or not np.isfinite(pose[parent]).all():
             continue
@@ -196,7 +196,7 @@ def relift_sequence(
     Pass 1 triangulates only the confidently-multi-view joints and estimates the player's
     canonical (anatomically-clamped) bone lengths from those clean samples. Pass 2 re-lifts
     every frame, using single-view bone-length ray placement for joints seen reliably in
-    only one camera — with the previous frame as a continuity prior so the result is smooth.
+    only one camera - with the previous frame as a continuity prior so the result is smooth.
     """
 
     from identity.p7_refine.refine import estimate_canonical_bones

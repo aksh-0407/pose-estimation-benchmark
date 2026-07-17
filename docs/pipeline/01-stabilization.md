@@ -138,14 +138,14 @@ not borne out. (Details in [fixes-log](fixes-log.md).)
 
 ---
 
-## 7. Known issues (severity ★)
+## 7. Known issues (severity, 1 low to 3 high)
 
-- **P15-1 (★★) Linking is appearance-blind**, pure IoU can mislink in crowds; a cheap pose-cosine
+- **P15-1 (severity 2/3) Linking is appearance-blind**, pure IoU can mislink in crowds; a cheap pose-cosine
   tiebreaker (already computed elsewhere) would help.
-- **P15-2 (★) Global smoothing constants**, per-joint / confidence-scaled parameters would smooth
+- **P15-2 (severity 1/3) Global smoothing constants**, per-joint / confidence-scaled parameters would smooth
   feet and torso appropriately.
-- **P15-3 (★) No long-range jitter handling**, the causal filter leaves the occlusion-burst tail.
-- **P15-4 (★) Not wired into the default delivery flow**, validated but opt-in; the batch driver
+- **P15-3 (severity 1/3) No long-range jitter handling**, the causal filter leaves the occlusion-burst tail.
+- **P15-4 (severity 1/3) Not wired into the default delivery flow**, validated but opt-in; the batch driver
   doesn't yet call it before 02.
 
 ---
@@ -158,7 +158,7 @@ not borne out. (Details in [fixes-log](fixes-log.md).)
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Add a pose-cosine tiebreaker to micro-track linking** (reuse `pose_vector`) so IoU ties in a pack are broken by body pose. | ★★ | Removes the main failure mode (crowd mislinks) cheaply. | Low | ByteTrack [2110.06864] |
-| 2 | **Wire 01 into the default flow** (batch driver runs it before 02, behind the enable flag) and add its jitter metric to the panel. | ★★ | A validated win delivers nothing until it's actually on. | Low |, |
-| 3 | **Per-joint / confidence-scaled `min_cutoff`** (feet vs torso). | ★ | Different joints have different noise. | Low | One-Euro [Casiez 2012] |
-| 4 | **Offer a SmoothNet post-pass** for offline runs to fix long occlusion-burst jitter. | ★ | Causal One-Euro can't fix long bursts. | Medium | SmoothNet [2112.13715] |
+| 1 | **Add a pose-cosine tiebreaker to micro-track linking** (reuse `pose_vector`) so IoU ties in a pack are broken by body pose. | severity 2/3 | Removes the main failure mode (crowd mislinks) cheaply. | Low | ByteTrack [2110.06864] |
+| 2 | **Wire 01 into the default flow** (batch driver runs it before 02, behind the enable flag) and add its jitter metric to the panel. | severity 2/3 | A validated win delivers nothing until it's actually on. | Low |, |
+| 3 | **Per-joint / confidence-scaled `min_cutoff`** (feet vs torso). | severity 1/3 | Different joints have different noise. | Low | One-Euro [Casiez 2012] |
+| 4 | **Offer a SmoothNet post-pass** for offline runs to fix long occlusion-burst jitter. | severity 1/3 | Causal One-Euro can't fix long bursts. | Medium | SmoothNet [2112.13715] |

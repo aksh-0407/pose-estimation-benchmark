@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Coverage audit — is a "single-camera" player a genuine geometry limit, or a P3
+"""Coverage audit - is a "single-camera" player a genuine geometry limit, or a P3
 association under-merge?
 
 Domain fact (rig geometry): the central players (striker / non-striker / bowler /
 keeper) sit in ~4 cameras' field of view (worst case 2, ~never 1); only umpires and
 deep fielders are legitimately seen by 1-2. So a high single-camera rate for the
-central group is suspicious — it may mean P3 failed to BIND detections that exist in
+central group is suspicious - it may mean P3 failed to BIND detections that exist in
 3-4 cameras, not that the cameras don't see the player.
 
 This tool separates the two. Per frame it single-link clusters the RAW pre-association

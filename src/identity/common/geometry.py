@@ -134,7 +134,7 @@ def sampson_distance(x1_px: np.ndarray, F: np.ndarray, x2_px: np.ndarray) -> flo
 
 
 def bbox_bottom_center_px(bbox_xywh_px: list[float]) -> np.ndarray:
-    """``[u, v]`` of the bbox bottom-centre — the ground-contact reference point."""
+    """``[u, v]`` of the bbox bottom-centre - the ground-contact reference point."""
 
     x, y, w, h = bbox_xywh_px
     return np.array([x + w / 2.0, y + h], dtype=float)
@@ -167,17 +167,18 @@ def ground_contact_pixel_ex(
     Returns ``(pixel, height_m, source)`` where ``height_m`` is the metric height of
     the projected landmark above the ground (so a caller can back-project the ankle
     onto the ``z = height_m`` plane instead of ``z = 0``, removing the ~10 cm
-    ankle-above-ground bias, F2) and ``source`` is one of ``ankle_mid`` /
+    ankle-above-ground bias) and ``source`` is one of ``ankle_mid`` /
     ``ankle_planted`` / ``bbox_bottom``.
 
     ``mode="legacy"`` reproduces the historical behaviour exactly (lower confident
     ankle, else bbox bottom-centre; ``height_m`` always 0). ``mode="v2"`` fixes the
-    foot-pixel defects (F3 tighter + horizontal plausibility, F4/F6 midpoint as the
-    cross-camera-consistent reference, F2 ankle height reported). ``mode="v3"``
-    (fix F4 of the critical-analysis campaign) prefers the Halpe-26 heel/toe
-    keypoints from ``native_keypoints_px`` — actual ground-contact landmarks,
-    ~2 cm above ground vs the ankle's ~10 cm — falling back to the v2 ankle stack
-    when the foot keypoints are missing or unconfident.
+    known foot-pixel defects: a tighter vertical window plus a horizontal
+    plausibility check, the two-ankle midpoint as the cross-camera-consistent
+    reference, and the ankle height reported to the caller. ``mode="v3"`` prefers
+    the Halpe-26 heel/toe keypoints from ``native_keypoints_px`` - actual
+    ground-contact landmarks, ~2 cm above ground vs the ankle's ~10 cm - falling
+    back to the v2 ankle stack when the foot keypoints are missing or unconfident.
+    (Fix history: docs/pipeline/fixes-log.md.)
     """
 
     bbox = np.asarray(bbox_xywh_px, dtype=float)
@@ -252,8 +253,8 @@ def ground_contact_pixel_ex(
             np.isfinite(p).all()
             and np.isfinite(confidence[i])
             and float(confidence[i]) >= ankle_confidence_min
-            and vertically_ok(p)                 # F3 vertical
-            and x_min <= float(p[0]) <= x_max     # F3 horizontal (new)
+            and vertically_ok(p)                  # vertical plausibility window
+            and x_min <= float(p[0]) <= x_max     # horizontal plausibility window
         )
 
     good = [i for i in (15, 16) if plausible_ankle(i)]
@@ -261,7 +262,7 @@ def ground_contact_pixel_ex(
         return bottom, 0.0, "bbox_bottom"
     if len(good) == 2:
         a, b = points[15], points[16]
-        # F4/F6: when both feet are on the ground (roughly level) the MIDPOINT is a
+        # When both feet are on the ground (roughly level) the MIDPOINT is a
         # body-centric reference every camera agrees on; only when clearly striding
         # (one foot well above the other) do we drop to the planted (lower) foot.
         if abs(float(a[1] - b[1])) <= level_frac * float(bbox[3]):
@@ -378,7 +379,7 @@ def upper_body_ground_estimate(
     pose model fails entirely, e.g. dark distant umpires). Returns
     ``(ground_xy, anchor_kind)`` or ``None``. The height priors are population
     means; the residual height error divided by the ray's elevation tangent is
-    the caller's extra ground variance — smallest exactly for the close-to-camera
+    the caller's extra ground variance - smallest exactly for the close-to-camera
     subjects that get cut off at the frame bottom.
     """
 
@@ -422,8 +423,8 @@ def ground_covariance(
     """2x2 world-XY covariance of a ground projection under isotropic pixel noise.
 
     Propagates ``sigma_px`` through the image->ground homography Jacobian
-    (evaluated numerically at the pixel). The result is strongly anisotropic —
-    elongated along the viewing ray, growing with distance — which is exactly the
+    (evaluated numerically at the pixel). The result is strongly anisotropic  - 
+    elongated along the viewing ray, growing with distance - which is exactly the
     structure a fixed scalar ground gate cannot represent. ``var_floor_m`` adds an
     isotropic floor for calibration/model error. Returns an inf-diagonal matrix
     when the projection is invalid so callers can gate on finiteness.
@@ -615,20 +616,22 @@ def ground_from_reprojection_ex(
 ) -> tuple[np.ndarray, np.ndarray | None]:
     """Ground ``(x, y)`` that minimizes robust reprojection error with ``z`` fixed at 0.
 
-    Solves ``argmin_{x,y} Σ_c w_c ρ(‖ project_c([x, y, 0]) − foot_c ‖)`` by Gauss–Newton
-    with Huber IRLS, using every camera's full 3×4 projection matrix jointly. Unlike
-    free-space triangulation this stays well-conditioned on the low-parallax *facing*
-    pairs (C1↔C4, C2↔C6, C3↔C5) because the depth DOF is removed by the ground
-    constraint; unlike the median of per-camera homography back-projections it is the
-    reprojection-optimal point, so with calibrated cameras it lands on the true foot to
-    a few centimetres. Initialised from the median homography back-projection.
+    Solves ``argmin_{x,y} sum_c w_c rho(|| project_c([x, y, 0]) - foot_c ||)`` by
+    Gauss-Newton with Huber IRLS, using every camera's full 3x4 projection matrix
+    jointly. Unlike free-space triangulation this stays well-conditioned on the
+    low-parallax *facing* pairs (C1-C4, C2-C6, C3-C5) because the depth DOF is
+    removed by the ground constraint; unlike the median of per-camera homography
+    back-projections it is the reprojection-optimal point, so with calibrated
+    cameras it lands on the true foot to a few centimetres. Initialised from the
+    median homography back-projection.
 
-    Returns ``([x, y], cov)`` in world metres. ``cov`` (F9a) is the 2×2 posterior
-    covariance from the final Gauss–Newton normal matrix, ``σ̂² (JᵀWJ)⁻¹`` with ``σ̂²``
-    the Huber-weighted residual variance — essentially free, since ``JᵀWJ`` is already
-    assembled by the solver. It is anisotropic and grows along each camera's depth
-    direction, exactly the measurement-noise model P4's Kalman needs. ``cov`` is None
-    for the single-view case (the caller should use the per-view homography-Jacobian
+    Returns ``([x, y], cov)`` in world metres. ``cov`` is the 2x2 posterior
+    covariance from the final Gauss-Newton normal matrix, ``sigma^2 * (J^T W J)^-1``
+    with ``sigma^2`` the Huber-weighted residual variance - essentially free, since
+    ``J^T W J`` is already assembled by the solver. It is anisotropic and grows
+    along each camera's depth direction, exactly the measurement-noise model that
+    the global-id stage's (05) ground Kalman filter needs. ``cov`` is None for the
+    single-view case (the caller should use the per-view homography-Jacobian
     :func:`ground_covariance` instead) and on failure (NaN point).
     """
 
@@ -651,7 +654,7 @@ def ground_from_reprojection_ex(
         [
             np.isfinite(feet[i]).all()
             and np.isfinite(projections[i]).all()
-            and np.isfinite(confidences[i])  # H5: max(NaN, eps) is NaN -> poisons JTJ
+            and np.isfinite(confidences[i])  # guard: max(NaN, eps) is NaN and poisons JTJ
             for i in range(n)
         ],
         dtype=bool,
@@ -664,7 +667,7 @@ def ground_from_reprojection_ex(
         if not valid[i]:
             continue
         # Back-project onto the landmark's own height plane (z = h_i), so an ankle
-        # gives the (x, y) directly below it -- i.e. the true ground contact (F2).
+        # gives the (x, y) directly below it, i.e. the true ground contact.
         xy = (
             pixel_to_plane_xy(feet[i], projections[i], float(heights[i]))
             if abs(float(heights[i])) > 1e-9
@@ -712,7 +715,7 @@ def ground_from_reprojection_ex(
                 break
             point = point - step
             if not np.isfinite(point).all():
-                # NOTE: must return a bare array — the caller treats the return as the
+                # NOTE: must return a bare array - the caller treats the return as the
                 # xy point; a (point, None) tuple here crashed np.isfinite (audit fix).
                 return np.full(2, np.nan)
             if float(np.linalg.norm(step)) < float(tol_m):
@@ -746,7 +749,7 @@ def ground_from_reprojection_ex(
                 xy = refit
                 final_active = inliers
 
-    # F9a: posterior covariance at the solution over the final active set.
+    # Posterior covariance at the solution over the final active set.
     JTJ = np.zeros((2, 2), dtype=float)
     weighted_ssr = 0.0
     m_views = 0
@@ -837,7 +840,7 @@ def camera_axis_lookat(
     ``forward_unit`` is the principal axis oriented toward ``toward`` (default: the
     world origin / pitch centre), resolving the bundle-adjustment sign ambiguity for
     this rig where every camera looks at the field. ``ground_lookat_xy`` is where that
-    axis meets the ``z=0`` ground plane — the strip the camera actually frames.
+    axis meets the ``z=0`` ground plane - the strip the camera actually frames.
     """
 
     P = np.asarray(projection_matrix, dtype=float)
@@ -893,8 +896,8 @@ def ground_point_visible_in(
 
     A point can reproject *inside* the image rectangle while lying **behind** the
     camera (the projective ambiguity the current ghost code ignores), so this first
-    enforces cheirality — the point must be on the same side of the camera as the
-    pitch (using :func:`camera_axis_lookat`'s pitch-oriented forward axis) — and only
+    enforces cheirality - the point must be on the same side of the camera as the
+    pitch (using :func:`camera_axis_lookat`'s pitch-oriented forward axis) - and only
     then checks the reprojected pixel falls within ``image_wh`` (expanded by
     ``margin_px``). This is the per-camera ground-visibility test the ghost markers and
     ghost-verification pass need to decide "is this ground location seen by camera X".
@@ -930,7 +933,7 @@ def derive_facing_pairs(
     A facing pair has anti-parallel forward axes AND the nearest ground look-at points:
     both cameras frame the SAME pitch strip from opposite sides, so a player seen by one
     is seen by the other. This is the relationship that matters for cross-camera identity
-    — distinct from diametrically-opposite *positions*, which can look at different strips
+    - distinct from diametrically-opposite *positions*, which can look at different strips
     (e.g. C2 vs C5). Returns sorted ``(cam_a, cam_b)`` pairs; greedy mutual-best matching
     leaves genuinely independent cameras (e.g. C7) unpaired.
     """

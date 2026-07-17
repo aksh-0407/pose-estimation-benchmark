@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Batch mosaic renderer — render every delivery's mosaic in parallel.
+"""Batch mosaic renderer - render every delivery's mosaic in parallel.
 
 Each delivery's mosaic render (``render_videos.py --mode mosaic``) is a
 CPU-bound rasterisation job: 7 camera JPEG decodes + skeleton/chip/text drawing
@@ -12,7 +12,7 @@ delivery. The deliveries are fully independent, so the peak lever is
   device->host copy + tensor reshape dominate); this launcher forces it OFF
   (``QT_RENDER_GPU_DECODE=0``).
 * NVENC is not the bottleneck at 1080p (encode overlaps the draw loop), so no
-  GPU encoder is required — libx264 stays.
+  GPU encoder is required - libx264 stays.
 * Measured scaling on the 8-vCPU L40S: 6 parallel deliveries = 3.2x throughput
   over serial; 8-wide only oversubscribes (load > nproc) with no gain. Default
   ``--jobs`` therefore leaves one core headroom.

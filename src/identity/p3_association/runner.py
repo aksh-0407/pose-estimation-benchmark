@@ -115,11 +115,11 @@ def run_association(
         raise ValueError("calibration preflight found non-finite fundamental matrices")
     records_by_frame = load_synchronized_records(prediction_files, delivery_id)
 
-    # Pass A: build (and cache) per-frame detections once — including appearance
+    # Pass A: build (and cache) per-frame detections once - including appearance
     # descriptors, which require the frame images. Frame decode is prefetched on a
-    # small thread pool (W5-PERF): decoding 7 cameras x 2560x1440 serially left the
+    # small thread pool: decoding 7 cameras x 2560x1440 serially left the
     # solver idle ~70% of Pass A; workers decode frame f+1..f+2 while f is processed.
-    # Order and outputs are unchanged (byte-identical, verified) — only the imread
+    # Order and outputs are unchanged (byte-identical, verified) - only the imread
     # moves off the main thread.
     detections_by_frame: dict[int, dict] = {}
     appearance_images_missing = 0
@@ -175,7 +175,7 @@ def run_association(
                 # emitted z0_reproj position, in the associator).
             )
         if config.contested_iou > 0.0:
-            # Wave-5b: flag same-camera overlapping detections (e.g. bowler crossing
+            # Flag same-camera overlapping detections (e.g. bowler crossing
             # the non-striker in a facing pair) so downstream evidence rides on the
             # cameras where the players are distinct.
             detections = mark_contested_detections(detections, config.contested_iou)
@@ -192,7 +192,7 @@ def run_association(
             detections_by_frame, projections, image_h_by_cam, config
         )
 
-    # Temporally smooth the emitted foot pixel per (camera, tracklet) (F7). Emit-only:
+    # Temporally smooth the emitted foot pixel per (camera, tracklet). Emit-only:
     # it never touches detection.ground_xy (the gate), so identity/clustering is
     # unchanged; it only steadies the reported ground position. No-op when window <= 1.
     detections_by_frame = smooth_emit_feet(detections_by_frame, config)
@@ -213,7 +213,7 @@ def run_association(
             calibration = graph_builder.harvest_calibration()
         graph_solution = graph_builder.solve(calibration)
 
-    # Pass C: per-frame correspondences — from stable bindings in graph mode,
+    # Pass C: per-frame correspondences - from stable bindings in graph mode,
     # from the historical per-frame clustering otherwise.
     anchor: AnchorState | None = None
     temporal_memory = TemporalLinkMemory(

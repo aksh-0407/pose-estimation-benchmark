@@ -9,10 +9,10 @@ epoch_frames: 40
 role_epoch_latch_count: 3
 role_assignment_max_cost: 8.0
 
-# --- Wave-6 (P5b): role-aware peripheral suppression -------------------------
+# --- Role-aware peripheral suppression ---------------------------------------
 # Core roles are never suppressed. Peripherals (umpires/fielders/unknown) are
-# dropped from render + 3D lift only when clearly low-quality. Disabled here
-# (flags-off = byte-identical); the W6 experiment overlay enables it.
+# dropped from render + 3D lift only when clearly low-quality. Enabled in
+# production (accepted after A/B evaluation); set false to keep every id.
 suppression_enabled: true
 suppress_min_kp_conf: 0.35
 suppress_min_completeness: 0.25

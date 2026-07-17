@@ -60,8 +60,22 @@ flowchart LR
 |---|---|
 | **Input** | `data/raw/<dataset>/.../camera<NN>/frame_*.jpg`; pose model from `configs/model_envs.yaml`; a detector config + weights |
 | **Output** | per delivery `<D>/00_inference/predictions/<group>__<delivery>__cam_NN.jsonl`, per player: `pose_2d` (Halpe-26, 26 joints incl. feet), `bbox_xywh_px` (the box), `detection_confidence`; plus `run_manifest.json`, `p1_metrics.json` |
-| **Key knobs** | `--model-id` (default `rtmpose_x_body8`), `--det-config/--det-checkpoint`, `--bbox-thr` (0.3), `--nms-thr` (0.3), `--max-people`, batch/prefetch sizes |
+| **Key knobs** | `--model-id` (default `rtmpose_x_body8`), `--detector` preset or `--det-config/--det-checkpoint`, `--bbox-thr` (0.3), `--nms-thr` (0.3), `--max-people`, batch/prefetch sizes |
 | **Skeleton** | `src/core/keypoints.py` (`HALPE26_KEYPOINTS`); `configs/keypoint_mappings.yaml` |
+
+Both runners (`run_phase1_rtmpose_inference.py` for the repo dataset layout,
+`run_phase1_l40s.py` for the remote box's native layout plus tiled detection and batch
+sweeps) share their model construction, batched inference, prefetching, and the
+per-frame record schema through `src/core/inference/phase1_common.py`; the record
+builder there is the single definition of the P1 JSONL line. The L40S runner writes
+the per-delivery run-tree layout by default (`--layout flat` restores its historical
+single `predictions/` directory).
+
+Reproducibility note: with the L40S runner's default mixed-precision mode (fp16
+autocast plus `cudnn.benchmark`), two runs from separate processes can differ by
+sub-0.001 detection-confidence wobble on isolated frames (kernel selection is a
+timing race); keypoints are unaffected in practice. Pass `--no-amp --no-perf` for
+bit-reproducible output; the standard runner has no such modes and is deterministic.
 
 ---
 
@@ -164,21 +178,21 @@ oversubscription, fixed with prefetch overlap and thread caps, not a model chang
 
 ---
 
-## 7. Known issues (severity ★)
+## 7. Known issues (severity, 1 low to 3 high)
 
 These feed the [known-bugs tracker](known-bugs.md).
 
-- **P1-1 (★★★) Detector-recall bound.** RTMDet-m @0.3 misses dark/distant/occluded subjects.
+- **P1-1 (severity 3/3) Detector-recall bound.** RTMDet-m @0.3 misses dark/distant/occluded subjects.
   *Evidence:* the association layer contains dedicated machinery, `synthetic tracklets`,
   `apply_feet_approximation`, that exists *only* because the detector never tracked those players.
   Recall lost here is unrecoverable, so this is the single highest-leverage P1 issue.
-- **P1-2 (★★) No 2D temporal stabilization at source.** Off-the-shelf keypoints jitter (~1.6 px mean
+- **P1-2 (severity 2/3) No 2D temporal stabilization at source.** Off-the-shelf keypoints jitter (~1.6 px mean
   on real frames). Addressed by stage [01](01-stabilization.md).
-- **P1-3 (★★) Detector unbenchmarked for this domain.** RTMDet-m was picked for speed; there is no
+- **P1-3 (severity 2/3) Detector unbenchmarked for this domain.** RTMDet-m was picked for speed; there is no
   cricket-specific recall/precision measurement justifying it over a stronger detector.
-- **P1-4 (★) `bbox_thr=0.3` is one global number** trading recall vs false positives across all 7
+- **P1-4 (severity 1/3) `bbox_thr=0.3` is one global number** trading recall vs false positives across all 7
   cameras and all lighting.
-- **P1-5 (★) Halpe-26 feet under-used downstream**, `pose_2d` carries the feet, but some identity
+- **P1-5 (severity 1/3) Halpe-26 feet under-used downstream**, `pose_2d` carries the feet, but some identity
   paths still use the legacy bbox-bottom/ankle pixel for ground contact.
 
 ---
@@ -200,10 +214,10 @@ A/B detail is in [`../methods_log.md`](../methods_log.md) Part A.
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Upgrade the detector** to RTMDet-l/x (drop-in) and evaluate **RT-DETR / Co-DETR** for max recall on small/dark subjects; judge by cross-camera coverage + mosaic review (no labels exist). | ★★★ | Recall lost here is unrecoverable; directly reduces missing-umpire fragmentation. | Medium; `--det-*` already wired. | RTMDet [2212.07784]; RT-DETR [2304.08069]; Co-DETR [2211.12860] |
-| 2 | **Evaluate RTMO (one-stage bottom-up)**, removes the detector bottleneck entirely (74.8 AP / 141 FPS). | ★★ | Attacks P1-1 by eliminating the detector-recall dependency; also faster. | Medium-High; new model path + schema re-validation. | RTMO [2312.07526] |
-| 3 | **Per-camera / adaptive `bbox_thr`** (lower where a camera is dark, stronger NMS to control FPs) + multi-scale test-time augmentation for distant people. | ★★ | Cheap recall gains on the hard subjects with no model swap. | Low; CLI/config only. | standard TTA |
-| 4 | **Use the Halpe-26 feet** as the primary ground-contact joint everywhere, replacing the bbox-bottom fallback. | ★★ | Feet are already computed; using them tightens the 3D ground solve for free. | Low-Medium; `geometry.py`. | Pose2Sim |
-| 5 | **Learned temporal 2D refinement (SmoothNet)** as a complement to stage 01's One-Euro filter for long occlusion-burst jitter. | ★ | One-Euro is causal/local; SmoothNet fixes long-range bursts it can't. | Medium; offline model. | SmoothNet [2112.13715] |
+| 1 | **Upgrade the detector** to RTMDet-l/x (drop-in) and evaluate **RT-DETR / Co-DETR** for max recall on small/dark subjects; judge by cross-camera coverage + mosaic review (no labels exist). | severity 3/3 | Recall lost here is unrecoverable; directly reduces missing-umpire fragmentation. | Medium; `--det-*` already wired. | RTMDet [2212.07784]; RT-DETR [2304.08069]; Co-DETR [2211.12860] |
+| 2 | **Evaluate RTMO (one-stage bottom-up)**, removes the detector bottleneck entirely (74.8 AP / 141 FPS). | severity 2/3 | Attacks P1-1 by eliminating the detector-recall dependency; also faster. | Medium-High; new model path + schema re-validation. | RTMO [2312.07526] |
+| 3 | **Per-camera / adaptive `bbox_thr`** (lower where a camera is dark, stronger NMS to control FPs) + multi-scale test-time augmentation for distant people. | severity 2/3 | Cheap recall gains on the hard subjects with no model swap. | Low; CLI/config only. | standard TTA |
+| 4 | **Use the Halpe-26 feet** as the primary ground-contact joint everywhere, replacing the bbox-bottom fallback. | severity 2/3 | Feet are already computed; using them tightens the 3D ground solve for free. | Low-Medium; `geometry.py`. | Pose2Sim |
+| 5 | **Learned temporal 2D refinement (SmoothNet)** as a complement to stage 01's One-Euro filter for long occlusion-burst jitter. | severity 1/3 | One-Euro is causal/local; SmoothNet fixes long-range bursts it can't. | Medium; offline model. | SmoothNet [2112.13715] |
 
 See the cross-phase priorities in [`wip/open-work.md`](../../wip/open-work.md).

@@ -35,7 +35,6 @@ import argparse
 import json
 import re
 import shutil
-import subprocess
 import sys
 import time
 import warnings
@@ -49,17 +48,12 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
-# Reuse the proven internals from the stock runner (module import has no main() side effects).
-from core.inference import run_phase1_rtmpose_inference as p1  # noqa: E402
+# Shared P1 building blocks (models, batched inference, prefetch, record schema).
+from core.inference import phase1_common as common  # noqa: E402
 from core.contract import (  # noqa: E402
     SCHEMA_VERSION as P1_SCHEMA_VERSION,
     SKELETON as P1_SKELETON,
     validate_group1_frame,
-)
-from core.dataset import (  # noqa: E402
-    FRAME_RE,
-    camera_label,
-    parse_frame_id,
 )
 
 # Env-overridable so nothing is machine-hardcoded (on the L40S box the data lives under
@@ -96,16 +90,20 @@ def parse_args() -> argparse.Namespace:
     mdl = parser.add_argument_group("model")
     mdl.add_argument("--model-id", default="rtmpose_x_body8",
                      help="Key in configs/model_envs.yaml (default: rtmpose_x_body8, Halpe-26)")
-    mdl.add_argument("--model-config", default=str(p1.DEFAULT_MODEL_CONFIG))
+    mdl.add_argument("--model-config", default=str(common.DEFAULT_MODEL_CONFIG))
     mdl.add_argument("--pose-config", default=None, help="Override pose config path")
     mdl.add_argument("--pose-checkpoint", default=None, help="Override pose checkpoint path")
-    mdl.add_argument("--det-config", default=str(p1.DEFAULT_DET_CONFIG))
-    mdl.add_argument("--det-checkpoint", default=str(p1.DEFAULT_DET_CHECKPOINT))
+    mdl.add_argument("--detector", default=None,
+                     help="Detector preset overriding --det-config/--det-checkpoint/--det-cat-id: "
+                          f"{sorted(common.DETECTOR_PRESETS)}. Default (unset) = vendored RTMDet-m "
+                          "baseline. mim presets need tools/detector_bakeoff/fetch_detectors.py first.")
+    mdl.add_argument("--det-config", default=str(common.DEFAULT_DET_CONFIG))
+    mdl.add_argument("--det-checkpoint", default=str(common.DEFAULT_DET_CHECKPOINT))
     mdl.add_argument("--det-cat-id", type=int, default=0, help="Detector person category id")
     mdl.add_argument("--bbox-thr", type=float, default=0.3, help="Min detection score")
     mdl.add_argument("--nms-thr", type=float, default=0.3, help="Box NMS IoU threshold")
     mdl.add_argument("--max-people", type=int, default=None, help="Keep top-N boxes per frame")
-    # Wave-5 tiled (SAHI-style) detection: overlapping tiles + a full-frame pass,
+    # Tiled (SAHI-style) detection: overlapping tiles + a full-frame pass,
     # merged with NMS + containment suppression. Keeps people at RTMDet's trained
     # object scale, recovering the small/distant band (bake-off: +0.8..+6 boxes/frame,
     # zero lost boxes vs the plain 640 pass). Pose stage unchanged.
@@ -117,12 +115,18 @@ def parse_args() -> argparse.Namespace:
     mdl.add_argument("--no-tiled-fast", dest="tiled_fast", action="store_false",
                      help="Disable the fast tiled path (crop prep in prefetch workers + "
                           "direct data_preprocessor/predict). Fast path is parity-checked "
-                          "against the generic path (W5-PERF).")
+                          "against the generic path.")
     parser.set_defaults(tiled_fast=True)
 
     rt = parser.add_argument_group("runtime")
     rt.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR,
                     help=f"Output root (default: {DEFAULT_OUTPUT_DIR})")
+    rt.add_argument("--layout", choices=["per-delivery", "flat"], default="per-delivery",
+                    help="Prediction layout. 'per-delivery' (default) writes "
+                         "<output-dir>/<DELIVERY>/00_inference/predictions/, the run-tree "
+                         "layout the batch driver (src/main.py) consumes directly. 'flat' "
+                         "writes everything to <output-dir>/predictions/ (the historical "
+                         "layout of this runner; needs manual reshuffling before main.py).")
     rt.add_argument("--device", default="cuda:0", help="cuda:0 / cpu (default: cuda:0)")
     rt.add_argument("--allow-cpu", action="store_true", help="Permit CPU when CUDA is unavailable")
     rt.add_argument("--run-id", default=None, help="Run identifier (default: auto timestamp)")
@@ -145,7 +149,7 @@ def parse_args() -> argparse.Namespace:
                     help="Disable cudnn.benchmark + TF32 (on by default for CUDA)")
     rt.add_argument("--no-amp", dest="amp", action="store_false",
                     help="Disable fp16 autocast for detector+pose forwards (on by default; "
-                         "W5-PERF: verified box/keypoint parity within tolerance on L40S)")
+                         "verified box/keypoint parity within tolerance on the L40S)")
     rt.add_argument("--show-torch-warnings", action="store_true")
     rt.set_defaults(resume=True, show_progress=True, perf=True, amp=True)
 
@@ -199,7 +203,7 @@ def discover_targets(args: argparse.Namespace) -> list[dict[str, Any]]:
         raise SystemExit(f"pose-data root not found: {pose_root}")
 
     group_filter = normalize_group_filters(args.groups)
-    camera_filter = p1.normalize_camera_filters(args.cameras)
+    camera_filter = common.normalize_camera_filters(args.cameras)
     delivery_filter = args.deliveries
 
     targets: list[dict[str, Any]] = []
@@ -214,23 +218,9 @@ def discover_targets(args: argparse.Namespace) -> list[dict[str, Any]]:
                 f == delivery_dir.name or f in delivery_dir.name for f in delivery_filter
             ):
                 continue
-            for camera_dir in sorted(p for p in delivery_dir.iterdir() if p.is_dir()):
-                if not camera_dir.name.startswith("camera"):
-                    continue
-                cam_id = camera_label(camera_dir.name.replace("camera", ""))
-                if camera_filter and cam_id not in camera_filter:
-                    continue
-                frames = sorted(
-                    (f for f in camera_dir.glob("*.jpg") if FRAME_RE.match(f.name)),
-                    key=lambda f: parse_frame_id(f),
-                )
-                frames = frames[args.start_index:]
-                if args.stride > 1:
-                    frames = frames[:: args.stride]
-                if args.frame_limit is not None:
-                    frames = frames[: args.frame_limit]
-                if not frames:
-                    continue
+            for camera_dir, cam_id, frames in common.iter_camera_targets(
+                delivery_dir, camera_filter, args.start_index, args.stride, args.frame_limit
+            ):
                 targets.append({
                     "group": label,
                     "source_group": group_dir.name,
@@ -260,12 +250,12 @@ def apply_perf(device: str, enabled: bool) -> None:
 def preflight(args: argparse.Namespace, device: str) -> None:
     """Fail fast with actionable errors before loading anything heavy."""
     # model + detector assets resolve and exist
-    pose_config, pose_checkpoint = p1.resolve_model_paths(args)
+    pose_config, pose_checkpoint = common.resolve_model_paths(args)
     checks = [
-        ("pose config", p1.abspath(pose_config)),
-        ("pose checkpoint", p1.abspath(pose_checkpoint)),
-        ("detector config", p1.abspath(args.det_config)),
-        ("detector checkpoint", p1.abspath(args.det_checkpoint)),
+        ("pose config", common.abspath(pose_config)),
+        ("pose checkpoint", common.abspath(pose_checkpoint)),
+        ("detector config", common.abspath(args.det_config)),
+        ("detector checkpoint", common.abspath(args.det_checkpoint)),
     ]
     for label, path in checks:
         if not path.exists():
@@ -312,28 +302,13 @@ def _nproc() -> int:
     return os.cpu_count() or 4
 
 
-def resolve_skeleton(pose_config: str, pose_model) -> tuple[str, list[int] | None]:
-    """Mirror the stock runner's source-skeleton inference exactly."""
-    meta_get = getattr(pose_model.dataset_meta, "get", None)
-    source = (meta_get("dataset_name") if callable(meta_get) else None) or "coco_wholebody_133"
-    low = pose_config.lower()
-    if "wholebody" in low:
-        source = "coco_wholebody_133"
-    elif "halpe" in low:
-        # Halpe-26 (e.g. RTMPose-x body8-halpe26): 26 kpts whose first 17 are COCO-17.
-        source = "halpe26"
-    elif any(tok in low for tok in ("coco", "body8", "body7")):
-        source = "coco_17"
-    return source, p1.coco17_source_indices(source)
-
-
 # --------------------------------------------------------------------------- #
 # sweep (in-process, single load, writes nothing)
 # --------------------------------------------------------------------------- #
 def detect_person_boxes_tiled_batch(detector, inference_detector, entries, args):
-    """Wave-5 tiled detection: per frame, tile crops + full frame in ONE detector call.
+    """Tiled detection: per frame, tile crops + full frame in ONE detector call.
 
-    Returns the same (N, 5) x1y1x2y2score arrays as p1.detect_person_boxes_batch, after
+    Returns the same (N, 5) x1y1x2y2score arrays as common.detect_person_boxes_batch, after
     the SAHI hygiene passes: interior-border clip drop (partial-person fragments),
     cross-tile NMS (args.nms_thr) and IoM containment suppression.
     """
@@ -399,7 +374,7 @@ def make_tiled_loader(args):
 
     Produces entry["tile_crops"] (uint8 BGR, pipeline-scale) and entry["tile_metas"]
     (offset/ori_shape/img_shape/scale_factor per crop; full frame is the last crop),
-    so the GPU loop never runs per-crop Python preprocessing (W5-PERF: the generic
+    so the GPU loop never runs per-crop Python preprocessing (the generic
     inference_detector pipeline was the tiled-mode bottleneck, not GPU compute).
     """
     import cv2
@@ -408,7 +383,7 @@ def make_tiled_loader(args):
     from detector_bakeoff import tile_layout
 
     def load(item):
-        entry = p1.load_frame_for_batch(item)
+        entry = common.load_frame_for_batch(item)
         img = entry["img"]
         h, w = img.shape[:2]
         tiles = tile_layout(w, h, (args.tile_cols, args.tile_rows), args.tile_overlap)
@@ -501,7 +476,7 @@ def detect_person_boxes_tiled_fast(detector, entries, args):
 
 
 def _amp_context(args, device: str):
-    """fp16 autocast for inference forwards (W5-PERF). No-op on CPU or --no-amp."""
+    """fp16 autocast for inference forwards. No-op on CPU or --no-amp."""
     if getattr(args, "amp", False) and device.startswith("cuda"):
         import torch
 
@@ -549,11 +524,11 @@ def _grid_sweep(args, loaded, n, best_workers, best_decode_fps, best_decode_pf,
                 entry.pop("boxes", None)
             _sync(device)
             start = time.perf_counter()
-            for chunk in p1.chunked(loaded, det_batch):
-                boxes = p1.detect_person_boxes_batch(detector, inference_detector, chunk, args)
+            for chunk in common.chunked(loaded, det_batch):
+                boxes = common.detect_person_boxes_batch(detector, inference_detector, chunk, args)
                 for entry, box in zip(chunk, boxes):
                     entry["boxes"] = box
-                p1.inference_topdown_batch(pose_model, pose_pipeline, chunk, pose_batch)
+                common.inference_topdown_batch(pose_model, pose_pipeline, chunk, pose_batch)
             _sync(device)
             dt = time.perf_counter() - start
             if device.startswith("cuda"):
@@ -577,7 +552,7 @@ def _grid_sweep(args, loaded, n, best_workers, best_decode_fps, best_decode_pf,
     rows.sort(key=lambda x: x["e2e_fps"], reverse=True)
     win = rows[0]
     best = {
-        "created_at": p1.utc_now(),
+        "created_at": common.utc_now(),
         "mode": "grid_end_to_end",
         "model_id": args.model_id, "device": device,
         "sweep_frames": n, "repeats": args.repeats,
@@ -624,8 +599,8 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
           f"{len(selected)} cameras, device {device}", flush=True)
 
     print("Loading detector + RTMPose (once) ...", flush=True)
-    detector, pose_model, inference_detector, pose_config, _ = p1.build_models(args, device)
-    pose_pipeline = p1.build_pose_pipeline(pose_model)
+    detector, pose_model, inference_detector, pose_config, _ = common.build_models(args, device)
+    pose_pipeline = common.build_pose_pipeline(pose_model)
 
     # ---- decode probe: pick io_workers ---------------------------------- #
     probe_values = args.io_workers_probe or sorted({4, 8, 16, _nproc()})
@@ -636,7 +611,7 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
         samples = []
         for r in range(args.repeats):
             start = time.perf_counter()
-            loaded, _ = p1.load_frame_batch(items, workers)
+            loaded, _ = common.load_frame_batch(items, workers)
             dt = time.perf_counter() - start
             if r > 0 or args.repeats == 1:
                 samples.append(dt)
@@ -649,7 +624,7 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
             best_decode_fps, best_workers = fps, workers
 
     # decode a clean cached copy once (at best workers) for the GPU sweeps
-    loaded, load_failures = p1.load_frame_batch(items, best_workers)
+    loaded, load_failures = common.load_frame_batch(items, best_workers)
     if load_failures:
         print(f"WARN: {len(load_failures)} frames failed to decode", flush=True)
     n = len(loaded)
@@ -670,8 +645,8 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
         for r in range(args.repeats):
             _sync(device)
             start = time.perf_counter()
-            for chunk in p1.chunked(loaded, det_batch):
-                p1.detect_person_boxes_batch(detector, inference_detector, chunk, args)
+            for chunk in common.chunked(loaded, det_batch):
+                common.detect_person_boxes_batch(detector, inference_detector, chunk, args)
             _sync(device)
             dt = time.perf_counter() - start
             if r > 0 or args.repeats == 1:
@@ -684,8 +659,8 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
             best_det_pf, best_det = pf, det_batch
 
     # populate boxes once (needed by the pose stage) using the best det batch
-    for chunk in p1.chunked(loaded, best_det):
-        boxes = p1.detect_person_boxes_batch(detector, inference_detector, chunk, args)
+    for chunk in common.chunked(loaded, best_det):
+        boxes = common.detect_person_boxes_batch(detector, inference_detector, chunk, args)
         for entry, box in zip(chunk, boxes):
             entry["boxes"] = box
     total_boxes = sum(len(e.get("boxes", [])) for e in loaded)
@@ -700,7 +675,7 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
         for r in range(args.repeats):
             _sync(device)
             start = time.perf_counter()
-            p1.inference_topdown_batch(pose_model, pose_pipeline, loaded, pose_batch)
+            common.inference_topdown_batch(pose_model, pose_pipeline, loaded, pose_batch)
             _sync(device)
             dt = time.perf_counter() - start
             if r > 0 or args.repeats == 1:
@@ -722,7 +697,7 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
         peak_mem_gb = torch.cuda.max_memory_allocated() / (1024 ** 3)
 
     best = {
-        "created_at": p1.utc_now(),
+        "created_at": common.utc_now(),
         "model_id": args.model_id,
         "device": device,
         "sweep_delivery": delivery,
@@ -768,16 +743,6 @@ def run_sweep(args: argparse.Namespace, targets: list[dict[str, Any]], device: s
 # --------------------------------------------------------------------------- #
 # run (writes predictions, resume-safe, no overlays)
 # --------------------------------------------------------------------------- #
-def git_sha() -> str | None:
-    try:
-        return subprocess.check_output(
-            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
-            stderr=subprocess.DEVNULL, text=True,
-        ).strip()
-    except Exception:
-        return None
-
-
 def build_progress_bar(total: int, enabled: bool):
     """One bar for the WHOLE run: dataset %, throughput, elapsed<ETA."""
     if not enabled:
@@ -798,13 +763,19 @@ def build_progress_bar(total: int, enabled: bool):
 def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], device: str) -> int:
     run_id = args.run_id or f"p1-l40s-rtmpose-{datetime.now().strftime('%Y%m%dT%H%M%SZ')}"
     out_dir = Path(args.output_dir).expanduser()
-    pred_dir = out_dir / "predictions"
+
+    def prediction_path(delivery_id: str, filename: str) -> Path:
+        if args.layout == "per-delivery":
+            return out_dir / delivery_id / "00_inference" / "predictions" / filename
+        return out_dir / "predictions" / filename
+
+    pred_dir = out_dir if args.layout == "per-delivery" else out_dir / "predictions"
     pred_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading detector + RTMPose on {device} ...", flush=True)
-    detector, pose_model, inference_detector, pose_config, pose_checkpoint = p1.build_models(args, device)
-    pose_pipeline = p1.build_pose_pipeline(pose_model)
-    source_skeleton, coco17_indices = resolve_skeleton(pose_config, pose_model)
+    detector, pose_model, inference_detector, pose_config, pose_checkpoint = common.build_models(args, device)
+    pose_pipeline = common.build_pose_pipeline(pose_model)
+    source_skeleton, coco17_indices = common.resolve_skeleton(pose_config, pose_model)
 
     timings = {"decode_seconds": 0.0, "detect_seconds": 0.0,
                "pose_seconds": 0.0, "write_seconds": 0.0}
@@ -824,21 +795,15 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
     for t in targets:
         cam_id, delivery_id, group = t["camera_id"], t["delivery_id"], t["group"]
         camera_name = f"{group}/{delivery_id}/{cam_id}"
-        out_jsonl = pred_dir / f"{group}__{delivery_id}__{cam_id}.jsonl"
+        out_jsonl = prediction_path(delivery_id, f"{group}__{delivery_id}__{cam_id}.jsonl")
+        out_jsonl.parent.mkdir(parents=True, exist_ok=True)
         if progress is not None:
             progress.set_postfix_str(camera_name, refresh=False)
 
         done: set[str] = set()
         existing_people = 0
         if args.resume and out_jsonl.exists():
-            with out_jsonl.open("r", encoding="utf-8") as handle:
-                for line in handle:
-                    try:
-                        row = json.loads(line)
-                        done.add(row["frame_name"])
-                        existing_people += len(row.get("players", []))
-                    except Exception:
-                        pass
+            done, existing_people = common.read_resume_state(out_jsonl, camera_name)
         mode = "a" if (args.resume and out_jsonl.exists()) else "w"
 
         cam_processed = cam_skipped = cam_failed = 0
@@ -856,7 +821,7 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
                 make_tiled_loader(args)
                 if args.tiled_det and args.tiled_fast else None
             )
-            for loaded, load_failures in p1.prefetch_decoded_batches(
+            for loaded, load_failures in common.prefetch_decoded_batches(
                 pending_all, decode_pool, args.det_batch_size, args.prefetch_batches, timings,
                 loader=tiled_loader,
             ):
@@ -878,7 +843,7 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
                             batch_boxes = detect_person_boxes_tiled_batch(
                                 detector, inference_detector, loaded, args)
                         else:
-                            batch_boxes = p1.detect_person_boxes_batch(
+                            batch_boxes = common.detect_person_boxes_batch(
                                 detector, inference_detector, loaded, args)
                     _sync(device)
                     timings["detect_seconds"] += time.perf_counter() - start
@@ -886,7 +851,7 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
                         entry["boxes"] = boxes
                     start = time.perf_counter()
                     with _amp_context(args, device):
-                        batch_results = p1.inference_topdown_batch(
+                        batch_results = common.inference_topdown_batch(
                             pose_model, pose_pipeline, loaded, args.pose_batch_size)
                     _sync(device)
                     timings["pose_seconds"] += time.perf_counter() - start
@@ -900,50 +865,36 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
 
                 for entry, results in zip(loaded, batch_results):
                     frame_path = entry["frame_path"]
-                    players = p1.player_records(
+                    players = common.player_records(
                         results, source_skeleton, entry["width"], entry["height"], coco17_indices)
-                    # --- record dict copied verbatim from run_phase1_rtmpose_inference.py --- #
-                    record = {
-                        "schema_version": P1_SCHEMA_VERSION,
-                        "camera_id": cam_id,
-                        "delivery_id": delivery_id,
-                        "capture_group": group,
-                        "frame_index": parse_frame_id(frame_path),
-                        "frame_name": frame_path.name,
-                        "match_id": p1.match_id_from_delivery(delivery_id),
-                        "metadata": {
-                            "model_id": args.model_id, "run_id": run_id, "device": device,
-                            "capture_group": group,
-                            "image_size_px": [entry["width"], entry["height"]],
-                            "inference_mode": "topdown_detector_pose",
-                            "input_mode": "opencv_bgr_mmdet_mmpose_batch",
-                            "det_batch_size_requested": args.det_batch_size,
-                            "det_batch_size_effective": args.det_batch_size,
-                            "pose_batch_size_requested": args.pose_batch_size,
-                            "pose_batch_size_effective": args.pose_batch_size,
-                            "io_workers": args.io_workers,
-                            "detector": "rtmdet_m_person_tiled" if args.tiled_det else "rtmdet_m_person",
-                            "bbox_thr": args.bbox_thr,
-                            "nms_thr": args.nms_thr,
-                            "tiled_det": bool(args.tiled_det),
-                            "model_specific": {
-                                "rtmpose": {
-                                    "source_skeleton": source_skeleton,
-                                    "output_skeleton": P1_SKELETON,
-                                    "pose_config": p1.rel(pose_config),
-                                    "pose_checkpoint": p1.rel(pose_checkpoint),
-                                    "det_config": p1.rel(p1.abspath(args.det_config)),
-                                    "det_checkpoint": p1.rel(p1.abspath(args.det_checkpoint)),
-                                }
-                            },
-                        },
-                        "players": players,
-                    }
+                    record = common.build_frame_record(
+                        camera_id=cam_id,
+                        delivery_id=delivery_id,
+                        capture_group=group,
+                        frame_path=frame_path,
+                        width=entry["width"],
+                        height=entry["height"],
+                        players=players,
+                        model_id=args.model_id,
+                        run_id=run_id,
+                        device=device,
+                        det_batch_size=args.det_batch_size,
+                        pose_batch_size=args.pose_batch_size,
+                        io_workers=args.io_workers,
+                        detector_label=(getattr(args, "detector", None) or "rtmdet_m_person")
+                                       + ("_tiled" if args.tiled_det else ""),
+                        bbox_thr=args.bbox_thr,
+                        nms_thr=args.nms_thr,
+                        source_skeleton=source_skeleton,
+                        output_skeleton=P1_SKELETON,
+                        pose_config_rel=common.rel(pose_config),
+                        pose_checkpoint_rel=common.rel(pose_checkpoint),
+                        det_config_rel=common.rel(common.abspath(args.det_config)),
+                        det_checkpoint_rel=common.rel(common.abspath(args.det_checkpoint)),
+                        extra_metadata={"tiled_det": bool(args.tiled_det)},
+                    )
                     validate_group1_frame(record, final_handoff=False)
-                    # ---------------------------------------------------------------------- #
-                    start = time.perf_counter()
-                    handle.write(json.dumps(record) + "\n")
-                    timings["write_seconds"] += time.perf_counter() - start
+                    common.write_record(handle, record, timings)
                     cam_people += len(players)
                     cam_processed += 1
                     if progress is not None:
@@ -964,7 +915,7 @@ def run_inference(args: argparse.Namespace, targets: list[dict[str, Any]], devic
             "group": group, "delivery_id": delivery_id, "camera_id": cam_id,
             "frames_processed": cam_processed, "frames_skipped": cam_skipped,
             "people": cam_people, "failed": cam_failed,
-            "predictions": p1.rel(out_jsonl),
+            "predictions": common.rel(out_jsonl),
         })
         frames_processed += cam_processed
         frames_skipped += cam_skipped
@@ -1016,11 +967,15 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
     manifest = {
         "schema_version": "cricket_phase1_run/v2",
         "prediction_schema_version": P1_SCHEMA_VERSION,
-        "run_id": run_id, "created_at": p1.utc_now(),
+        "run_id": run_id, "created_at": common.utc_now(),
         "model_id": args.model_id, "device": device, "skeleton": source_skeleton,
         "pose_data_root": str(Path(args.pose_data).expanduser()),
-        "prediction_dir": p1.rel(pred_dir),
-        "detector": "rtmdet_m_person_tiled" if args.tiled_det else "rtmdet_m_person",
+        "layout": args.layout,
+        "prediction_dir": common.rel(pred_dir),
+        "detector": (getattr(args, "detector", None) or "rtmdet_m_person")
+                    + ("_tiled" if args.tiled_det else ""),
+        "det_config": common.rel(common.abspath(args.det_config)),
+        "det_checkpoint": common.rel(common.abspath(args.det_checkpoint)),
         "tiled_det": bool(args.tiled_det),
         "amp": bool(getattr(args, "amp", False)),
         "tiled_fast": bool(getattr(args, "tiled_fast", False)) if args.tiled_det else None,
@@ -1030,7 +985,7 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
         "io_workers": args.io_workers, "cv2_threads": args.cv2_threads,
         "prefetch_batches": args.prefetch_batches, "perf": args.perf,
         "bbox_thr": args.bbox_thr, "nms_thr": args.nms_thr,
-        "git_sha": git_sha(),
+        "git_sha": common.git_sha(),
         "summary": summary,
         "delivery_count": len({c["delivery_id"] for c in cameras}),
         "camera_count": len(cameras),
@@ -1041,7 +996,7 @@ def _write_metrics(args, out_dir: Path, pred_dir: Path, run_id: str, device: str
     (out_dir / "p1_metrics.json").write_text(json.dumps({
         "schema_version": "cricket_phase1_metrics/v2",
         "prediction_schema_version": P1_SCHEMA_VERSION,
-        "run_id": run_id, "created_at": p1.utc_now(),
+        "run_id": run_id, "created_at": common.utc_now(),
         "model_id": args.model_id, "device": device, "skeleton": source_skeleton,
         "det_batch_size": args.det_batch_size, "pose_batch_size": args.pose_batch_size,
         "io_workers": args.io_workers,

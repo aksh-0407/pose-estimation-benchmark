@@ -38,7 +38,7 @@ class GlobalTrack:
     posture: PostureAggregate | None = None
     single_camera: bool = False
     # Confirmed neighbours within the density radius when this track was last
-    # marked missed while CONFIRMED — a crowded loss reads as occlusion and earns
+    # marked missed while CONFIRMED - a crowded loss reads as occlusion and earns
     # a longer lost window (wip/to_do.md: density-scaled adaptive window).
     density_at_loss: int = 0
     local_track_ids_by_cam: dict[str, str] = field(default_factory=dict)
@@ -152,7 +152,7 @@ class GlobalTrack:
             window = min(int(lost_window_max_frames), base + max(0, self.hits - confirm_hits))
             window = max(window, base)
             if density_bonus_frames > 0 and self.density_at_loss > 0:
-                # Lost inside a scrum/pack: almost certainly occlusion, not exit —
+                # Lost inside a scrum/pack: almost certainly occlusion, not exit  - 
                 # lengthen the window per crowding neighbour (same cap).
                 window = min(
                     int(lost_window_max_frames),

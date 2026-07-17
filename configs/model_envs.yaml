@@ -203,22 +203,6 @@ models:
         path: models/rtmo_l/weights/rtmo-l_16xb16-600e_coco-640x640-516a421f_20231211.pth
         required_for_smoke: true
 
-  yolo26x_pose:
-    env_name: pose-lab
-    profile: ultralytics_pose
-    smoke_profile: ultralytics
-    benchmark_runner: yolo
-    checkpoint: models/yolo26x_pose/weights/yolo26x-pose.pt
-    model_name: models/yolo26x_pose/weights/yolo26x-pose.pt
-    smoke_image: external/mmpose/projects/rtmpose/examples/onnxruntime/human-pose.jpeg
-    assets:
-      - kind: url
-        url: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26x-pose.pt
-        path: models/yolo26x_pose/weights/yolo26x-pose.pt
-        required_for_smoke: true
-    notes:
-      - Ultralytics pose weights are mirrored from the official assets release so setup can prefetch them.
-
   vitpose_h:
     env_name: cricket-vitpose-h-mmpose-v1
     profile: mmpose_v1

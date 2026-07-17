@@ -1,10 +1,10 @@
-# Dataset registry — maps a logical dataset name to its on-disk layout.
+# Dataset registry - maps a logical dataset name to its on-disk layout.
 #
 # All data lives under a single DATA_ROOT, chosen per machine:
 #   * laptop : "data"            (repo-relative; the default)
 #   * L40S   : ~/bits-pose-data  (pass --data-root or set PIPETRACK_DATA)
 # Select it with --data-root / env PIPETRACK_DATA. The tree under it is IDENTICAL
-# on every machine — only the base differs:
+# on every machine - only the base differs:
 #
 #   <DATA_ROOT>/raw/<dataset>/{<capture_group>/<delivery>/cameraNN/*.jpg,
 #                              calibration-data/, events-data/}

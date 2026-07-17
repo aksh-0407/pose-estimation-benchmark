@@ -35,6 +35,7 @@ def test_compute_chain_order_skip_and_wiring(tmp_path, monkeypatch):
         "identity.p5_global_id.run_global_id",
         "identity.p6_roles.run_role_assignment",
         "identity.p6_roles.suppress_peripherals",
+        "identity.p7_refine.run_refinement",
     ]
     assert "failed_stage" not in result
 

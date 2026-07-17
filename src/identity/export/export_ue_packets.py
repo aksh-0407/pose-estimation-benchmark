@@ -31,7 +31,7 @@ def iter_identified_player_frames(run_dir: Path):
     """Yield ``(record, player)`` once per identified player per frame.
 
     The same triangulated 3D is stamped on every camera's record, so packets are
-    deduplicated on ``(frame_index, global_player_id)`` — one packet per player per
+    deduplicated on ``(frame_index, global_player_id)`` - one packet per player per
     frame, not per camera.
     """
     seen: set[tuple[int, str]] = set()

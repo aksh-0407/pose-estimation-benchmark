@@ -25,7 +25,7 @@ HALPE26_KEYPOINTS = COCO17_KEYPOINTS + [
     "left_big_toe", "right_big_toe", "left_small_toe", "right_small_toe",
     "left_heel", "right_heel",
 ]
-HALPE26_ROOT_INDEX = HALPE26_KEYPOINTS.index("hip")  # 19 — the export root joint
+HALPE26_ROOT_INDEX = HALPE26_KEYPOINTS.index("hip")  # 19 - the export root joint
 
 # Halpe-26 skeleton connectivity (for rendering the full body incl. feet).
 HALPE26_EDGES = [
@@ -40,7 +40,7 @@ HALPE26_EDGES = [
 
 # Kinematic tree as an ordered (parent -> child) bone list, rooted at the mid-hip
 # (index 19 = HALPE26_ROOT_INDEX). The order is breadth-first from the root, so a
-# forward pass over the list always sees a bone's parent joint already placed —
+# forward pass over the list always sees a bone's parent joint already placed  - 
 # this is what makes forward-kinematics rebuild / bone-length enforcement a single
 # linear sweep (used by the 07 refinement stage). Covers all 26 joints (root has no
 # incoming bone), a spanning tree of HALPE26_EDGES plus the face->head link.
@@ -58,7 +58,7 @@ HALPE26_BONES = [
     (1, 3), (2, 4),                                        # eyes -> ears
 ]
 
-# Left/right bone pairs whose lengths are anatomically equal — pooled to a single
+# Left/right bone pairs whose lengths are anatomically equal - pooled to a single
 # per-player length so the emitted skeleton is bilaterally symmetric.
 HALPE26_SYMMETRIC_BONES = [
     ((19, 11), (19, 12)),   # pelvis width halves
@@ -77,7 +77,7 @@ HALPE26_SYMMETRIC_BONES = [
 # Absolute anatomical bone-length limits in METRES: {(parent, child): (min, max, default)}.
 # Adult cricketer proportions (~1.7-1.95 m). These are a hard biomechanical guardrail: a
 # per-player median bone that falls outside its range is a triangulation artefact (a bad /
-# chimera identity), NOT a real limb, so the refinement caps it — the emitted skeleton can
+# chimera identity), NOT a real limb, so the refinement caps it - the emitted skeleton can
 # never "go beyond physics" regardless of how bad the underlying 3D is. `default` is used
 # when a bone has no reliable samples at all.
 HALPE26_BONE_LIMITS_M = {
@@ -97,7 +97,7 @@ HALPE26_BONE_LIMITS_M = {
     (15, 24): (0.03, 0.13, 0.08), (16, 25): (0.03, 0.13, 0.08),   # ankle -> heel
 }
 
-# Hinge joints as (proximal, joint, distal) triplets — the flexion angle is measured
+# Hinge joints as (proximal, joint, distal) triplets - the flexion angle is measured
 # at ``joint`` between the (proximal - joint) and (distal - joint) vectors. Used to
 # clamp anatomically impossible bends (backward knees / elbows).
 HALPE26_HINGES = [

@@ -91,7 +91,7 @@ def build_delivery_html(before, after, delivery: str, out_path: Path, step: int)
 
     fig = make_subplots(
         rows=1, cols=2, specs=[[{"type": "scene"}, {"type": "scene"}]],
-        subplot_titles=("BEFORE (06_roles)", "AFTER (07_refine — physics + smoothing)"),
+        subplot_titles=("BEFORE (06_roles)", "AFTER (07_refine - physics + smoothing)"),
         horizontal_spacing=0.02,
     )
 
@@ -123,7 +123,7 @@ def build_delivery_html(before, after, delivery: str, out_path: Path, step: int)
         zaxis=dict(range=[lo[2], hi[2]]), aspectmode="cube",
     )
     fig.update_layout(
-        title=f"{delivery} — 3D skeleton before vs after refinement ({len(gids)} players)",
+        title=f"{delivery} - 3D skeleton before vs after refinement ({len(gids)} players)",
         scene=scene_kw, scene2=scene_kw, template="plotly_dark", height=720,
         updatemenus=[dict(type="buttons", showactive=False, x=0.05, y=0, xanchor="right",
                           buttons=[

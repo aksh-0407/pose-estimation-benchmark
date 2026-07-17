@@ -25,8 +25,8 @@ The calibration is centimetre-accurate and **3D location is largely solved** (th
 ground error is down ~36% and jitter is halved). **Identity is now the dominant ceiling** , 
 mosaics place players correctly but their IDs swap and fragment. In rough priority:
 
-1. **Cross-camera under-merge** on the low-parallax facing pairs (`cam_01↔04`, `02↔06`,
-   `03↔05`), the epipolar geometry is weak and the colour cue is dead, so two views of one
+1. **Cross-camera under-merge** on the low-parallax facing pairs (`cam_01-04`, `02-06`,
+   `03-05`), the epipolar geometry is weak and the colour cue is dead, so two views of one
    player become two IDs.
 2. **Fragmentation / over-segmentation**, players lost through occlusion are re-born as new
    IDs; stitching under-merges. 18-25 IDs vs a ~13 roster.

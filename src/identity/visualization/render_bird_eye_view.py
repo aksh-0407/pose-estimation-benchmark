@@ -33,14 +33,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / "src"))
 
-
-def read_jsonl(path: Path):
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
+from identity.visualization.loaders import iter_jsonl as read_jsonl
 
 
 def load_ground_tracks(p4_dir: Path) -> dict[int, list[tuple[str, np.ndarray]]]:

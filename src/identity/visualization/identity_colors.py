@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 
-# 20 maximally-separated colours (W7-RENDER): golden-ratio hue stepping with two
+# 20 maximally-separated colours: golden-ratio hue stepping with two
 # alternating saturation/value bands, so numerically adjacent global ids (P1, P2, ...)
 # land far apart in hue AND neighbouring hues differ in brightness. BGR order.
 # Wraparound now every 21st id instead of every 13th; pairwise separation is

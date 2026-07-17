@@ -1,1 +1,1 @@
-"""P4 online global identity tracking and offline tracklet stitching."""
+"""Global-identity stage (05): online global-id tracking and offline tracklet stitching."""

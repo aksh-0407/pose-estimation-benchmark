@@ -1,4 +1,4 @@
-# 07 (refinement) — physics-constrained 3D skeleton refinement.
+# 07 (refinement) - physics-constrained 3D skeleton refinement.
 # Runs AFTER identity (06_roles); rewrites only pose_3d / pose_3d_named, never any
 # identity field, so IDs are unaffected. Offline / whole-clip (non-causal smoothing).
 enabled: true

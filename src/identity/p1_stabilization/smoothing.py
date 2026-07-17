@@ -1,6 +1,6 @@
 """One-Euro filtering of per-keypoint pixel trajectories.
 
-The One-Euro filter (Casiez, Roussel & Vogel, CHI 2012 —
+The One-Euro filter (Casiez, Roussel & Vogel, CHI 2012  - 
 https://gery.casiez.net/1euro/) is the standard low-latency jitter filter for noisy
 interactive signals: a low-pass filter whose cutoff rises with the signal speed, so it
 removes jitter when a joint is still without adding lag when it moves fast. We run one
@@ -60,8 +60,8 @@ def smooth_track_keypoints(
 ) -> np.ndarray:
     """Return a (T, K, 2) smoothed copy of ``keypoints_series``.
 
-    A keypoint that is invalid (non-finite) or exactly (0, 0) — the P1 placeholder for a
-    missing joint — is passed through untouched and does not seed/advance its filter.
+    A keypoint that is invalid (non-finite) or exactly (0, 0) - the P1 placeholder for a
+    missing joint - is passed through untouched and does not seed/advance its filter.
     """
     T, K, _ = keypoints_series.shape
     out = np.array(keypoints_series, dtype=float, copy=True)
@@ -72,7 +72,7 @@ def smooth_track_keypoints(
             x, y = float(keypoints_series[t, k, 0]), float(keypoints_series[t, k, 1])
             conf = float(confidence_series[t, k])
             if not (math.isfinite(x) and math.isfinite(y)) or (x == 0.0 and y == 0.0):
-                continue  # missing/placeholder joint — leave as-is, don't advance the filter
+                continue  # missing/placeholder joint - leave as-is, don't advance the filter
             # Confidence-gated spike clamp: a big jump on a low-confidence keypoint is
             # replaced by the last filtered position before it can pollute the filter.
             last_x, last_y = fx.last, fy.last
@@ -89,7 +89,7 @@ def smooth_track_keypoints(
 
 def mean_jitter_px(keypoints_series: np.ndarray, confidence_series: np.ndarray,
                    confidence_min: float) -> float:
-    """Mean frame-to-frame displacement (px) over confident, valid keypoints — the
+    """Mean frame-to-frame displacement (px) over confident, valid keypoints - the
     'how noisy is this trajectory' number used before/after to prove the smoothing."""
     T = keypoints_series.shape[0]
     if T < 2:

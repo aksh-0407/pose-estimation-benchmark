@@ -34,7 +34,7 @@ def _rot_x(deg: float) -> np.ndarray:
     ])
 
 
-# World: z up is NOT assumed here — these cameras look along +/-z with y up-ish and
+# World: z up is NOT assumed here - these cameras look along +/-z with y up-ish and
 # a slight downward tilt so the ground plane (z=0 in solver terms is the XY plane
 # of the ground test below) projects non-degenerately.
 P_FRONT = _camera(_rot_x(15.0), np.array([0.0, 3.0, -6.0]))

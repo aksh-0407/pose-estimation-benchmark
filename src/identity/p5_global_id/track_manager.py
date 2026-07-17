@@ -4,21 +4,21 @@ Rebuilt as a single auditable multi-object tracker (Chen et al. CVPR'20 cross-vi
 tracking; AI-City'24 geometric-consistency MTMC). P3 has already solved the *spatial*
 cross-camera association: each :class:`Correspondence` is one world detection whose
 ``ground_xy`` is the foot point on the calibrated pitch plane, with at most one member
-per camera. P4a only has to solve *temporal* association — link those world detections
+per camera. P4a only has to solve *temporal* association - link those world detections
 into persistent tracks and mint a stable ``global_player_id``.
 
 Per frame the tracker runs four small, independently-correct stages:
 
-0. **Binding continuity** — a correspondence carrying a tracklet-graph ``binding_id``
+0. **Binding continuity** - a correspondence carrying a tracklet-graph ``binding_id``
    maps 1:1 to a persistent track for the whole delivery: the graph already solved
    who-is-who globally, so P4a must never re-litigate it per frame.
-1. **Identity continuity** — a correspondence whose P2 ``local_track_id`` is already owned
+1. **Identity continuity** - a correspondence whose P2 ``local_track_id`` is already owned
    by exactly one live track sticks to that track (rescues tracks across drift/occlusion).
    Ownership claims expire after ``ownership_ttl_frames`` without re-assertion, so a
    transient bad P3 merge can no longer weld two players together permanently.
-2. **Geometric assignment** — remaining correspondences ↔ remaining tracks by a
+2. **Geometric assignment** - remaining correspondences ↔ remaining tracks by a
    chi2-gated Mahalanobis ground distance solved with the Hungarian algorithm.
-3. **Re-entry / birth** — an unmatched correspondence revives a kinematically-consistent
+3. **Re-entry / birth** - an unmatched correspondence revives a kinematically-consistent
    deleted track or spawns a new tentative one.
 
 Because each correspondence has <=1 member per camera and is mapped to exactly one track
@@ -38,7 +38,7 @@ from scipy.optimize import linear_sum_assignment
 from identity.p5_global_id.ground_kalman import RoleParams, SingerGroundKalman
 from identity.common.pose_shape import descriptor_distance, posture_distance_z
 from identity.p3_association.associator import Correspondence
-from identity.p5_global_id.config import P4Config
+from identity.p5_global_id.config import GlobalIdConfig
 from identity.p5_global_id.global_track import CONFIRMED, DELETED, LOST, TENTATIVE, GlobalTrack
 
 _LARGE_COST = 1e12
@@ -47,7 +47,7 @@ _LARGE_COST = 1e12
 class TrackManager:
     """Track one delivery. IDs are deterministic because the counter is instance-local."""
 
-    def __init__(self, config: P4Config) -> None:
+    def __init__(self, config: GlobalIdConfig) -> None:
         self.config = config
         self.tracks: list[GlobalTrack] = []
         self.deleted_pool: list[GlobalTrack] = []
@@ -62,7 +62,7 @@ class TrackManager:
         self.last_member_assignments: dict[tuple[int, str], GlobalTrack] = {}
         self.diagnostics: Counter[str] = Counter()
         self._role_params = {
-            role: RoleParams(**values) for role, values in config.p4a.role_params.items()
+            role: RoleParams(**values) for role, values in config.tracking.role_params.items()
         }
 
     # ------------------------------------------------------------------ helpers
@@ -93,12 +93,12 @@ class TrackManager:
         """Bind each (camera, P2 tracklet) to ``track`` unless another track owns it.
 
         A conflicting claim is refused while the current owner's claim is fresh, but
-        succeeds once the owner has not re-asserted it for ``ownership_ttl_frames`` —
+        succeeds once the owner has not re-asserted it for ``ownership_ttl_frames``  - 
         the revocability that lets a transient bad merge heal instead of poisoning
         the tracklet for the rest of the delivery.
         """
 
-        ttl = self.config.p4a.ownership_ttl_frames
+        ttl = self.config.tracking.ownership_ttl_frames
         accepted: dict[str, str] = {}
         for camera_id, local_track_id in local_ids.items():
             key = (camera_id, local_track_id)
@@ -120,7 +120,7 @@ class TrackManager:
         """Return the single track (any state) that owns one of these P2 tracklets.
 
         A P2 tracklet id is unique to one physical person within a camera, so an exact
-        match is decisive even across a deletion — stronger than any foot projection.
+        match is decisive even across a deletion - stronger than any foot projection.
         Expired claims still count here (continuity is preserved); expiry only allows
         a *different* track to take over in :meth:`_claim_local_ids`.
         """
@@ -143,7 +143,7 @@ class TrackManager:
         if any(item is track for item in self.tracks):
             return
         self.deleted_pool = [item for item in self.deleted_pool if item is not track]
-        track.predict_to(frame_index, max_pos_var=self.config.p4a.cap_max_pos_var)
+        track.predict_to(frame_index, max_pos_var=self.config.tracking.cap_max_pos_var)
         track.state = CONFIRMED if track.global_player_id is not None else TENTATIVE
         self.tracks.append(track)
         self.diagnostics["local_owner_reentries"] += 1
@@ -159,22 +159,22 @@ class TrackManager:
         one from being ignored entirely.
         """
 
-        if not self.config.p4a.use_measurement_covariance:
+        if not self.config.tracking.use_measurement_covariance:
             return None
-        if for_gating and not self.config.p4a.use_measurement_covariance_for_gating:
+        if for_gating and not self.config.tracking.use_measurement_covariance_for_gating:
             return None
         cov = observation.ground_cov
         if cov is None:
             return None
-        cov = np.asarray(cov, dtype=float) * self.config.p4a.r_scale
+        cov = np.asarray(cov, dtype=float) * self.config.tracking.r_scale
         if cov.shape != (2, 2) or not np.isfinite(cov).all():
             return None
         try:
             eigenvalues, eigenvectors = np.linalg.eigh(0.5 * (cov + cov.T))
         except np.linalg.LinAlgError:
             return None
-        floor = self.config.p4a.r_floor_m ** 2
-        ceiling = self.config.p4a.r_ceiling_m ** 2
+        floor = self.config.tracking.r_floor_m ** 2
+        ceiling = self.config.tracking.r_ceiling_m ** 2
         eigenvalues = np.clip(eigenvalues, floor, ceiling)
         return eigenvectors @ np.diag(eigenvalues) @ eigenvectors.T
 
@@ -189,7 +189,7 @@ class TrackManager:
             frame_index,
             single_camera=observation.single_camera,
             local_track_ids_by_cam=local_ids,
-            pose_ema_rate=self.config.p4a.pose_descriptor_ema,
+            pose_ema_rate=self.config.tracking.pose_descriptor_ema,
             posture=observation.posture,
             measurement_R=self._measurement_R(observation),
         )
@@ -239,27 +239,27 @@ class TrackManager:
             observation_R = self._measurement_R(observation, for_gating=True)
             for ti, track in enumerate(tracks):
                 mahalanobis = track.kalman.mahalanobis_sq(observation.ground_xy, R=observation_R)
-                if mahalanobis <= self.config.p4a.chi2_gate_2dof:
+                if mahalanobis <= self.config.tracking.chi2_gate_2dof:
                     # Pose is added INSIDE the gate only: it re-ranks candidates that
                     # geometry already admits, and contributes nothing (None distance)
                     # until a track has a mature descriptor and the two share enough
                     # segments -- so behaviour is unchanged when pose is absent.
                     pose_penalty = 0.0
-                    if track.pose_update_count >= self.config.p4a.pose_min_updates:
+                    if track.pose_update_count >= self.config.tracking.pose_min_updates:
                         distance = descriptor_distance(
                             track.pose_proportions,
                             observation.pose_descriptor,
-                            min_shared=self.config.p4a.pose_min_shared_segments,
+                            min_shared=self.config.tracking.pose_min_shared_segments,
                         )
                         if distance is not None:
-                            veto = self.config.p4a.pose_gate_veto_distance
+                            veto = self.config.tracking.pose_gate_veto_distance
                             if veto > 0.0 and distance > veto:
                                 # Clearly the wrong build: veto rather than penalise, so
-                                # a mis-shapen candidate cannot capture this track (ID-3).
+                                # a mis-shapen candidate cannot capture this track.
                                 self.diagnostics["pose_gate_vetoes"] += 1
                                 continue
-                            pose_penalty = self.config.p4a.pose_match_weight * distance
-                    posture_veto = self.config.p4a.posture_gate_veto_z
+                            pose_penalty = self.config.tracking.pose_match_weight * distance
+                    posture_veto = self.config.tracking.posture_gate_veto_z
                     if posture_veto > 0.0:
                         # F6b: the billboard posture works on the facing pairs where
                         # the triangulated descriptor cannot mature, so this veto
@@ -300,7 +300,7 @@ class TrackManager:
             mahalanobis = track.kalman.mahalanobis_sq(
                 observation.ground_xy, R=self._measurement_R(observation, for_gating=True)
             )
-            if mahalanobis <= self.config.p4a.chi2_gate_2dof and mahalanobis < best_distance:
+            if mahalanobis <= self.config.tracking.chi2_gate_2dof and mahalanobis < best_distance:
                 best, best_distance = track, mahalanobis
         return best
 
@@ -314,13 +314,13 @@ class TrackManager:
         """
 
         ground_xy = observation.ground_xy
-        pose_veto = self.config.p4a.reentry_pose_max_distance
+        pose_veto = self.config.tracking.reentry_pose_max_distance
         candidates: list[tuple[float, str, GlobalTrack, np.ndarray, np.ndarray]] = []
         H = np.zeros((2, 6), dtype=float)
         H[0, 0] = H[1, 1] = 1.0
         for track in self.deleted_pool:
             observation_gap = frame_index - track.last_frame
-            if observation_gap <= 0 or observation_gap > self.config.p4a.reentry_temporal_gate_frames:
+            if observation_gap <= 0 or observation_gap > self.config.tracking.reentry_temporal_gate_frames:
                 continue
             propagation_steps = max(0, frame_index - track.prediction_frame)
             x_pred, P_pred = track.kalman.propagate_state(propagation_steps)
@@ -331,8 +331,8 @@ class TrackManager:
                 mahalanobis = float(innovation @ np.linalg.solve(S, innovation))
             except np.linalg.LinAlgError:
                 continue
-            gate = self.config.p4a.reentry_mahalanobis_gate * (
-                1.0 + observation_gap / self.config.p4a.reentry_gap_scale_frames
+            gate = self.config.tracking.reentry_mahalanobis_gate * (
+                1.0 + observation_gap / self.config.tracking.reentry_gap_scale_frames
             )
             if mahalanobis > gate:
                 continue
@@ -340,20 +340,20 @@ class TrackManager:
             maximum_distance = (
                 self.config.kinematic_v_max_mps
                 * observation_gap / self.config.frame_rate_fps
-                * self.config.p4a.reentry_kinematic_slack
+                * self.config.tracking.reentry_kinematic_slack
             )
             if distance > maximum_distance:
                 self.diagnostics["reentry_kinematic_rejects"] += 1
                 continue
-            if pose_veto > 0.0 and track.pose_update_count >= self.config.p4a.pose_min_updates:
+            if pose_veto > 0.0 and track.pose_update_count >= self.config.tracking.pose_min_updates:
                 pose_distance = descriptor_distance(
                     track.pose_proportions, observation.pose_descriptor,
-                    min_shared=self.config.p4a.pose_min_shared_segments,
+                    min_shared=self.config.tracking.pose_min_shared_segments,
                 )
                 if pose_distance is not None and pose_distance > pose_veto:
                     self.diagnostics["reentry_pose_rejects"] += 1
                     continue
-            posture_veto = self.config.p4a.reentry_posture_max_z
+            posture_veto = self.config.tracking.reentry_posture_max_z
             if posture_veto > 0.0:
                 posture_z = posture_distance_z(track.posture, observation.posture)
                 if posture_z is not None and posture_z[0] > posture_veto:
@@ -384,11 +384,11 @@ class TrackManager:
         self._last_frame = frame_index
         self.last_member_assignments = {}
         for track in self.tracks:
-            track.predict_to(frame_index, max_pos_var=self.config.p4a.cap_max_pos_var)
+            track.predict_to(frame_index, max_pos_var=self.config.tracking.cap_max_pos_var)
 
         usable = [
             corr for corr in correspondences
-            if corr.track_confidence >= self.config.p4a.confidence_discard
+            if corr.track_confidence >= self.config.tracking.confidence_discard
         ]
         grounded = [corr for corr in usable if np.isfinite(corr.ground_xy).all()]
         no_ground = [corr for corr in usable if not np.isfinite(corr.ground_xy).all()]
@@ -397,7 +397,7 @@ class TrackManager:
         assignments: dict[int, GlobalTrack] = {}
         hit: set[int] = set()
         claimed: set[int] = set()
-        # Cameras each track has been observed in THIS frame — an absorb may only
+        # Cameras each track has been observed in THIS frame - an absorb may only
         # add coverage from cameras the track has no member in yet.
         cams_hit: dict[int, set[str]] = {}
 
@@ -434,7 +434,7 @@ class TrackManager:
                         observation.ground_xy,
                         R=self._measurement_R(observation, for_gating=True),
                     )
-                    <= self.config.p4a.local_identity_mahalanobis_gate
+                    <= self.config.tracking.local_identity_mahalanobis_gate
                 ):
                     self._apply_match(observation, track, frame_index)
                 else:
@@ -467,7 +467,7 @@ class TrackManager:
                 observation.ground_xy,
                 R=self._measurement_R(observation, for_gating=True),
             )
-            if mahalanobis <= self.config.p4a.local_identity_mahalanobis_gate:
+            if mahalanobis <= self.config.tracking.local_identity_mahalanobis_gate:
                 self._apply_match(observation, track, frame_index)
             else:
                 # Trust the P2 identity but do not corrupt the filter with a foot
@@ -563,16 +563,16 @@ class TrackManager:
             if id(track) not in hit and track.state in {CONFIRMED, TENTATIVE, LOST}:
                 if (
                     track.state == CONFIRMED
-                    and self.config.p4a.density_lost_window
+                    and self.config.tracking.density_lost_window
                 ):
                     # Density at the moment of loss: confirmed neighbours within
-                    # the radius (self excluded) — occlusion evidence for the
+                    # the radius (self excluded) - occlusion evidence for the
                     # adaptive lost window.
                     me = track.kalman.pos_world_xy
                     track.density_at_loss = sum(
                         1 for other_id, pos in confirmed_positions
                         if other_id != id(track)
-                        and float(np.linalg.norm(pos - me)) <= self.config.p4a.density_radius_m
+                        and float(np.linalg.norm(pos - me)) <= self.config.tracking.density_radius_m
                     )
                 track.mark_missed()
         self._promote_and_prune()
@@ -583,13 +583,13 @@ class TrackManager:
 
         A duplicate born on top of a tracked player sits inside the shadow gate
         of a CONFIRMED track; it stays tentative (invisible) until it either
-        separates or persists long enough (override) to be a real player — e.g.
+        separates or persists long enough (override) to be a real player - e.g.
         two batsmen legitimately standing together confirm via the override. At
         the roster cap (cricket: 15 on the field), a new id additionally needs
         clear separation from every confirmed track.
         """
 
-        if track.hits >= self.config.p4a.shadow_confirm_override_hits:
+        if track.hits >= self.config.tracking.shadow_confirm_override_hits:
             return False
         position = track.kalman.pos_world_xy
         if not np.isfinite(position).all():
@@ -604,13 +604,13 @@ class TrackManager:
             for other in confirmed
             if np.isfinite(other.kalman.pos_world_xy).all()
         ]
-        if distances and min(distances) <= self.config.p4a.shadow_confirm_gate_m:
+        if distances and min(distances) <= self.config.tracking.shadow_confirm_gate_m:
             self.diagnostics["shadow_confirmations_blocked"] += 1
             return True
         if (
-            len(confirmed) >= self.config.p4a.expected_roster_max
+            len(confirmed) >= self.config.tracking.expected_roster_max
             and distances
-            and min(distances) <= self.config.p4a.roster_cap_min_separation_m
+            and min(distances) <= self.config.tracking.roster_cap_min_separation_m
         ):
             self.diagnostics["roster_cap_confirmations_blocked"] += 1
             return True
@@ -621,22 +621,22 @@ class TrackManager:
         for track in self.tracks:
             if (
                 track.state == TENTATIVE
-                and track.hits >= self.config.p4a.confirm_hits
+                and track.hits >= self.config.tracking.confirm_hits
                 and self._confirmation_blocked(track)
             ):
                 pass  # stays tentative: emits no id until it separates/persists
-            elif track.maybe_confirm(self.config.p4a.confirm_hits):
+            elif track.maybe_confirm(self.config.tracking.confirm_hits):
                 track.global_player_id = self._mint_id()
                 self.diagnostics["tracks_confirmed"] += 1
             if track.should_delete(
-                confirm_hits=self.config.p4a.confirm_hits,
-                lost_window_frames=self.config.p4a.lost_window_frames,
-                bowler_lost_window_frames=self.config.p4a.bowler_lost_window_frames,
-                adaptive_lost_window=self.config.p4a.adaptive_lost_window,
-                lost_window_max_frames=self.config.p4a.lost_window_max_frames,
+                confirm_hits=self.config.tracking.confirm_hits,
+                lost_window_frames=self.config.tracking.lost_window_frames,
+                bowler_lost_window_frames=self.config.tracking.bowler_lost_window_frames,
+                adaptive_lost_window=self.config.tracking.adaptive_lost_window,
+                lost_window_max_frames=self.config.tracking.lost_window_max_frames,
                 density_bonus_frames=(
-                    self.config.p4a.density_bonus_frames
-                    if self.config.p4a.density_lost_window else 0
+                    self.config.tracking.density_bonus_frames
+                    if self.config.tracking.density_lost_window else 0
                 ),
             ):
                 track.state = DELETED
@@ -660,7 +660,7 @@ class TrackManager:
             track.role_candidate = role
             track.role_latch_count = 1
         if (
-            track.role_latch_count >= self.config.p4a.role_latch_frames
+            track.role_latch_count >= self.config.tracking.role_latch_frames
             and track.dominant_role != role
         ):
             track.dominant_role = role

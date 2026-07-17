@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Data-parallel Phase-1 launcher — several GPU-sharing inference processes.
+"""Data-parallel Phase-1 launcher - several GPU-sharing inference processes.
 
 A single ``run_phase1_l40s.py`` process is GPU-compute-bound at ~28 f/s on the
 L40S while using only ~1.6 GB of the 46 GB VRAM (measured by ``--sweep --grid``):
@@ -13,7 +13,7 @@ each on a disjoint slice of deliveries:
 Beyond ~3 the 8 vCPUs' JPEG decode becomes the ceiling, so this defaults to 3
 shards with reduced per-process io-workers so the aggregate decode threads stay
 near the core count. Each shard writes per-camera prediction files into the SAME
-``--output-dir`` (filenames are ``<group>__<delivery>__cam_NN.jsonl`` — disjoint
+``--output-dir`` (filenames are ``<group>__<delivery>__cam_NN.jsonl`` - disjoint
 across shards, no collision) and is ``--resume`` safe.
 
 Sharding is by whole delivery so a delivery's 7 cameras stay in one process

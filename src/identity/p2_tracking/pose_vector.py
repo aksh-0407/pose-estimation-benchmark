@@ -17,8 +17,8 @@ _SCALE_ANCHORS = [(L_SHOULDER, L_HIP), (R_SHOULDER, R_HIP), (L_SHOULDER, R_SHOUL
 
 @dataclass(frozen=True)
 class PoseVector:
-    vector: np.ndarray      # (2*K,) float — [x0, y0, ..., x_{K-1}, y_{K-1}], root-relative & scaled
-    mask: np.ndarray        # (K,) bool — per-keypoint validity
+    vector: np.ndarray      # (2*K,) float - [x0, y0, ..., x_{K-1}, y_{K-1}], root-relative & scaled
+    mask: np.ndarray        # (K,) bool - per-keypoint validity
     confidence: np.ndarray  # (K,) float
     defined: bool           # False when no valid root anchor exists
 

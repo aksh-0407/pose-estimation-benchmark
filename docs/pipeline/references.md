@@ -21,7 +21,7 @@ logs.
 - 03: `src/identity/p3_association/{tracklet_graph.py, geometry_cache.py:74, cue_calibration.py}`; `src/identity/common/geometry.py:540` (`ground_from_reprojection`), `pose_shape.py`.
 - 3D lift: `src/identity/common/triangulation.py` (`triangulate_point_dlt:31`, `triangulate_skeleton_ransac:162`); `src/identity/p4_lift/run_triangulation.py`.
 - 05: `src/identity/p5_global_id/{track_manager.py:322, stitching.py}`; `src/identity/p5_global_id/ground_kalman.py:39` (Singer/Van Loan).
-- Render: `src/identity/visualization/{render_videos.py, mosaic_layout.py, identity_colors.py}`.
+- Render: `src/identity/visualization/` (`render_videos.py` CLI, with `video_io.py`, `loaders.py`, `overlays.py`, `panels.py`, `mosaic_layout.py`, `identity_colors.py`).
 
 ## External sources
 

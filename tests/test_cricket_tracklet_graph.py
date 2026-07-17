@@ -308,7 +308,7 @@ def test_graph_emits_stable_bindings_per_frame():
             player = {det.local_track_id.rsplit("_", 1)[1] for det in corr.members.values()}
             assert len(player) == 1
             seen_bindings.setdefault(player.pop(), set()).add(corr.binding_id)
-    # The SAME binding id every frame — no flicker by construction.
+    # The SAME binding id every frame - no flicker by construction.
     assert all(len(bindings) == 1 for bindings in seen_bindings.values())
 
 
@@ -493,7 +493,7 @@ def test_short_fragments_are_demoted_and_trajectory_attach_recovers_them():
     config = _graph_config()
     builder = TrackletGraphBuilder(config, PROJECTIONS)
     rng = np.random.default_rng(17)
-    # A player crosses the ground, seen continuously by both cameras — but in
+    # A player crosses the ground, seen continuously by both cameras - but in
     # cam_01 the P2 track shatters into disjoint short tracklets (dark-footage
     # failure mode). Fragments must ride the binding's trajectory, not mint ids.
     for frame in range(240):

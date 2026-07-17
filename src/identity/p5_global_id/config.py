@@ -1,4 +1,4 @@
-"""Validated configuration for P4a global tracking and P4b stitching."""
+"""Validated configuration for the global-id stage (05): online tracking and stitching."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def _default_incompatible_roles() -> list[list[str]]:
 
 
 @dataclass(frozen=True)
-class P4AConfig:
+class GlobalTrackingConfig:
     confirm_hits: int = 3
     lost_window_frames: int = 30
     bowler_lost_window_frames: int = 60
@@ -78,14 +78,14 @@ class P4AConfig:
     pose_descriptor_ema: float = 0.15
     pose_min_updates: int = 5
     pose_min_shared_segments: int = 4
-    # ID-3 teleport control. When > 0, a Stage-2 candidate whose mature pose-shape
+    # Teleport control. When > 0, a Stage-2 candidate whose mature pose-shape
     # descriptor differs from the track's by more than this bone-ratio distance is
-    # VETOED (not merely penalised) inside the chi2 gate — a body of clearly the
+    # VETOED (not merely penalised) inside the chi2 gate - a body of clearly the
     # wrong build can no longer capture a track. 0 keeps the additive tie-breaker only.
     pose_gate_veto_distance: float = 0.0
-    # ID-2/ID-3. When > 0, reviving a deleted track from the re-entry pool requires
+    # When > 0, reviving a deleted track from the re-entry pool requires
     # its pose-shape descriptor to agree with the observation within this distance
-    # (abstains — allows — when either descriptor is immature/unshared, so behaviour
+    # (abstains - allows - when either descriptor is immature/unshared, so behaviour
     # is unchanged where pose is unavailable). Blocks kinematically-plausible but
     # wrong-person re-entries (a teleport/ID-swap source).
     reentry_pose_max_distance: float = 0.0
@@ -96,16 +96,16 @@ class P4AConfig:
     # the threshold is vetoed (abstains when either posture is missing). 0 = off.
     posture_gate_veto_z: float = 0.0
     reentry_posture_max_z: float = 0.0
-    # F5 online role proxy: classify bowler/umpire/wicketkeeper causally from the
+    # Online role proxy: classify bowler/umpire/wicketkeeper causally from the
     # ground trajectory and propose_role() them so the Singer filter switches to
     # role-aware dynamics DURING tracking (P5 currently runs after P4, too late).
     online_role_proxy: bool = False
     proxy_min_track_frames: int = 50
     proxy_bowler_min_speed_mps: float = 3.5
     proxy_static_speed_max_mps: float = 0.6
-    # F10 uncertainty-aware measurement noise: use the P3 ground covariance
-    # (emit_ground_cov) as the per-measurement Kalman R — anisotropic and
-    # distance-dependent — instead of the fixed per-role R. Gating and update use
+    # Uncertainty-aware measurement noise: use the P3 ground covariance
+    # (emit_ground_cov) as the per-measurement Kalman R - anisotropic and
+    # distance-dependent - instead of the fixed per-role R. Gating and update use
     # the same R. Eigenvalues clamped to [r_floor_m^2, r_ceiling_m^2].
     use_measurement_covariance: bool = False
     r_scale: float = 1.0
@@ -113,11 +113,11 @@ class P4AConfig:
     r_ceiling_m: float = 2.0
     # Gate-side behaviour: an UNCERTAIN observation must not find it EASIER to
     # capture a track (a wide R shrinks the Mahalanobis distance of far, wrong
-    # candidates — measured +37 teleports on M2). Default keeps admission gates
+    # candidates - measured +37 teleports on M2). Default keeps admission gates
     # on the conservative fixed role R and applies the measurement R to the
     # state update only; true = legacy symmetric behaviour for A/B.
     use_measurement_covariance_for_gating: bool = False
-    # ID-2 fragmentation. Adaptive lost-window: a well-established track (many hits)
+    # Fragmentation control. Adaptive lost-window: a well-established track (many hits)
     # is kept alive across occlusion for up to lost_window_max_frames instead of the
     # flat lost_window_frames, so a briefly-occluded confirmed player is re-acquired
     # rather than deleted and re-born as a fresh id. False keeps the flat window.
@@ -129,56 +129,56 @@ class P4AConfig:
     density_lost_window: bool = False
     density_radius_m: float = 2.0
     density_bonus_frames: int = 15
-    # ID-2 cardinality prior. In a ~12 s cricket delivery every one of the ~13-15
+    # Cardinality prior. In a ~12 s cricket delivery every one of the ~13-15
     # people is present the whole clip, so a global id that survives only a handful
     # of frames is a fragment/shadow, not a late-entering player. When > 0, any id
     # whose total emitted frame-span is below this is dropped (its detections become
     # unlabelled) AFTER stitching has had its chance to absorb it. 0 = disabled.
     min_emit_frames: int = 0
     # Emit the chi2-gated Kalman POSTERIOR as the ground position instead of the raw
-    # per-frame fused observation (ISSUE-5). The posterior cannot jump faster than the
+    # per-frame fused observation. The posterior cannot jump faster than the
     # gate allows, so a single bad/mis-associated measurement can no longer teleport the
     # reported track; it also removes the double-averaging in the emit path. False keeps
     # the legacy raw-observation emit byte-for-byte.
     emit_kalman_posterior: bool = False
     # Emitted ground position source. "foot" (default, byte-identical) uses the
-    # z0_reproj / foot-plane ground estimate averaged over cameras then fragments —
+    # z0_reproj / foot-plane ground estimate averaged over cameras then fragments  - 
     # the legacy path the ground-teleport diagnosis blames (two averaging layers over
     # grazing-foot rays; docs/diagnosis/04-issue-emitted-ground-teleports.md).
     # "triangulated_hip" instead emits the 04 lift's triangulated pelvis (mean of the
     # RANSAC-triangulated COCO hips, `pelvis_ground_xy` in lift3d.jsonl) projected to
-    # z=0 — one robust multi-view point per (binding, frame), no camera/fragment
+    # z=0 - one robust multi-view point per (binding, frame), no camera/fragment
     # averaging. Falls back to the foot position for any frame with no triangulable
     # hip (single-camera / <2 views). Requires the 04 lift to have run with
     # --id-source binding (so lift3d.jsonl is keyed by binding_id); otherwise it logs
     # a warning and behaves as "foot".
     emit_ground_source: str = "foot"
-    # IMPACT-2 partial-detection suppression (emission level, so P5 cannot re-spawn the
+    # Partial-detection suppression (emission level, so the global-id stage cannot re-spawn the
     # ghost the way a P3-binding suppression let it). After id assignment, any global id
     # that is SINGLE-camera across the whole delivery AND whose detections are
     # predominantly partial (median confident-keypoint count < partial_min_visible_kpts,
     # e.g. a head-only view of the keeper, or a cut-off umpire) is DROPPED (its detections
-    # go unlabelled/tentative). Drop-only — it NEVER relabels a detection, so unlike the
+    # go unlabelled/tentative). Drop-only - it NEVER relabels a detection, so unlike the
     # rejected tracklet lock it cannot put an id on the wrong person. Full-body
     # single-camera peripherals (many confident keypoints) are spared. False = disabled.
     drop_partial_singlecam: bool = False
     partial_min_visible_kpts: int = 8
-    # 1F single-view sticky-hip lift (only meaningful with emit_ground_source=triangulated_hip).
+    # Single-view sticky-hip lift (only meaningful with emit_ground_source=triangulated_hip).
     # 88% of emitted teleports are at single-camera frames, where the hip cannot be triangulated
     # and the emitted position falls back to a noisy foot / fixed-0.93 m-plane estimate. When true,
     # each id's STICKY hip height is learned (median hip-z over its multi-camera triangulated frames)
     # and, for single-camera frames, the hip PIXEL is back-projected onto that per-id height plane
-    # (geometry.pixel_to_plane_xy) — a stable hip-on-ground position instead of the foot fallback.
+    # (geometry.pixel_to_plane_xy) - a stable hip-on-ground position instead of the foot fallback.
     # False = disabled (byte-identical).
     single_view_hip_fallback: bool = False
-    # A3 emitted-track velocity gate (drop-based). The 8_init teleport A/B showed no emission
+    # Emitted-track velocity gate (drop-based). The 8_init teleport A/B showed no emission
     # position SOURCE (foot / triangulated_hip / single-view-hip / Kalman posterior) removes the
     # rare >25 m/s emitted teleports (max 1220 m/s): they are id-level jumps in the association-fed
     # raw observation, not a position-source artefact. When true, each global id's emitted ground
     # track is walked in frame order and any frame whose implied speed from the LAST KEPT frame
-    # exceeds emit_velocity_max_mps is DROPPED (its ground row removed) — a real cricketer never
+    # exceeds emit_velocity_max_mps is DROPPED (its ground row removed) - a real cricketer never
     # exceeds ~10-11 m/s, so 12 m/s spares all true motion while killing teleports. Drop-only: it
-    # never moves/relabels a position, so (like the accepted IMPACT-2 drop) it cannot put a marker
+    # never moves/relabels a position, so (like the accepted partial-detection drop) it cannot put a marker
     # in a wrong place. To avoid deleting a genuinely relocated/re-acquired track, after
     # emit_velocity_max_consec_drops consecutive drops the gate RE-ANCHORS to the current position
     # (accepts a sustained move). False = disabled (byte-identical emit).
@@ -279,7 +279,7 @@ class P4AConfig:
 
 
 @dataclass(frozen=True)
-class P4BConfig:
+class StitchingConfig:
     enabled: bool = True
     cross_camera_min_frames: int = 30
     cross_camera_min_track_ratio: float = 0.5
@@ -290,17 +290,17 @@ class P4BConfig:
     new_traj_cost_factor: float = 0.5
     velocity_continuity_weight: float = 0.5
     kinematic_slack: float = 1.5
-    # Stitching v2 (ID-2 / ghost-verification). When > 0, a stitch between two
+    # Build-agreement stitch veto. When > 0, a stitch between two
     # fragments is FORBIDDEN if both carry mature pose-shape descriptors that differ
-    # by more than this bone-ratio distance — so only same-build fragments merge
+    # by more than this bone-ratio distance - so only same-build fragments merge
     # (abstains when either descriptor is immature/unshared). w_pose adds the pose
     # distance to the link cost so a better body-shape match is preferred among
     # admissible stitches. 0 = disabled (byte-identical).
     pose_stitch_max_distance: float = 0.0
     w_pose: float = 0.0
     pose_min_shared_segments: int = 4
-    # F6 occupancy-licensed bridging: when two fragments' (camera, frame) occupancies
-    # are fully disjoint — they can never have been two simultaneous people — the
+    # Occupancy-licensed bridging: when two fragments' (camera, frame) occupancies
+    # are fully disjoint - they can never have been two simultaneous people - the
     # temporal gate is extended to temporal_gate_frames_occupancy so a real occlusion
     # gap longer than temporal_gate_frames can still be bridged. By default such a
     # long bridge additionally requires a pose-shape agreement (both descriptors
@@ -317,7 +317,7 @@ class P4BConfig:
     occupancy_bridge: bool = False
     temporal_gate_frames_occupancy: int = 300
     occupancy_bridge_require_pose: bool = True
-    # G7/FR: the legacy cost mixes frames and metres on one axis — w_temporal*gap
+    # G7/FR: the legacy cost mixes frames and metres on one axis - w_temporal*gap
     # alone exceeds the dummy (new_traj_cost_factor*w_spatial = 3.0) for any gap
     # > 30 frames, making stitches beyond 0.6 s MATHEMATICALLY unselectable (the
     # measured 'M2: 1068 feasible edges, 0 links'). Normalized mode divides each
@@ -325,7 +325,7 @@ class P4BConfig:
     # are commensurate and the dummy threshold is meaningful across the whole
     # gate. Off = legacy byte-identical behaviour.
     normalized_costs: bool = False
-    # F12: billboard-posture stitch key. When > 0 a stitch whose two fragments'
+    # Billboard-posture stitch key. When > 0 a stitch whose two fragments'
     # posture aggregates differ by more than this RMS z-score is forbidden;
     # w_posture adds the z to the link cost. Abstains when either is missing.
     posture_stitch_max_z: float = 0.0
@@ -367,11 +367,11 @@ class P4BConfig:
 
 
 @dataclass(frozen=True)
-class P4Config:
+class GlobalIdConfig:
     frame_rate_fps: float = 50.0
     kinematic_v_max_mps: float = 9.0
-    p4a: P4AConfig = field(default_factory=P4AConfig)
-    p4b: P4BConfig = field(default_factory=P4BConfig)
+    tracking: GlobalTrackingConfig = field(default_factory=GlobalTrackingConfig)
+    stitching: StitchingConfig = field(default_factory=StitchingConfig)
 
     def __post_init__(self) -> None:
         _positive("frame_rate_fps", self.frame_rate_fps)
@@ -379,6 +379,14 @@ class P4Config:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+# Backward-compatible aliases for the stage's pre-restructure naming (the
+# global-id stage was historically called P4, its online tracker P4a, and its
+# stitcher P4b). New code should use the stage-05 names above.
+P4Config = GlobalIdConfig
+P4AConfig = GlobalTrackingConfig
+P4BConfig = StitchingConfig
 
 
 def _positive(name: str, value: Any) -> None:
@@ -410,19 +418,30 @@ def _build_nested(cls, raw: Any, section: str):
     return cls(**raw)
 
 
-def load_global_id_config(path: str | Path | None) -> P4Config:
+def load_global_id_config(path: str | Path | None) -> GlobalIdConfig:
     if path is None:
-        return P4Config()
+        return GlobalIdConfig()
     with Path(path).open("r", encoding="utf-8") as handle:
         raw = yaml.safe_load(handle) or {}
     if not isinstance(raw, dict):
         raise ValueError("global-id config must be a mapping")
-    unknown = set(raw) - {"frame_rate_fps", "kinematic_v_max_mps", "p4a", "p4b"}
+    unknown = set(raw) - {"frame_rate_fps", "kinematic_v_max_mps",
+                          "tracking", "stitching", "p4a", "p4b"}
     if unknown:
         raise ValueError(f"unknown global-id config keys: {sorted(unknown)}")
-    return P4Config(
+    # "tracking"/"stitching" are the current section names; "p4a"/"p4b" are the
+    # pre-restructure spellings, still accepted so archived configs and
+    # experiment YAMLs keep loading. Giving both spellings for one section is
+    # ambiguous and rejected.
+    if "tracking" in raw and "p4a" in raw:
+        raise ValueError("give either 'tracking' or 'p4a', not both")
+    if "stitching" in raw and "p4b" in raw:
+        raise ValueError("give either 'stitching' or 'p4b', not both")
+    tracking_raw = raw.get("tracking", raw.get("p4a"))
+    stitching_raw = raw.get("stitching", raw.get("p4b"))
+    return GlobalIdConfig(
         frame_rate_fps=float(raw.get("frame_rate_fps", 50.0)),
         kinematic_v_max_mps=float(raw.get("kinematic_v_max_mps", 9.0)),
-        p4a=_build_nested(P4AConfig, raw.get("p4a"), "p4a"),
-        p4b=_build_nested(P4BConfig, raw.get("p4b"), "p4b"),
+        tracking=_build_nested(GlobalTrackingConfig, tracking_raw, "tracking"),
+        stitching=_build_nested(StitchingConfig, stitching_raw, "stitching"),
     )

@@ -21,7 +21,7 @@ def _args(tmp_path, extra=()):
 def test_stage_window_bounds_and_order():
     assert _stage_window("01_stabilization", "08_render") == [
         "01_stabilization", "02_tracking", "03_association", "04_lift",
-        "05_global_id", "06_roles", "08_render",
+        "05_global_id", "06_roles", "07_refine", "08_render",
     ]
     # 04_lift (binding-keyed) sits inside the window BEFORE global_id; self-skips
     # unless --enable-lift is set.

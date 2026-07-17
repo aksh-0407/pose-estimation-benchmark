@@ -135,7 +135,7 @@ def manifest_section(tree: Path) -> list[str]:
         except (OSError, json.JSONDecodeError):
             out.append("(p1_metrics.json unreadable)")
     if not out:
-        out.append("(no manifest found — pre-driver-era tree; directory listing below)")
+        out.append("(no manifest found - pre-driver-era tree; directory listing below)")
         entries = sorted(p.name for p in tree.iterdir())[:20]
         out.append("- top-level entries: " + ", ".join(entries))
     return out
@@ -197,7 +197,7 @@ def main() -> None:
     (out_dir / "README.md").write_text("\n".join(index) + "\n")
     print("index written:", out_dir / "README.md")
     if not ok:
-        raise SystemExit("some runs produced empty docs — inspect before deleting")
+        raise SystemExit("some runs produced empty docs - inspect before deleting")
 
 
 if __name__ == "__main__":

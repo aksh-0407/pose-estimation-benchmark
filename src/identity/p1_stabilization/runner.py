@@ -125,7 +125,7 @@ def stabilize_camera_file(input_path: Path, output_path: Path, camera_id: str,
             frame_boxes.append(dets)
         micro_tracks = link_micro_tracks(frame_boxes, config.link)
         for members in micro_tracks:
-            # pose_2d is the canonical Halpe-26 block (feet included) — one smoothing pass.
+            # pose_2d is the canonical Halpe-26 block (feet included) - one smoothing pass.
             _smooth_block(members, records, "pose_2d", config, config.frame_rate_fps, jitter_acc)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

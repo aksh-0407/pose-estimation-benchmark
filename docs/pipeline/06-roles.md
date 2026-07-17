@@ -116,12 +116,12 @@ false`. (v1 requires the 05 run to have `online_role_proxy: true`.)
 
 ---
 
-## 7. Known issues (severity ★)
+## 7. Known issues (severity, 1 low to 3 high)
 
-- **R-1 (★) Bowling-end / keeper picks need visual arbitration**, the open items here are *visual
+- **R-1 (severity 1/3) Bowling-end / keeper picks need visual arbitration**, the open items here are *visual
   sign-off only* (bowling orientation, standing-back keeper), not code bugs. No teleport or identity
   contribution from this stage.
-- **R-2 (★) No event/play-state prior**, roles are inferred from geometry alone, with no ball/over
+- **R-2 (severity 1/3) No event/play-state prior**, roles are inferred from geometry alone, with no ball/over
   context to disambiguate.
 
 ---
@@ -134,8 +134,8 @@ false`. (v1 requires the 05 run to have `online_role_proxy: true`.)
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Fold in play-state / event context** (ball release, over number) as a prior on the role slots. | ★ | Geometry alone can't always separate a deep fielder from an umpire; event context can. | Medium | SoccerNet game-state [2404.11335] |
-| 2 | **Confidence-scaled suppression** rather than fixed thresholds, and expose the keeper standing-back band as a knob. | ★ | Fixed thresholds under-/over-suppress across cameras. | Low |, |
+| 1 | **Fold in play-state / event context** (ball release, over number) as a prior on the role slots. | severity 1/3 | Geometry alone can't always separate a deep fielder from an umpire; event context can. | Medium | SoccerNet game-state [2404.11335] |
+| 2 | **Confidence-scaled suppression** rather than fixed thresholds, and expose the keeper standing-back band as a knob. | severity 1/3 | Fixed thresholds under-/over-suppress across cameras. | Low |, |
 
 ---
 

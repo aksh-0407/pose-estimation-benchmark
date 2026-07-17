@@ -6,7 +6,7 @@
 - Archived: 2026-07-14T02:30:48.994248+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance
-(no manifest found — pre-driver-era tree; directory listing below)
+(no manifest found - pre-driver-era tree; directory listing below)
 - top-level entries: deliveries
 
 ## Per-delivery metric panel

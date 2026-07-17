@@ -73,13 +73,16 @@ def main(argv: list[str] | None = None) -> int:
         p4_online_role_proxy = False
         if manifest_path.exists():
             p4_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            p4_online_role_proxy = bool(
-                p4_manifest.get("config", {}).get("p4a", {}).get("online_role_proxy", False)
+            # "tracking" is the current manifest key; "p4a" is the pre-restructure
+            # spelling still present in archived run trees.
+            tracking_cfg = p4_manifest.get("config", {}).get(
+                "tracking", p4_manifest.get("config", {}).get("p4a", {})
             )
+            p4_online_role_proxy = bool(tracking_cfg.get("online_role_proxy", False))
         if not p4_online_role_proxy:
             raise ValueError(
                 "role_assignment_version=v1 requires the input P4 run to have been produced "
-                "with online_role_proxy=true (run_manifest.json config.p4a.online_role_proxy)"
+                "with online_role_proxy=true (run_manifest.json config.tracking.online_role_proxy)"
             )
 
     match_id = infer_match_id(args.delivery_id)
@@ -114,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             roles = assign_roles_epoched(per_id_series, direction, **common)
             direction_source = "over_consensus"
         elif axis is not None and direction is not None:
-            # A physically plausible bowler run is direct evidence — it wins outright.
+            # A physically plausible bowler run is direct evidence - it wins outright.
             roles = assign_roles_epoched(per_id_series, direction, **common)
             direction_source = "run_detected"
         elif axis is not None:

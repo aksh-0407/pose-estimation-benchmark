@@ -185,7 +185,7 @@ Verify completeness: every finished camera file has 600 lines; `camera_count` in
 
 The runner is built to keep the GPU fed while keeping the CPU light:
 
-- **Overlapped I/O ↔ GPU pipeline (`--prefetch-batches`, default 3).** A single
+- **Overlapped I/O - GPU pipeline (`--prefetch-batches`, default 3).** A single
   persistent thread-pool reads + decodes the next N detector batches *while the GPU runs
   detection + pose on the current batch*, instead of the old read to detect to pose stall
   where the GPU idled during every cold-disk read. On a laptop 4060 this took cold-data

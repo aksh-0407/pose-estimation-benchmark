@@ -1,27 +1,27 @@
-"""Calibration-derived mosaic layout — no hardcoded camera ids.
+"""Calibration-derived mosaic layout - no hardcoded camera ids.
 
 The bowling end flips between overs, so a fixed tile order cannot stay correct.
 Everything here is derived per delivery from calibration + the delivery itself:
 
-* **Pitch axis** — from the pitch calibration config: the crease markings run
+* **Pitch axis** - from the pitch calibration config: the crease markings run
   across the pitch, so the pitch axis is perpendicular to their principal
   direction (sign-ambiguous until the bowling end is known).
-* **Bowling direction** ``p_hat`` — the fastest early-delivery run along the
+* **Bowling direction** ``p_hat`` - the fastest early-delivery run along the
   pitch axis is the bowler's run-up; its sign orients the axis. Per-camera
   tracklet motion is used (never the fused cross-camera tracks, whose
   inter-camera bias reads as spurious motion). CLI override available.
-* **Columns** — one FACING camera pair per column (derived from the calibration
+* **Columns** - one FACING camera pair per column (derived from the calibration
   optical axes, same helper the association stage uses): the end-on pair first,
   then side pairs ordered striker's-end coverage first.
-* **Rows** — end-on pair: the camera looking WITH the delivery goes on top (the
+* **Rows** - end-on pair: the camera looking WITH the delivery goes on top (the
   broadcast "behind the bowler's arm" view). Side pairs: the camera whose tile
-  must be mirrored (see below) goes on top — this keeps each column a facing
+  must be mirrored (see below) goes on top - this keeps each column a facing
   pair and flips the whole layout when the bowling end flips.
-* **Mirrors** — a side camera is flipped when the delivery would travel
+* **Mirrors** - a side camera is flipped when the delivery would travel
   left-to-right in its tile, so every side tile reads right-to-left (the
   production's broadcast convention). End-on cameras never flip (the delivery
   runs along their depth axis).
-* **Bottom row** — the unpaired camera (the pano) sits bottom-middle, flanked
+* **Bottom row** - the unpaired camera (the pano) sits bottom-middle, flanked
   by the delivery-monitor and roster panels.
 """
 
@@ -59,7 +59,7 @@ def load_pitch_axis(pitch_config_path: str | Path) -> np.ndarray | None:
     """Unit pitch axis (sign-ambiguous) from the pitch calibration config.
 
     Preferred: the two stump mid-base points (``fsmb``/``nsmb``) define the axis
-    exactly. Fallback: the principal direction of all marking points — for a
+    exactly. Fallback: the principal direction of all marking points - for a
     full-pitch cloud (>= 8 m extent) that IS the pitch axis; for a single-crease
     patch the markings run across the pitch, so the perpendicular is used.
     """

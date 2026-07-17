@@ -4,11 +4,11 @@
 A *swap event* is two global ids whose fused ground positions stay within
 ``--radius`` of each other for at least ``--min-frames`` frames. Sub-classes:
 
-  disjoint-cameras : the two ids NEVER share a camera-frame over the event —
+  disjoint-cameras : the two ids NEVER share a camera-frame over the event  - 
                      the classic facing-pair split (one physical player carrying
                      two ids in different camera sets). These are the mergeable
                      class; the renderer draws each as the other's ghost.
-  shared-camera    : the ids co-occur in at least one camera-frame — genuinely
+  shared-camera    : the ids co-occur in at least one camera-frame - genuinely
                      two people standing close (crossing); NOT mergeable.
 
 Usage:

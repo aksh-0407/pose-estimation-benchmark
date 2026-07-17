@@ -20,7 +20,7 @@ class RoleAssignerConfig:
     epoch_frames: int = 40
     role_epoch_latch_count: int = 3
     role_assignment_max_cost: float = 8.0
-    # Wave-6 (P5b) peripheral suppression — consumed by suppress_peripherals.py;
+    # Peripheral suppression - consumed by suppress_peripherals.py;
     # carried here so one P5 YAML configures the whole roles family.
     suppression_enabled: bool = False
     suppress_min_kp_conf: float = 0.35

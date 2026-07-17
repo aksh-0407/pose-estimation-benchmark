@@ -205,12 +205,12 @@ genuine fast limb motion (a bat swing, a bowler's arm) passes through with minim
 
 ---
 
-## 8. Known issues (severity ★)
+## 8. Known issues (severity, 1 low to 3 high)
 
-- **REF-1 (★) Smoother ring on sharp motion onset.** A zero-phase Butterworth with a 3 Hz cutoff
+- **REF-1 (severity 1/3) Smoother ring on sharp motion onset.** A zero-phase Butterworth with a 3 Hz cutoff
   introduces a brief pre-ring (~2 frames) before a sudden acceleration (a bowler starting the run).
   Acceptable at 50 fps; would matter at lower frame rates.
-- **REF-2 (★) Hinge clamp is axis-free.** The flexion plane is derived from the three-point geometry
+- **REF-2 (severity 1/3) Hinge clamp is axis-free.** The flexion plane is derived from the three-point geometry
   per frame, not from a consistent anatomical axis. On near-collinear limbs the plane is unstable and
   the clamp may produce a small rotational jitter. Mitigated by the 15° minimum (never near full
   extension).

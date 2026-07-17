@@ -15,7 +15,7 @@ Pipeline order: **P1** (2D pose) to **P1b** (2D stabilization) to **P2** (per-ca
 | # | Issue | Evidence | Feeds |
 |---|---|---|---|
 | P1-1 | **Deep-field / small-subject recall** is the upstream driver of everything. Deep fielders and umpires are ~10-20 px; when a camera misses them they become single-camera to no triangulation, noisy foot ray, split id. | single_cam 0.76-0.82 on `M2_2_3_*`; coverage falls to 0.48. | 05, 08, 04 |
-| P1-2 | **cam_07 panoramic** (3775×960) sees players tiny with low keypoint confidence; its 2D is the weakest and its tracklets fail to associate. | cam_05↔cam_07 top split pair on M2_2_3. | 05 |
+| P1-2 | **cam_07 panoramic** (3775×960) sees players tiny with low keypoint confidence; its 2D is the weakest and its tracklets fail to associate. | cam_05-cam_07 top split pair on M2_2_3. | 05 |
 | P1-3 | jitter_px 1.2-3.4 (panel), 2D keypoint noise is 2-3 px, the floor for reprojection error; hips are the worst joint (11-12 px cross-view). | manager reprojection analysis (`wip/open-work.md` §H). | 3D reproj |
 
 Verdict: P1 is **not** the identity algorithm's fault, but it is the **root cause** of the
@@ -35,11 +35,11 @@ in teleports (those are position-fusion, not 2D-jitter, artifacts).
 Verdict: P2 is healthy. The visible flicker is **not** born here, it is P3/P4 re-labelling a
 stable P2 tracklet (07).
 
-## P3, cross-camera association (tracklet graph + union-lift)  ⬅ **primary identity fault**
+## P3, cross-camera association (tracklet graph + union-lift)  <- **primary identity fault**
 
 | # | Issue | Evidence | Feeds |
 |---|---|---|---|
-| P3-1 | **Facing-pair binding failure.** cam_01↔cam_04 (and cam_02↔cam_06, cam_03↔cam_05) are near-degenerate epipolar geometry; the ground-distance cue is the only one live and it is noisy on grazing cam_04. Whole tracklets fail to associate. | cam_01↔cam_04 = 5030 split events (#1); `M1_1_16_2` cam_04 to P011 vs others to P005. | 05, 06 |
+| P3-1 | **Facing-pair binding failure.** cam_01-cam_04 (and cam_02-cam_06, cam_03-cam_05) are near-degenerate epipolar geometry; the ground-distance cue is the only one live and it is noisy on grazing cam_04. Whole tracklets fail to associate. | cam_01-cam_04 = 5030 split events (#1); `M1_1_16_2` cam_04 to P011 vs others to P005. | 05, 06 |
 | P3-2 | **No strong facing-pair-capable cue.** colour d′≈0, bone-ratio abstains, posture weak when a view is grazing/tiny. Association leans on geometry exactly where geometry is degenerate. | panel `d_app` 0-2.7, often 0. | 05 |
 | P3-3 | **Per-frame membership churn** tips a tracklet between clusters to the 2D flicker. | `cycle_cons` 0.47-0.95; low on `M2_1_12_1`, `M2_2_3_1`. | 07 |
 | P3-4 | Ground position from the z=0 solve is **per-frame** and, for grazing/single-cam clusters, noisy to feeds the teleport spikes. | e_max spikes correlate with single_cam. | 04 |

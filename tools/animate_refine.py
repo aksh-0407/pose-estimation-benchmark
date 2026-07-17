@@ -122,8 +122,8 @@ def main() -> int:
 
     def update(i):
         f = frames[i]
-        _draw(axb, before, f, f"BEFORE (06_roles) — {args.delivery} f{f}", lo_b, hi_b, colors)
-        _draw(axa, after, f, f"AFTER (07_refine) — f{f}", lo_a, hi_a, colors)
+        _draw(axb, before, f, f"BEFORE (06_roles) - {args.delivery} f{f}", lo_b, hi_b, colors)
+        _draw(axa, after, f, f"AFTER (07_refine) - f{f}", lo_a, hi_a, colors)
 
     ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=50)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)

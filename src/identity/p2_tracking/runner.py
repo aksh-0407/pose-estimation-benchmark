@@ -48,7 +48,7 @@ def track_one_camera(args: tuple) -> tuple[str, str, dict, str | None]:
             + summary.get("dormant_deleted", 0)
         )
         return camera_id, "ok", summary, None
-    except Exception as exc:  # noqa: BLE001 — surface per-camera failure, do not kill the pool
+    except Exception as exc:  # noqa: BLE001 - surface per-camera failure, do not kill the pool
         return camera_id, "failed", {}, f"{type(exc).__name__}: {exc}"
 
 

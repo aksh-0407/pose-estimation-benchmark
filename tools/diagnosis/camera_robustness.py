@@ -3,18 +3,18 @@
 
 Answers the user's questions directly, with no ground truth:
 
-1. PER-CAMERA REPROJECTION CONTRIBUTION — reproject each identity-frame's triangulated
+1. PER-CAMERA REPROJECTION CONTRIBUTION - reproject each identity-frame's triangulated
    3D skeleton (from 04 lift3d.jsonl) into every camera that observed it and compare to
    that camera's 2D keypoints. Aggregated per camera_id, this surfaces the "one bad /
    outlier camera" for a delivery (the camera whose 2D consistently disagrees with the
    multi-view 3D consensus).
 
-2. LEAVE-ONE-CAMERA-OUT (LOCO) STABILITY — for identity-frames with >=3 views, retriangulate
+2. LEAVE-ONE-CAMERA-OUT (LOCO) STABILITY - for identity-frames with >=3 views, retriangulate
    the mid-hip from all views, then again dropping one camera; the per-camera shift
    ||p_all - p_drop|| quantifies how much each camera moves the solution (robustness to
    losing / mistrusting that camera).
 
-3. MONOCULAR-vs-MULTIVIEW dispersion — per joint, the spread of each camera-PAIR's
+3. MONOCULAR-vs-MULTIVIEW dispersion - per joint, the spread of each camera-PAIR's
    2-view triangulation around the full multi-view point: how much a 2-camera ("nearly
    monocular") estimate would differ from using all cameras, per joint.
 

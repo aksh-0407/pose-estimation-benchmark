@@ -122,7 +122,7 @@ def validate_pose_3d(value: Any) -> None:
 def validate_pose_3d_named(value: Any) -> None:
     """Optional self-describing named + root-relative 3D block (``pose_3d_named``).
 
-    ``{root_joint, root_world_m, joints_root_relative_m:{name:[dx,dy,dz]|null}}`` —
+    ``{root_joint, root_world_m, joints_root_relative_m:{name:[dx,dy,dz]|null}}``  - 
     the root in world metres, every named joint relative to it. Additive to
     ``pose_3d``; a joint may be ``null`` when it could not be triangulated.
     """
@@ -288,7 +288,7 @@ def contract_report() -> dict[str, Any]:
         "skeleton": SKELETON,
         "keypoint_count": KEYPOINT_COUNT,
         "roles": sorted(ROLE_VALUES),
-        "camera_ids": [f"cam_0{index}" for index in range(1, 8)],
+        "camera_ids": [f"cam_{index:02d}" for index in range(1, 8)],
         "canonical_coordinates": "full-frame pixels",
         "compatibility_coordinates": "normalized full-frame coordinates",
         "final_handoff_requires_global_player_id": True,

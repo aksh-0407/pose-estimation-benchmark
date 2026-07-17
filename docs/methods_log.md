@@ -70,6 +70,27 @@ Optimization methods (speed only) are recorded separately in
 
 ---
 
+## Part A0: 2026-07-17 full-codebase audit campaign
+
+A structural and hygiene campaign, not a tuning one: legacy YOLO stack deleted, the P1
+runners refactored onto a shared module, the 1982-line renderer split, the global-id
+package renamed to stage-05 terms (old YAML keys still load), whole-repo slop and jargon
+purge, and a documentation refresh. Every refactor was verified byte-identical against a
+golden re-run of stages 02 to 07 on delivery CCPL080626M1_1_14_1 (and a 40-frame GPU
+check for P1). The full change ledger with verification evidence is
+[docs/audit/changes.md](audit/changes.md); the defect register is
+[docs/audit/bugs.md](audit/bugs.md) plus [pipeline/known-bugs.md](pipeline/known-bugs.md).
+
+One deliberate metric-definition change shipped (nothing else moved any output): the
+global-id diagnostic "feet unusable" guard required exactly 17 confidence values, so
+with Halpe-26 input the ankle check never ran and every bottom-of-frame bbox was
+anchored on the upper-body plane. Fixed to length-aware. Emitted tracks and
+predictions are byte-identical; only the agreement diagnostic's anchoring changed.
+Measured on the golden delivery: cross-camera agreement 0.9327 to 0.9297 (agreeing
+pairs 14572 to 13634), teleports/ids/persistence/verdict unchanged. Agreement numbers
+after this date are on the corrected definition and read about 0.003 lower on this
+delivery; do not interpret that step as a regression.
+
 ## Part A: 2026-07-16 and 2026-07-17 session
 
 This is the most recent work. It follows the pipetrack_v9 push and runs entirely on the L40S box.

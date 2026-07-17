@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Triangulate multi-view poses, including canonical PipeTrack P4 runs."""
+"""Triangulate multi-view poses (the 3D lift, stage 04)."""
 
 from __future__ import annotations
 
@@ -91,13 +91,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--parallax-order", action="store_true",
                         help="G3: try high-parallax RANSAC seed pairs first (flag-gated A/B)")
     parser.add_argument("--robust-refit", action="store_true",
-                        help="Phase-1C: IRLS-Huber M-estimator polish on the per-joint inlier "
+                        help="Iteratively reweighted Huber polish on the per-joint inlier "
                              "re-fit (down-weights marginal-inlier cameras). Off = byte-identical.")
     parser.add_argument("--robust-huber-px", type=float, default=8.0,
                         help="Huber threshold (px reprojection residual) for --robust-refit.")
     parser.add_argument("--suppression-path", default=None,
                         help="P5b suppression.json; suppressed global ids are not lifted "
-                             "(default: probes <input>/../06_roles/suppression.json; Wave-6)")
+                             "(default: probes <input>/../06_roles/suppression.json)")
     parser.add_argument("--id-source", choices=["global", "binding"], default="global",
                         help="Group observations by P4 global_player_id (terminal lift, legacy) "
                              "or by P3 binding_id (the 04 (binding lift) re-sequenced lift, fix F9b).")
@@ -163,7 +163,7 @@ def triangulate_canonical_run(
     robust_huber_px: float = 8.0,
 ) -> dict[str, Any]:
     input_run_dir, output_run_dir = Path(input_run_dir), Path(output_run_dir)
-    # Wave-6 (P5b): suppressed peripheral ids are excluded from the lift entirely.
+    # Suppressed peripheral ids (roles stage output) are excluded from the lift entirely.
     suppressed_ids: set[str] = set()
     sup_path = Path(suppression_path) if suppression_path else (
         input_run_dir.parent / "06_roles" / "suppression.json"
@@ -173,7 +173,11 @@ def triangulate_canonical_run(
             payload = json.loads(sup_path.read_text())
             if payload.get("enabled"):
                 suppressed_ids = {str(pid) for pid in (payload.get("suppressed") or {})}
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as exc:
+            # Proceed without suppression, but say so: a corrupt suppression file
+            # would otherwise silently lift every player.
+            print(f"WARN: could not read suppression file {sup_path} ({exc}); "
+                  "lifting all players", flush=True)
             suppressed_ids = set()
     prediction_files = discover_prediction_files(input_run_dir, delivery_id, cameras)
     records_by_frame = load_synchronized_records(prediction_files, delivery_id)
@@ -214,7 +218,7 @@ def triangulate_canonical_run(
                 for player in record.get("players", []):
                     player_id = player.get("global_player_id")
                     if player_id and str(player_id) in suppressed_ids:
-                        continue  # Wave-6: drop low-confidence peripherals, never extrapolate
+                        continue  # drop low-confidence peripherals, never extrapolate
                     if player_id and player.get("pose_2d") is not None:
                         observations[(frame_index, player_id)].append((camera_id, player))
 
@@ -241,7 +245,7 @@ def triangulate_canonical_run(
             continue
         if id_source == "binding":
             # The lift core also derives per-camera torso residuals (the chimera
-            # signature) and per-joint covariance — the 04 (binding lift) feedback payload.
+            # signature) and per-joint covariance - the 04 (binding lift) feedback payload.
             member_keypoints = _member_keypoints(views)
             lift = lift_frame(
                 member_keypoints,
@@ -292,7 +296,7 @@ def triangulate_canonical_run(
             return padded
 
         if dense_fill:
-            # C6: rows == real frames, so gap gates and smoothing operate in true
+            # Rows == real frames, so gap gates and smoothing operate in true
             # time; unobserved frames are NaN rows that fills may bridge only
             # within max_gap_frames of REAL frames.
             timeline = list(range(frames[0], frames[-1] + 1))
@@ -344,7 +348,7 @@ def triangulate_canonical_run(
         confidences = smoothed_conf[key]
         # Per-joint nullable emit: keep the frame as long as the mid-hip (COCO l/r hip)
         # triangulated, so a player-frame is not dropped just because the feet were not
-        # multi-view-visible — body joints still ship, un-triangulated joints emit as null.
+        # multi-view-visible - body joints still ship, un-triangulated joints emit as null.
         finite = np.isfinite(points).all(axis=1)
         if not (finite[11] and finite[12]):
             continue  # no placeable root/ground position -> no 3D for this frame
@@ -387,7 +391,7 @@ def triangulate_canonical_run(
     purity_by_binding: dict[str, Any] = {}
     if id_source == "binding":
         # F9b diagnostics: the per-frame 3D stream keyed on binding_id plus the
-        # whole-delivery purity report — the chimera-split signal and the shape
+        # whole-delivery purity report - the chimera-split signal and the shape
         # evidence Waves 3/4 consume.
         def _nan_to_none(values: np.ndarray) -> list:
             return [

@@ -1,7 +1,7 @@
 """Cross-camera association (P3) configuration.
 
 Same frozen-dataclass + validated-YAML-loader pattern as
-src/identity/p2_tracking/config.py. Every magic number Vedant hard-coded is exposed
+src/identity/p2_tracking/config.py. Every previously hard-coded magic number is exposed
 here so the run manifest records exactly what produced a result.
 """
 
@@ -20,7 +20,7 @@ _CALIBRATION_MODES = {"auto", "file", "defaults"}
 _DEFAULT_ANCHOR_PRIORITY = ["cam_01", "cam_04", "cam_02", "cam_03", "cam_05", "cam_06", "cam_07"]
 # FACING (co-observing) pairs, per configs/facing.jpeg and verified against the
 # calibration optical axes: each pair looks at the SAME ground strip from opposite
-# sides. NOT the diametrically-opposite *positions* (C2/C5, C3/C6) — those look at
+# sides. NOT the diametrically-opposite *positions* (C2/C5, C3/C6) - those look at
 # different strips and never co-observe. The association runner re-derives these from
 # the projection matrices and overrides this default, so calibration is the source of
 # truth even if this list is edited wrongly.
@@ -46,7 +46,8 @@ class P3AssociationConfig:
     w_tri: float = 0.4
     parallax_min_deg: float = 10.0
     parallax_full_deg: float = 25.0
-    # Calibration stats (replace Vedant's fake auto-compute; empirically tuned)
+    # Calibration stats (empirically tuned constants; the original auto-compute
+    # was broken, see geometry_cache.py)
     mu_fine_score: float = 15.0
     sigma_fine_score: float = 5.0
     dummy_cost_scale: float = 3.0
@@ -95,13 +96,17 @@ class P3AssociationConfig:
     graph_sample_gate_m: float = 6.0          # wide evidence gate (also feeds calibration)
     graph_min_covis_frames: int = 10          # min gated co-visible frames for an edge
     graph_covis_full_frames: int = 40         # support saturation for full edge weight
-    # Min aggregated LLR to merge. Above the single-cue positive cap by design:
-    # capped ground agreement alone can never merge two tracklets — at least one
-    # corroborating cue (posture, motion, appearance) must also vote "same".
+    # Min aggregated log-likelihood ratio to merge. NOTE: with these dataclass
+    # defaults (cap 1.5 < threshold 2.0) a single capped ground cue cannot merge
+    # two tracklets alone, but the PRODUCTION YAML deliberately raises the cap
+    # to 3.5 (> 2.0), abandoning that structural bound: there a single strongly
+    # supported ground cue can clear the threshold by itself, and merge safety
+    # rests on support weighting and the veto below. Recorded in
+    # docs/pipeline/known-bugs.md.
     graph_llr_merge_threshold: float = 2.0
     graph_llr_veto: float = -4.5              # only a CONFIDENT contradiction blocks a merge
     graph_llr_positive_cap: float = 1.5       # per-cue cap on "same" evidence
-    # Corroboration-aware single-cue merge (ID-1 under-merge on the facing pairs).
+    # Corroboration-aware single-cue merge, for under-merging on the facing pairs.
     # On the low-parallax facing pairs appearance abstains, motion abstains for
     # static players, and posture can abstain for crouched/oblique bodies, leaving
     # ground alone -- which the positive cap (1.5) holds below the 2.0 threshold, so
@@ -129,7 +134,7 @@ class P3AssociationConfig:
     binding_min_single_frames: int = 150
     graph_hard_dist_gate_m: float = 2.75      # median ground residual ceiling for edges
     graph_motion_enabled: bool = True
-    # G6: the motion-cue shape parameters were hard-coded magic numbers while every
+    # The motion-cue shape parameters were hard-coded magic numbers while every
     # other cue is calibrated/configurable; promoted here (values unchanged).
     graph_motion_speed_full_mps: float = 2.0     # both clearly moving above this
     graph_motion_speed_still_mps: float = 0.7    # clearly standing below this
@@ -145,7 +150,7 @@ class P3AssociationConfig:
     ground_sigma_px_base: float = 2.0
     ground_sigma_px_bbox_frac: float = 0.01   # + frac * bbox_height_px
     ground_var_floor_m: float = 0.4
-    # Wave-5b: contested-camera evidence down-weighting. When two detections in the
+    # Contested-camera evidence down-weighting. When two detections in the
     # SAME camera overlap heavily (bowler/non-striker crossing in a facing pair),
     # that camera cannot separate the two players: its ground evidence is unreliable
     # and its appearance/posture crops bleed one identity into the other. Marking
@@ -178,25 +183,25 @@ class P3AssociationConfig:
     ground_fusion_huber_delta: float = 2.5    # (robust_cov only) Mahalanobis-sqrt cutoff
     # Foot-contact pixel (ISSUE-7). "legacy" = historical (lower confident ankle else
     # bbox bottom-centre, projected as if on the ground). "v2" = ankle MIDPOINT as the
-    # cross-camera-consistent reference when both feet are down (F4/F6), tighter vertical
-    # + new horizontal plausibility (F3), and the ankle height reported so the z0_reproj
-    # solver back-projects onto z=ankle_height instead of z=0 (removes the ~10 cm bias, F2).
-    # "v3" (campaign fix F4) = prefer the Halpe-26 heel/toe keypoints from
-    # pose_2d feet — true ground-contact landmarks (~2 cm above ground vs the
-    # ankle's ~10 cm) — falling back to the v2 ankle stack when unavailable.
+    # cross-camera-consistent reference when both feet are down, tighter vertical
+    # + new horizontal plausibility, and the ankle height reported so the z0_reproj
+    # solver back-projects onto z=ankle_height instead of z=0 (removes the ~10 cm bias).
+    # "v3" = prefer the Halpe-26 heel/toe keypoints from
+    # pose_2d feet - true ground-contact landmarks (~2 cm above ground vs the
+    # ankle's ~10 cm) - falling back to the v2 ankle stack when unavailable.
     foot_contact_mode: str = "legacy"         # or "v2" / "v3"
     ankle_height_m: float = 0.10
     foot_horizontal_margin_frac: float = 0.15
     foot_level_frac: float = 0.15
     foot_kp_conf_min: float = 0.5             # v3: min confidence for a heel/toe landmark
     foot_height_m: float = 0.02               # v3: heel/toe landmark height above ground
-    # C5: the documented single-camera ankle-height emit (~0.94 m grazing-angle bias
-    # fix, methods-log M5) was never wired to the production emit path — single-member
+    # The documented single-camera ankle-height emit (~0.94 m grazing-angle bias
+    # fix, methods-log M5) was never wired to the production emit path - single-member
     # clusters emitted the legacy z=0 back-projection. When enabled, the EMITTED
     # position back-projects the emit-path foot pixel onto its landmark height plane;
     # the clustering gate keeps the legacy foot (identity invariant). Off = legacy.
     single_cam_height_emit: bool = False
-    # Temporal smoothing of the EMITTED foot pixel per (camera, tracklet), F7. Odd
+    # Temporal smoothing of the EMITTED foot pixel per (camera, tracklet). Odd
     # window for a centred median (robust to single-frame ankle spikes); 1 = disabled.
     # Emit-only, so identity is unchanged.
     foot_smooth_window: int = 1
@@ -233,26 +238,26 @@ class P3AssociationConfig:
     posture_keep_upright_unknown: bool = False
     # F9a: emit the 2x2 ground covariance per cluster (GN posterior for multi-view
     # z0_reproj, inflated per-view Jacobian model for single-camera). Feeds the P4
-    # uncertainty-aware Kalman R (F10). Off = rows byte-identical to the baseline.
+    # uncertainty-aware Kalman R. Off = rows byte-identical to the baseline.
     emit_ground_cov: bool = False
     single_cam_cov_inflation: float = 4.0
     airborne_cov_scale: float = 4.0
     airborne_ankle_bbox_frac: float = 0.25
     # F9c: after the graph solve, lift each binding's multi-view frames to 3D and
     # log the per-binding purity report (torso-residual chimera signature, pooled
-    # bone-ratio descriptor, stature) into diagnostics + metrics. Read-only —
+    # bone-ratio descriptor, stature) into diagnostics + metrics. Read-only  - 
     # nothing feeds back into clustering yet (that is Wave 3/4). Off = no extra
     # compute, byte-identical outputs.
     graph_lift_feedback: bool = False
     graph_lift_stride: int = 5                # lift every Nth frame (cost control)
     graph_chimera_torso_residual_px: float = 20.0
     graph_chimera_frame_fraction: float = 0.3
-    # F11: pose-shape as a PRIMARY cluster-level cue. After the pairwise merge
+    # Pose-shape as a PRIMARY cluster-level cue. After the pairwise merge
     # rounds, each multi-camera cluster is lifted to 3D and its bone-ratio
     # descriptor + metric stature become a second corroboration round: two
     # compatible clusters with agreeing geometry AND agreeing body shape merge
     # even where the per-cue positive cap holds the pairwise round below the
-    # threshold (the facing-pair under-merge, ID-1). The shape LLR is
+    # threshold (the facing-pair under-merge). The shape LLR is
     # self-calibrated per delivery (same = temporal halves of one cluster,
     # diff = co-visible distinct clusters) and abstains when starved.
     # W9 union-lift merge: same ground location + one coherent 3D skeleton across
@@ -268,11 +273,11 @@ class P3AssociationConfig:
     graph_shape_min_frames: int = 8           # min lifted frames for a descriptor
     graph_shape_min_segments: int = 4         # min shared bone segments to compare
     graph_shape_stature_max_m: float = 0.15   # hard stature disagreement gate
-    # F13 splittable clustering: before refinement, lift each multi-camera cluster
+    # Splittable clustering: before refinement, lift each multi-camera cluster
     # and, where the torso-residual chimera signature fires, veto the intruding
-    # (worst) camera's within-cluster pair LLRs down to graph_chimera_veto_llr —
+    # (worst) camera's within-cluster pair LLRs down to graph_chimera_veto_llr  - 
     # the existing refine move/split machinery then evicts the intruder. This is
-    # the merge-only clustering's missing UNDO (ID-5 permanent chimeras).
+    # the merge-only clustering's missing UNDO (permanent chimeras).
     graph_split_enabled: bool = False
     graph_chimera_veto_llr: float = -6.0
     # Cue calibration: auto = bootstrap same/diff populations from this delivery,
@@ -283,7 +288,7 @@ class P3AssociationConfig:
     anchor_pair_dist_m: float = 1.5
     anchor_pair_isolation_m: float = 3.0
     diff_pair_min_dist_m: float = 3.0
-    # F8 cold-start robustness: when the strict gates find < 3 anchor pairs, retry
+    # Cold-start robustness: when the strict gates find < 3 anchor pairs, retry
     # once with these relaxed same-player gates; if still starved, load a prior
     # calibration fitted on a clean delivery of the same match instead of silently
     # reverting to the default Gaussians. All off by default (byte-identical).

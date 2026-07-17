@@ -4,16 +4,18 @@ global_id -> roles -> mosaic render.
 Extends the identity inner-loop driver (``identity.id_pipeline``) to the whole delivery
 chain. P1 lands per delivery as the ``00_inference`` stage; each stage writes the canonical
 run-dir layout ``<output-tree>/<DELIVERY>/{00_inference,01_stabilization,02_tracking,
-03_association,04_lift,05_global_id,06_roles,logs}`` and mosaics land in ``<artifacts-root>/<DELIVERY>/``.
+03_association,04_lift,05_global_id,06_roles,07_refine,logs}`` and mosaics land in
+``<artifacts-root>/<DELIVERY>/``.
 
 The 3D lift (04_lift) is the single triangulation and runs BEFORE global_id (Associate ->
 Triangulate -> Track): global_id and roles carry its 3D forward, and 06_roles emits the
 terminal role-stamped, suppression-filtered predictions consumed downstream.
 
-Designed as the A/B workhorse (docs/critical-analysis/, wip/to_do.md):
+Designed as the A/B workhorse (stage reference: docs/pipeline/; measurement and
+diagnosis notes: docs/diagnosis/):
 
-- ``--from-stage``/``--until-stage`` (or ``--only``/``--skip`` if wired) select the stage
-  window; ``--base-tree`` reuses upstream stage dirs from a frozen run (read in place).
+- ``--from-stage``/``--until-stage`` select the stage window; ``--base-tree`` reuses
+  upstream stage dirs from a frozen run (read in place).
 - Every stage's config path and sha256 are recorded in ``pipeline_manifest.json``.
 - ``--panel-only`` re-prints the joint metric panel; ``--baseline`` diffs it
   against a frozen snapshot tree (same layout, metrics files only).
@@ -27,7 +29,7 @@ Example (full chain on the reference delivery, run under the ``pose-lab`` env)::
 Example (association+ experiment reusing a frozen tree's tracking)::
 
     python -m main \
-        --from-stage 03_association --base-tree data/derived/runs/pipetrack_v8 \
+        --from-stage 03_association --base-tree data/derived/8_init/pipetrack_v9 \
         --output-tree data/derived/runs/expt \
         --p3-config configs/03_association.yaml \
         --skip-render --jobs 8
@@ -58,7 +60,7 @@ from identity.id_pipeline import (  # noqa: E402
 
 STAGE_ORDER = ["01_stabilization", "02_tracking", "03_association", "04_lift", "05_global_id", "06_roles", "07_refine", "08_render"]
 
-# Columns are read jointly — no single one is optimized in isolation.
+# Columns are read jointly - no single one is optimized in isolation.
 # (name, metrics file relative to deliveries/<D>/, dotted key, format)
 PANEL_COLUMNS = [
     ("agreement", "05_global_id/global_id_metrics.json", "cross_camera_agreement_rate", "{:.3f}"),
@@ -221,8 +223,9 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
                 args.python, log,
             )
             if rc == 0:
-                # Wave-6 (P5b): role-aware peripheral suppression. Explicit paths so a
-                # reused base-tree p4 never makes the probe read the wrong p5 dir.
+                # Role-aware peripheral suppression (06). Explicit paths so a reused
+                # base-tree global-id dir (05) never makes the probe read the wrong
+                # roles dir (06).
                 rc = _run_stage(
                     "identity.p6_roles.suppress_peripherals",
                     ["--input-run-dir", str(plan.stage_dir("05_global_id")),
@@ -245,13 +248,15 @@ def run_compute_chain(plan: DeliveryPlan) -> dict:
         else:  # pragma: no cover - registry and loop must stay in sync
             raise AssertionError(stage)
         result[f"{stage}_rc"] = rc
-        # P3/P4 exit 1 for a warn/fail *verdict* but produced full output; every
-        # other stage's nonzero rc means the stage itself failed -> stop the chain.
+        # Association (03) and global_id (05) exit 1 for a warn/fail *verdict* while
+        # still producing full output; every other stage's nonzero rc means the stage
+        # itself failed -> stop the chain.
         if rc not in (0, 1) or (rc == 1 and stage not in ("03_association", "05_global_id")):
             result["failed_stage"] = stage
             return result
-        # H7: a crashed P3/P4 ALSO exits 1 (uncaught exception) — distinguish a
-        # warn-verdict from a crash by requiring the stage's metrics artifact.
+        # A crashed association/global_id stage ALSO exits 1 (uncaught exception);
+        # distinguish a warn-verdict from a crash by requiring the stage's metrics
+        # artifact to exist.
         metrics_name = {"03_association": "association_metrics.json", "05_global_id": "global_id_metrics.json"}.get(stage)
         if rc == 1 and metrics_name and not (out_dir / metrics_name).exists():
             result["failed_stage"] = stage
@@ -308,8 +313,9 @@ def write_pipeline_manifest(args: argparse.Namespace, stages: list[str], deliver
 
 
 def _sum_confirmed_tracks(metrics: dict):
-    """Total confirmed per-camera tracks — the P2 fragmentation proxy (~13-15 people
-    per camera view is ideal; excess = per-camera track fragments P4 must stitch)."""
+    """Total confirmed per-camera tracks - the tracking (02) fragmentation proxy
+    (~13-15 people per camera view is ideal; excess means per-camera track fragments
+    that the global-id stage (05) must stitch)."""
     per_camera = metrics.get("per_camera")
     if not isinstance(per_camera, dict):
         return None
@@ -394,29 +400,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
                         help="Run 07 (refinement): physics-constrained 3D-skeleton smoothing AFTER "
                              "identity (rewrites only pose_3d; IDs unchanged). Default ON.")
     parser.add_argument("--refine-config", default="configs/07_refine.yaml")
-    parser.add_argument("--p1b-config", default="configs/01_stabilization.yaml")
-    parser.add_argument("--p2-config", default="configs/02_tracking.yaml")
-    parser.add_argument("--p3-config", default="configs/03_association.yaml")
-    parser.add_argument("--p4-config", default="configs/05_global_id.yaml")
+    parser.add_argument("--p1b-config", default="configs/01_stabilization.yaml",
+                        help="Stage 01 (stabilization) YAML.")
+    parser.add_argument("--p2-config", default="configs/02_tracking.yaml",
+                        help="Stage 02 (per-camera tracking) YAML.")
+    parser.add_argument("--p3-config", default="configs/03_association.yaml",
+                        help="Stage 03 (cross-camera association) YAML.")
+    parser.add_argument("--p4-config", default="configs/05_global_id.yaml",
+                        help="Stage 05 (global identity) YAML. Flag name kept from the "
+                             "stage's pre-restructure name (P4).")
     parser.add_argument("--p5-config", default="configs/06_roles.yaml",
-                        help="P5 roles YAML (v1.1 epoch solver); pass '' for legacy v0.")
+                        help="Stage 06 (roles) YAML, epoch-solver version; pass '' for the "
+                             "legacy v0 solver. Flag name kept from the stage's "
+                             "pre-restructure name (P5).")
     parser.add_argument("--tri-reproj-px", type=float, default=10.0)
     parser.add_argument("--tri-min-views", type=int, default=2)
     parser.add_argument("--tri-ema-alpha", type=float, default=0.65)
     parser.add_argument("--tri-cheirality", action=argparse.BooleanOptionalAction, default=True,
-                        help="Fix F3: cheirality gate in the 3D lift (default off = baseline).")
+                        help="Cheirality (in-front-of-camera) gate in the 3D lift. Default on.")
     parser.add_argument("--tri-smoother", choices=["ema", "butterworth"], default="butterworth",
-                        help="Fix F7: zero-phase Butterworth instead of causal EMA (default ema).")
+                        help="Temporal smoother for the lifted 3D: zero-phase Butterworth "
+                             "(default) or causal EMA.")
     parser.add_argument("--tri-butter-cutoff-hz", type=float, default=6.0)
     parser.add_argument("--tri-native-skeleton", action=argparse.BooleanOptionalAction, default=True,
-                        help="Fix F15: triangulate all 26 Halpe keypoints (default off = COCO-17).")
+                        help="Triangulate all 26 Halpe keypoints (default on). Off restricts "
+                             "the lift to the COCO-17 subset.")
     parser.add_argument("--tri-robust-refit", action=argparse.BooleanOptionalAction, default=False,
-                        help="Phase-1C: IRLS-Huber M-estimator polish on the per-joint triangulation "
-                             "(down-weights marginal-inlier cameras). Off = byte-identical.")
+                        help="Iteratively-reweighted (Huber) refit polish on the per-joint "
+                             "triangulation, down-weighting marginal-inlier cameras. Default off.")
     parser.add_argument("--tri-robust-huber-px", type=float, default=8.0,
                         help="Huber threshold (px) for --tri-robust-refit.")
     parser.add_argument("--tri-dense-fill", action=argparse.BooleanOptionalAction, default=True,
-                        help="Fix C6: gap-gate temporal fills on real frame numbers (default off).")
+                        help="Gap-gate temporal fills on real frame numbers (default on).")
     parser.add_argument("--artifacts-root", default=None,
                         help="Mosaics land in <artifacts-root>/<D>/ (required to render). "
                              "Default with --dataset: <DATA_ROOT>/viz/<dataset>/pipetrack_v<version>.")

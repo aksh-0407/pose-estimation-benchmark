@@ -66,7 +66,7 @@ def test_propagate_state_does_not_mutate():
 
 
 def test_role_params_override_changes_dynamics():
-    # P4Config can inject custom role params; the filter must honour them.
+    # GlobalIdConfig can inject custom role params; the filter must honour them.
     custom = dict(ROLE_PARAMS)
     custom["fielder"] = RoleParams(alpha=8.0, sigma_a=9.0, measurement_noise=0.4)
     default_k = SingerGroundKalman(np.array([0.0, 0.0]), "fielder")
@@ -88,7 +88,7 @@ def test_per_measurement_R_overrides_role_noise():
     from identity.p5_global_id.ground_kalman import SingerGroundKalman
 
     # Two identical filters; one gets a HUGE per-measurement R for an outlier
-    # observation — its state must move far less than the trusting filter's.
+    # observation - its state must move far less than the trusting filter's.
     a = SingerGroundKalman(np.array([0.0, 0.0]), "unknown", dt=0.02)
     b = SingerGroundKalman(np.array([0.0, 0.0]), "unknown", dt=0.02)
     for f in (a, b):

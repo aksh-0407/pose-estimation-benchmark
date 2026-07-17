@@ -1,4 +1,4 @@
-"""P4b post-delivery tracklet stitching without a graph-library dependency."""
+"""Post-delivery tracklet stitching (stage 05) without a graph-library dependency."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from identity.common.pose_shape import (
     descriptor_distance,
     posture_distance_z,
 )
-from identity.p5_global_id.config import P4Config
+from identity.p5_global_id.config import GlobalIdConfig
 
 
 @dataclass(frozen=True)
@@ -42,11 +42,11 @@ class Edge:
     spatial_gap_m: float
 
 
-def _role_penalty(role_a: str, role_b: str, config: P4Config) -> float:
+def _role_penalty(role_a: str, role_b: str, config: GlobalIdConfig) -> float:
     if "unknown" in {role_a, role_b} or role_a == role_b:
         return 0.0
-    incompatible = {frozenset(pair) for pair in config.p4b.incompatible_role_pairs}
-    return config.p4b.w_role if frozenset((role_a, role_b)) in incompatible else 0.3 * config.p4b.w_role
+    incompatible = {frozenset(pair) for pair in config.stitching.incompatible_role_pairs}
+    return config.stitching.w_role if frozenset((role_a, role_b)) in incompatible else 0.3 * config.stitching.w_role
 
 
 def velocity_continuity_cost(segment_a: Segment, segment_b: Segment) -> float:
@@ -138,7 +138,7 @@ def extract_segments(
 
 def build_link_costs(
     segments: Iterable[Segment],
-    config: P4Config,
+    config: GlobalIdConfig,
     occupancy_by_id: dict[str, set[tuple[str, int]]] | None = None,
 ) -> list[Edge]:
     """Feasible stitch edges between temporally ordered fragments.
@@ -147,22 +147,22 @@ def build_link_costs(
     occupancy-licensed long bridge: a gap beyond ``temporal_gate_frames`` is still
     admissible up to ``temporal_gate_frames_occupancy`` when the two identities'
     occupancies are fully disjoint (they can never have been two simultaneous
-    people) — by default additionally requiring mature pose-shape agreement.
+    people) - by default additionally requiring mature pose-shape agreement.
     """
 
     segments = list(segments)
     edges: list[Edge] = []
-    pose_gate = config.p4b.pose_stitch_max_distance
-    w_pose = config.p4b.w_pose
-    bridge_enabled = config.p4b.occupancy_bridge and occupancy_by_id is not None
+    pose_gate = config.stitching.pose_stitch_max_distance
+    w_pose = config.stitching.w_pose
+    bridge_enabled = config.stitching.occupancy_bridge and occupancy_by_id is not None
     for source in segments:
         for target in segments:
             gap = target.start_frame - source.end_frame
             if gap <= 0:
                 continue
-            long_bridge = gap > config.p4b.temporal_gate_frames
+            long_bridge = gap > config.stitching.temporal_gate_frames
             if long_bridge:
-                if not bridge_enabled or gap > config.p4b.temporal_gate_frames_occupancy:
+                if not bridge_enabled or gap > config.stitching.temporal_gate_frames_occupancy:
                     continue
                 source_cells = occupancy_by_id.get(source.global_player_id, set())
                 target_cells = occupancy_by_id.get(target.global_player_id, set())
@@ -170,7 +170,7 @@ def build_link_costs(
                     continue
             distance = float(np.linalg.norm(target.first_ground_pos - source.last_ground_pos))
             maximum = (
-                config.kinematic_v_max_mps * gap / config.frame_rate_fps * config.p4b.kinematic_slack
+                config.kinematic_v_max_mps * gap / config.frame_rate_fps * config.stitching.kinematic_slack
             )
             if distance > maximum:
                 continue
@@ -179,7 +179,7 @@ def build_link_costs(
             if pose_gate > 0.0 or w_pose > 0.0:
                 pose_distance = descriptor_distance(
                     source.pose, target.pose,
-                    min_shared=config.p4b.pose_min_shared_segments,
+                    min_shared=config.stitching.pose_min_shared_segments,
                 )
                 if pose_distance is not None:
                     # Hard gate: two fragments of clearly different build are not the
@@ -188,37 +188,37 @@ def build_link_costs(
                         continue
                     pose_term = w_pose * pose_distance
             posture_term = 0.0
-            posture_gate = config.p4b.posture_stitch_max_z
-            if posture_gate > 0.0 or config.p4b.w_posture > 0.0:
+            posture_gate = config.stitching.posture_stitch_max_z
+            if posture_gate > 0.0 or config.stitching.w_posture > 0.0:
                 posture_z = posture_distance_z(source.posture, target.posture)
                 if posture_z is not None:
-                    # F12: a stitch between clearly different builds is forbidden on
-                    # the billboard stature/shape too — this key matures on the
+                    # A stitch between clearly different builds is forbidden on
+                    # the billboard stature/shape too - this key matures on the
                     # facing pairs where the triangulated descriptor stays immature.
                     if posture_gate > 0.0 and posture_z[0] > posture_gate:
                         continue
-                    posture_term = config.p4b.w_posture * posture_z[0]
-            if long_bridge and config.p4b.occupancy_bridge_require_pose:
+                    posture_term = config.stitching.w_posture * posture_z[0]
+            if long_bridge and config.stitching.occupancy_bridge_require_pose:
                 # A long bridge on kinematics alone is how chimeras happen; demand
                 # positive body-shape evidence (abstaining descriptors don't count).
                 if pose_distance is None or pose_gate <= 0.0 or pose_distance > pose_gate:
                     continue
-            if config.p4b.normalized_costs:
-                # G7: commensurate unit-free terms — each divided by its own gate,
+            if config.stitching.normalized_costs:
+                # Commensurate unit-free terms - each divided by its own gate,
                 # so a plausible stitch anywhere inside the gates can actually win
-                # against the new-trajectory dummy (see P4BConfig.normalized_costs).
-                temporal_term = config.p4b.w_temporal * (
-                    gap / max(config.p4b.temporal_gate_frames, 1)
+                # against the new-trajectory dummy (see StitchingConfig.normalized_costs).
+                temporal_term = config.stitching.w_temporal * (
+                    gap / max(config.stitching.temporal_gate_frames, 1)
                 )
-                spatial_term = config.p4b.w_spatial * (distance / max(maximum, 1e-6))
+                spatial_term = config.stitching.w_spatial * (distance / max(maximum, 1e-6))
             else:
-                temporal_term = config.p4b.w_temporal * gap
-                spatial_term = config.p4b.w_spatial * distance
+                temporal_term = config.stitching.w_temporal * gap
+                spatial_term = config.stitching.w_spatial * distance
             cost = (
                 temporal_term
                 + spatial_term
                 + _role_penalty(source.dominant_role, target.dominant_role, config)
-                + config.p4b.velocity_continuity_weight * velocity_continuity_cost(source, target)
+                + config.stitching.velocity_continuity_weight * velocity_continuity_cost(source, target)
                 + pose_term
                 + posture_term
             )
@@ -226,7 +226,7 @@ def build_link_costs(
     return edges
 
 
-def solve_flow(segments: Iterable[Segment], edges: Iterable[Edge], config: P4Config) -> dict[int, int]:
+def solve_flow(segments: Iterable[Segment], edges: Iterable[Edge], config: GlobalIdConfig) -> dict[int, int]:
     """Solve the path-cover assignment with one private no-link dummy per tail."""
 
     segments = sorted(segments, key=lambda item: item.seg_id)
@@ -235,7 +235,7 @@ def solve_flow(segments: Iterable[Segment], edges: Iterable[Edge], config: P4Con
     ids = [segment.seg_id for segment in segments]
     index = {segment_id: offset for offset, segment_id in enumerate(ids)}
     count = len(ids)
-    new_trajectory_cost = config.p4b.w_spatial * config.p4b.new_traj_cost_factor
+    new_trajectory_cost = config.stitching.w_spatial * config.stitching.new_traj_cost_factor
     large = max(1e9, new_trajectory_cost * 1e6)
     cost = np.full((count, 2 * count), large, dtype=float)
     for row in range(count):
@@ -341,7 +341,7 @@ def merge_colocated_ids(
     different camera sets; the renderer then draws each id as the other's ghost.
     Two ids are merged when their fused ground positions stay within ``radius_m``
     for >= ``min_frames`` frames, they NEVER occupy the same camera-frame over
-    that window (co-occurring in one camera = genuinely two people — the same
+    that window (co-occurring in one camera = genuinely two people - the same
     invariant ``remap_ids`` enforces, applied here as the mergeability test
     rather than a veto), and their billboard statures agree when both are known.
     Winner = the id seen first. Records are patched in place; returns report

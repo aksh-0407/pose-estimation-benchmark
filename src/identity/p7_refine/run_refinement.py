@@ -1,4 +1,4 @@
-"""CLI entry point for 07 (refinement) — physics-constrained 3D skeleton refinement.
+"""CLI entry point for 07 (refinement) - physics-constrained 3D skeleton refinement.
 
 Runs after identity (06_roles) and before the render/export:
 
@@ -29,7 +29,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default=None, help="optional refine YAML (default: configs/07_refine.yaml)")
     parser.add_argument("--camera", action="append", default=None, help="restrict to camera id(s), e.g. cam_01")
     parser.add_argument("--drive-root", default=None,
-                        help="Dataset raw/footage root — provides the calibration for the "
+                        help="Dataset raw/footage root - provides the calibration for the "
                              "visibility-aware re-lift (without it, re-lift is skipped).")
     parser.add_argument("--expected-frames", type=int, default=600, help="(accepted for CLI uniformity; unused)")
     return parser

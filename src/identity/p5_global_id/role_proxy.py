@@ -1,18 +1,18 @@
 """Online role proxy (F5): feed role-aware Singer dynamics DURING tracking.
 
-P5 assigns roles offline, after P4 — too late for the Kalman, which therefore
+P5 assigns roles offline, after P4 - too late for the Kalman, which therefore
 tracks every player with the generic ``unknown`` manoeuvre model. This proxy
 watches the confirmed tracks' ground trajectories causally and, once the
 evidence is unambiguous, calls :meth:`TrackManager.propose_role` (which latches
 for ``role_latch_frames`` before switching the filter), so a bowler gets agile
 dynamics for the delivery and an umpire near-static ones.
 
-Deliberately conservative — it proposes only the three role families whose
+Deliberately conservative - it proposes only the three role families whose
 dynamics differ most and whose online signatures are near-unambiguous:
 
-* **bowler** — the first track with a sustained fast run along the pitch axis;
+* **bowler** - the first track with a sustained fast run along the pitch axis;
   the run's sign also fixes the bowling direction for the other rules.
-* **umpire / wicketkeeper** — near-static, on the pitch line, behind the
+* **umpire / wicketkeeper** - near-static, on the pitch line, behind the
   bowling-end / striker's-end stumps (only after the direction is known).
 
 Everything else keeps ``unknown``; batsmen/fielders' dynamics are close enough

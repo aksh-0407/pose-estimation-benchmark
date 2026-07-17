@@ -17,6 +17,11 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from core.keypoints import HALPE26_EDGES
 from identity.visualization.identity_colors import color_for_player
+from identity.visualization.loaders import (
+    iter_jsonl,
+    load_cluster_badges,
+    stage_from_manifest,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,14 +60,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_jsonl(path: Path):
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if line:
-                yield json.loads(line)
-
-
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, sort_keys=True)
@@ -77,26 +74,6 @@ def canonical_prediction_parts(path: Path) -> tuple[str, str, str] | None:
     if not group or not delivery_id or not camera_id.startswith("cam_"):
         return None
     return group, delivery_id, camera_id
-
-
-def load_cluster_badges(path: Path) -> dict[tuple[int, str], dict[int, int]]:
-    badges: dict[tuple[int, str], dict[int, int]] = defaultdict(dict)
-    if not path.exists():
-        return badges
-    for row in read_jsonl(path):
-        frame_index = int(row["frame_index"])
-        for cluster in row.get("clusters", []):
-            for member in cluster.get("members", []):
-                badges[(frame_index, member["cam_id"])][int(member["player_index"])] = int(cluster["cluster_id"])
-    return badges
-
-
-def stage_from_manifest(manifest: dict[str, Any]) -> str:
-    return {
-        "per_camera_tracking": "p2",
-        "cross_camera_association": "p3",
-        "global_id_tracking": "p4",
-    }.get(manifest.get("task"), "p4")
 
 
 def camera_folder(camera_id: str) -> str:
@@ -324,7 +301,7 @@ def main() -> int:
         camera_output_dir.mkdir(parents=True, exist_ok=True)
         count = 0
         camera_key = f"{group}/{delivery_id}/{camera_id}"
-        for row_index, record in enumerate(read_jsonl(prediction_path)):
+        for row_index, record in enumerate(iter_jsonl(prediction_path)):
             frame_index = int(record["frame_index"])
             if not should_render_record(
                 row_index=row_index,

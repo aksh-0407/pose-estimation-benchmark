@@ -20,18 +20,29 @@ frame in UE centimetres.
 
 ## Mosaic / bird's-eye render
 
-`src/identity/visualization/render_videos.py` produces the diagnostic videos from a global-id
-run, colouring skeletons by stable global ID.
+`src/identity/visualization/render_videos.py` is the render CLI and orchestrator; it produces
+the diagnostic videos from a global-id run, colouring skeletons by stable global ID. Its
+building blocks live beside it: `video_io.py` (encoders, GPU frame decoding), `loaders.py`
+(every prediction and side-artifact reader), `overlays.py` (everything drawn on a camera
+picture), `panels.py` (roster and bird's-eye tiles). The phase-1 overlay and bird's-eye
+renderers read the same `loaders` module, so each file format is parsed in one place.
 
-- **Layout** (`mosaic_layout.derive_mosaic_layout`): a 3×3 grid derived per delivery from
+- **Layout** (`mosaic_layout.derive_mosaic_layout`): a 3x3 grid derived per delivery from
   calibration, one facing pair per column (end-on pair first), side tiles mirrored so the
   delivery reads right-to-left, the panoramic cam_07 bottom-middle, flanked by a bird's-eye
   ground monitor and a roster panel. Nothing is hardcoded; the bowling end flips between overs.
-- **Render** (W7 upgrades): collision-aware player chips with leader lines, a skeleton
-  body-paint identity overlay, a 20-colour max-separation palette, roles shown **only** in the
-  roster panel, and 06b-suppressed players dropped. The bird's-eye dots expose stage-05 emitted
-  teleports; colour flicker exposes stage-03/05 ID switches (517 across the 40 , 
+- **Render**: collision-aware player chips with leader lines, a skeleton body-paint identity
+  overlay, a 20-colour max-separation palette, roles shown **only** in the roster panel, and
+  suppressed players dropped. The bird's-eye dots expose stage-05 emitted teleports; colour
+  flicker exposes stage-03/05 ID switches (517 across the 40-delivery set,
   `../diagnosis/07-issue-2d-id-switch-flicker.md`).
+
+**Driver exit-code convention** (`src/main.py`): a stage exiting 0 succeeded; stages
+`03_association` and `05_global_id` may exit 1 to signal a warn/fail *verdict* while still
+having produced full output (the driver distinguishes a warn from a crash by the presence of
+the stage's metrics artifact); any other nonzero exit is a stage failure and halts that
+delivery's chain. The render step currently reads `05_global_id` regardless of whether 06/07
+ran (known-bugs.md BUG-14).
 
 ```bash
 # mosaic: 7 tiles + bird's-eye monitor + roster

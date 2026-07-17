@@ -355,7 +355,7 @@ def colocated_identity_metrics(
     min_frames: int = 25,
 ) -> dict:
     """W9 tripwire: distinct global ids co-located on the ground with DISJOINT
-    camera occupancy — one physical player carrying two ids seen from different
+    camera occupancy - one physical player carrying two ids seen from different
     sides (the ghost-under-player swap). Pairs that ever share a camera-frame are
     genuinely two people and are counted separately (context, not failure).
     """

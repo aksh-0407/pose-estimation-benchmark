@@ -23,7 +23,7 @@ Get it right to one player, one identity everywhere. Get it wrong two ways:
 > sides two different players can look almost identical.
 
 **Why it's structurally hard here, the "facing pairs".** The camera rig's co-observing pairs are
-**C1↔C4, C2↔C6, C3↔C5**: each pair looks at the same strip of ground **from nearly opposite sides**.
+**C1-C4, C2-C6, C3-C5**: each pair looks at the same strip of ground **from nearly opposite sides**.
 That geometry is **low-parallax**, and it breaks the usual cross-camera math (explained next). So 03
 does most of its reasoning on the **calibrated ground plane** and fuses several *weak* cues instead of
 trusting any single one.
@@ -43,7 +43,7 @@ trusting any single one.
 
 Given a point in camera A, its true match in camera B is **not** anywhere, it must lie on a specific
 line, the **epipolar line**. The **fundamental matrix `F`** is the 3×3 matrix that encodes this for a
-camera pair: for a true match `x₁ ↔ x₂`, `x₂ᵀ F x₁ = 0`. It is precomputed as
+camera pair: for a true match `x₁ - x₂`, `x₂ᵀ F x₁ = 0`. It is precomputed as
 `F = [e₂]_× · P₂ · pinv(P₁)` from the calibrated projection matrices.
 
 > **In plain words:** "if the batsman's head is *here* in camera 1, then in camera 4 it must lie
@@ -147,14 +147,14 @@ edge_total = support · ( llr_ground + llr_appearance + llr_posture + llr_motion
 ```
 
 - **LLR (log-likelihood ratio):** for a measured value `v`, `LLR = log P(v | same) − log P(v | diff)`.
-  Positive ⇒ this cue says "same player"; negative ⇒ "different"; zero ⇒ "no idea".
+  Positive means this cue says "same player"; negative means "different"; zero means "no idea".
   > **In plain words:** each cue casts a weighted vote. "Their feet are 0.2 m apart" votes *strongly
   > same*; "they're 8 m apart" votes *strongly different*; a useless cue votes ~0.
 - The four cues: **ground** (are their feet at the same pitch spot?), **appearance** (colour, mostly
   dead here), **posture** (3D body configuration), **motion** (are their velocities consistent? one
-  sprinting while the other stands ⇒ "different").
+  sprinting while the other stands means "different").
 - **`support`** (0 to 1) scales the whole sum by how many frames the two tracklets actually co-observe , 
-  little shared time ⇒ weak evidence.
+  little shared time means weak evidence.
 - **Merge threshold:** an edge must reach `graph_llr_merge_threshold = 2.0` to be allowed to merge.
 
 ### Asymmetric clipping and the cap
@@ -176,7 +176,7 @@ true facing-pair match, support ≈ 0.85, cap 1.5:
    0.85 · ( min(ground,1.5)=1.5 + 0.3 + 0.1 + 0.2 ) ≈ 1.79  <  2.0   to NO MERGE  (split id)
 
 same match, cap 3.5:
-   0.85 · ( min(ground,3.5)=3.4 + 0.3 + 0.1 + 0.2 ) ≈ 3.40  >  2.0   to MERGE ✓
+   0.85 · ( min(ground,3.5)=3.4 + 0.3 + 0.1 + 0.2 ) ≈ 3.40  >  2.0   to MERGE (passes)
 ```
 
 3.5 was chosen by **sweep**, it's the measured agreement peak; ≥ 4.0 starts *over*-merging different
@@ -266,7 +266,7 @@ from run manifests. Real status of the §11 fixes:
 | #2 splittable clustering |  **ENABLED (conservative)** | `graph_split_enabled: true`, torso 30px / frac 0.6 | **OFF-vs-ON (8_init): INERT** (no chimeras in these 8 to split). Real test = chimera-heavy 40-set clips. Sub-threshold residual: [BUG-3](known-bugs.md) |
 | #3 parallax-adaptive gate |  **ENABLED** | `graph_facing_gate_scale: 1.3` (widens facing-pair gate) | **OFF-vs-ON (8_init): INERT** (gate not binding after the cap fix). Real test = low-parallax 40-set clips |
 | (feeds 05) covariance emit |  **ENABLED** | `emit_ground_cov: true` to 05 `use_measurement_covariance` | see 05 |
-| #4 self-supervised cross-view | ⬜ **NOT DONE** |, | future |
+| #4 self-supervised cross-view | **NOT DONE** |, | future |
 | #5 cue cold-start robustify |  **PARTIAL** | `calibration_mode: auto` (anchor relax + cross-delivery prior) |, |
 
 - **03-1 (C07 image size), VERIFIED NOT A BUG.** `load_image_sizes_from_drive` returns cam_07's true
@@ -278,17 +278,17 @@ from run manifests. Real status of the §11 fixes:
 
 ---
 
-## 10. Known issues (severity ★)
+## 10. Known issues (severity, 1 low to 3 high)
 
-- **ID-1 (★★★) Facing-pair under-merge.** Cross-camera agreement as low as 0.50 on `_7`. Root:
+- **ID-1 (severity 3/3) Facing-pair under-merge.** Cross-camera agreement as low as 0.50 on `_7`. Root:
   low-parallax geometry + dead colour + tight ground gate. Biggest single identity loss.
-- **ID-5 (★★) Single-linkage can't split to permanent chimeras.** 10-32% of ≥3-view clusters are
+- **ID-5 (severity 2/3) Single-linkage can't split to permanent chimeras.** 10-32% of ≥3-view clusters are
   geometrically inconsistent (two people merged, un-splittable).
-- **ID-4 (★★) Appearance cue statistically dead.** `d′ ≈ 0` on 5/8 deliveries (identical kit); the
+- **ID-4 (severity 2/3) Appearance cue statistically dead.** `d′ ≈ 0` on 5/8 deliveries (identical kit); the
   discriminative body-proportion signal is under-weighted.
-- **V2-L1 (★★) ~50% single-camera frames**, only ~61% of player-frames have ≥2 views, so half get no
+- **V2-L1 (severity 2/3) ~50% single-camera frames**, only ~61% of player-frames have ≥2 views, so half get no
   cross-camera correction. Largely an association-binding-rate problem.
-- **03-2 (★) Cue-calibration cold-start**, `<3` isolated anchors ⇒ default Gaussians, silently
+- **03-2 (severity 1/3) Cue-calibration cold-start**, `<3` isolated anchors means default Gaussians, silently
   weakening cues on crowded deliveries.
 
 ---
@@ -297,11 +297,11 @@ from run manifests. Real status of the §11 fixes:
 
 | # | Fix | Priority | Why | Effort | Source |
 |---|---|---|---|---|---|
-| 1 | **Promote pose-shape / a learned kit-robust ReID embedding from soft tie-breaker to a *primary* cross-camera cue** where colour is dead and geometry is weak. | ★★★ | Body proportions are the *only* discriminative signal on facing pairs; making it primary directly attacks ID-1. | Medium-High | SoccerNet ReID [2404.11335]; self-supervised assoc [2401.17617] |
-| 2 | **Give clustering the ability to split**, replace single-linkage with **correlation clustering / graph multicut**, gated on the 04 full-skeleton reprojection. | ★★★ | Merge-only makes ID-5 chimeras permanent; reprojection is a clean split signal (see [04](04-lift.md)). | High | correlation-clustering MOT [Tang 2017] |
-| 3 | **Parallax-adaptive cost + gate**, use per-view ground covariance instead of a hard 2.5 m gate. | ★★ | A hard gate on noisy facing-pair feet splits correct merges; an uncertainty-aware one won't. | Medium | uncertainty-aware fusion [2008.01258] |
-| 4 | **Self-supervised cross-view association** to learn a view-invariant affinity from the unlabelled multi-camera data. | ★★ | No identity labels exist; multi-view consistency is a free supervisory signal. | High | [2401.17617] |
-| 5 | **Robustify cue cold-start**, widen the isolation window / borrow a cross-delivery prior when `<3` anchors. | ★ | Crowded deliveries currently lose their calibrated cues. | Low-Medium |, |
+| 1 | **Promote pose-shape / a learned kit-robust ReID embedding from soft tie-breaker to a *primary* cross-camera cue** where colour is dead and geometry is weak. | severity 3/3 | Body proportions are the *only* discriminative signal on facing pairs; making it primary directly attacks ID-1. | Medium-High | SoccerNet ReID [2404.11335]; self-supervised assoc [2401.17617] |
+| 2 | **Give clustering the ability to split**, replace single-linkage with **correlation clustering / graph multicut**, gated on the 04 full-skeleton reprojection. | severity 3/3 | Merge-only makes ID-5 chimeras permanent; reprojection is a clean split signal (see [04](04-lift.md)). | High | correlation-clustering MOT [Tang 2017] |
+| 3 | **Parallax-adaptive cost + gate**, use per-view ground covariance instead of a hard 2.5 m gate. | severity 2/3 | A hard gate on noisy facing-pair feet splits correct merges; an uncertainty-aware one won't. | Medium | uncertainty-aware fusion [2008.01258] |
+| 4 | **Self-supervised cross-view association** to learn a view-invariant affinity from the unlabelled multi-camera data. | severity 2/3 | No identity labels exist; multi-view consistency is a free supervisory signal. | High | [2401.17617] |
+| 5 | **Robustify cue cold-start**, widen the isolation window / borrow a cross-delivery prior when `<3` anchors. | severity 1/3 | Crowded deliveries currently lose their calibrated cues. | Low-Medium |, |
 
 Cross-phase: ID-1 / ID-5 / V2-L1 are the top of the whole-pipeline roadmap, see
 [`wip/open-work.md`](../../wip/open-work.md).

@@ -59,7 +59,7 @@ class PoseProportions:
     """Scale-normalized 3D bone-length ratios; a view-invariant identity descriptor."""
 
     vector: np.ndarray  # (SEGMENT_COUNT,) segment_length / robust_scale; NaN where invalid
-    mask: np.ndarray    # (SEGMENT_COUNT,) bool — segment validity
+    mask: np.ndarray    # (SEGMENT_COUNT,) bool - segment validity
     scale: float        # robust body-scale used to normalize (metres), or NaN
     n_views: int        # camera views that contributed to the reconstruction
 
@@ -279,7 +279,7 @@ def ground_anchored_skeleton(
     along the camera's horizontal viewing direction, so every keypoint ray gets a
     unique, metrically-scaled intersection. Returns ``(points3d (17,3), valid (17,))``
     with NaN rows where the joint is unavailable or implausible. ``ground_xy``
-    overrides the foot-pixel projection — used when the feet are cut off and the
+    overrides the foot-pixel projection - used when the feet are cut off and the
     anchor came from an upper-body height-plane estimate instead.
     """
 
@@ -316,7 +316,7 @@ def ground_anchored_skeleton(
         return out, valid
     plane_offset = float(normal @ (anchor - C))
     # Vectorised ray-plane intersection over all joints (each joint is independent,
-    # no cross-joint reduction) — bit-identical to the per-joint loop it replaces
+    # no cross-joint reduction) - bit-identical to the per-joint loop it replaces
     # (proven by exact-equality test on real calibration + keypoint data).
     conf_ok = np.isfinite(conf) & (conf >= min_conf) & np.isfinite(points).all(axis=1)
     denoms = rays @ normal                                     # (joints,)
@@ -338,7 +338,7 @@ class PostureSample:
     """Per-frame metric posture quantities from one camera's billboard skeleton.
 
     ``upright_known`` distinguishes "measured as not standing" (crouching keeper)
-    from "could not be determined" (feet cut off at the frame edge) — the two
+    from "could not be determined" (feet cut off at the frame edge) - the two
     must be treated differently when deciding whether shape quantities are
     comparable across oblique views.
     """
@@ -397,7 +397,7 @@ def posture_from_skeleton(
             )))
             ankle_ok = float(np.min([p[2] for p in ankles])) <= upright_ankle_max_m
             # A squat keeps the spine vertical and the ankles grounded but is NOT
-            # standing — the hips give it away.
+            # standing - the hips give it away.
             hips_ok = float(hip_mid[2]) >= upright_hip_min_m
             upright = tilt <= upright_tilt_max_deg and ankle_ok and hips_ok and spine[2] > 0.0
 
@@ -457,7 +457,7 @@ class PostureAccumulator:
         ``keep_upright_unknown`` is the H3 policy switch: when True, upright-only
         quantities (stature etc.) are kept for samples whose posture could not be
         DETERMINED (feet cut off) and dropped only when measured as not standing.
-        Default False = legacy behaviour (drop unless measured upright) — the
+        Default False = legacy behaviour (drop unless measured upright) - the
         composed-stack A/B showed the permissive policy shifts the calibrated
         posture distributions enough to suppress facing-pair corroboration merges,
         so it must be an explicit, measured opt-in (`posture_keep_upright_unknown`).

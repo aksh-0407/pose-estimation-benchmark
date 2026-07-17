@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import numpy as np
 
-from identity.p5_global_id.config import P4BConfig, P4Config
+from identity.p5_global_id.config import StitchingConfig, GlobalIdConfig
 from identity.p5_global_id.stitching import (
     Segment,
     build_link_costs,
@@ -38,7 +38,7 @@ def test_extract_segments_deduplicates_camera_records_and_splits_gaps():
 
 
 def test_flow_links_feasible_nearby_segments_and_rejects_impossible_link():
-    config = P4Config(p4b=replace(P4BConfig(), new_traj_cost_factor=2.0))
+    config = GlobalIdConfig(stitching=replace(StitchingConfig(), new_traj_cost_factor=2.0))
     segments = [
         _segment(0, "P001", 0, 10, (0, 0), (0, 0)),
         _segment(1, "P002", 12, 20, (0.1, 0), (1, 0)),
@@ -54,7 +54,7 @@ def test_role_and_velocity_costs_disfavor_inconsistent_links():
     forward = _segment(1, "P002", 12, 20, (0.2, 0), (0.4, 0), "bowler")
     backward = _segment(2, "P003", 12, 20, (-0.2, 0), (-0.4, 0), "wicketkeeper")
     assert velocity_continuity_cost(aligned, forward) < velocity_continuity_cost(aligned, backward)
-    edges = build_link_costs([aligned, forward, backward], P4Config())
+    edges = build_link_costs([aligned, forward, backward], GlobalIdConfig())
     costs = {(edge.source_seg_id, edge.target_seg_id): edge.cost for edge in edges}
     assert costs[(0, 1)] < costs[(0, 2)]
 
@@ -98,11 +98,11 @@ def test_occupancy_bridge_extends_temporal_gate_for_disjoint_fragments():
     ]
     disjoint = {"P001": {("cam_01", 50)}, "P002": {("cam_01", 350)}}
 
-    baseline = P4Config()
+    baseline = GlobalIdConfig()
     assert build_link_costs(segments, baseline, disjoint) == []  # flag off: no edge
 
-    bridged = P4Config(p4b=replace(
-        P4BConfig(), occupancy_bridge=True, occupancy_bridge_require_pose=False,
+    bridged = GlobalIdConfig(stitching=replace(
+        StitchingConfig(), occupancy_bridge=True, occupancy_bridge_require_pose=False,
         new_traj_cost_factor=30.0,
     ))
     edges = build_link_costs(segments, bridged, disjoint)
@@ -127,8 +127,8 @@ def test_occupancy_bridge_pose_requirement_blocks_shapeless_long_links():
         _segment(1, "P002", 300, 400, (0.5, 0), (1, 0)),
     ]
     disjoint = {"P001": {("cam_01", 50)}, "P002": {("cam_02", 350)}}
-    strict = P4Config(p4b=replace(
-        P4BConfig(), occupancy_bridge=True,  # require_pose defaults True
+    strict = GlobalIdConfig(stitching=replace(
+        StitchingConfig(), occupancy_bridge=True,  # require_pose defaults True
         pose_stitch_max_distance=0.3, w_pose=2.0,
     ))
     # Neither fragment carries a mature descriptor -> the long bridge must abstain.
@@ -156,14 +156,14 @@ def test_posture_stitch_gate_blocks_different_builds():
     near_twin = replace(_segment(1, "P002", 12, 20, (0.1, 0), (1, 0)), posture=posture(1.84))
     wrong_build = replace(_segment(1, "P002", 12, 20, (0.1, 0), (1, 0)), posture=short)
 
-    gated = P4Config(p4b=replace(P4BConfig(), posture_stitch_max_z=3.0, w_posture=0.5))
+    gated = GlobalIdConfig(stitching=replace(StitchingConfig(), posture_stitch_max_z=3.0, w_posture=0.5))
     assert len(build_link_costs([seg_a, near_twin], gated)) == 1     # same build passes
     assert build_link_costs([seg_a, wrong_build], gated) == []       # wrong build blocked
     # missing posture abstains (edge still allowed)
     bare = _segment(1, "P002", 12, 20, (0.1, 0), (1, 0))
     assert len(build_link_costs([seg_a, bare], gated)) == 1
     # flag off: byte-identical behaviour (edge allowed regardless)
-    off = P4Config()
+    off = GlobalIdConfig()
     assert len(build_link_costs([seg_a, wrong_build], off)) == 1
 
 
@@ -182,19 +182,19 @@ def test_bowler_detection_is_direction_signed():
 
 def test_normalized_costs_make_long_gap_stitches_selectable():
     # G7: legacy units let w_temporal*gap alone dwarf the dummy for gaps > 30
-    # frames — a real 120-frame occlusion could NEVER stitch. Normalized mode
+    # frames - a real 120-frame occlusion could NEVER stitch. Normalized mode
     # keeps in-gate costs commensurate with the dummy.
     segments = [
         _segment(0, "P001", 0, 100, (0, 0), (0, 0)),
         _segment(1, "P002", 220, 300, (0.5, 0), (1, 0)),   # gap 120 = the full gate
     ]
-    legacy = P4Config(p4b=replace(P4BConfig(), new_traj_cost_factor=3.0))
+    legacy = GlobalIdConfig(stitching=replace(StitchingConfig(), new_traj_cost_factor=3.0))
     edges = build_link_costs(segments, legacy)
     assert len(edges) == 1
     assert solve_flow(segments, edges, legacy) == {}        # documents the dead zone
 
-    normalized = P4Config(p4b=replace(
-        P4BConfig(), new_traj_cost_factor=3.0, normalized_costs=True,
+    normalized = GlobalIdConfig(stitching=replace(
+        StitchingConfig(), new_traj_cost_factor=3.0, normalized_costs=True,
     ))
     edges = build_link_costs(segments, normalized)
     assert solve_flow(segments, edges, normalized) == {0: 1}  # now selectable

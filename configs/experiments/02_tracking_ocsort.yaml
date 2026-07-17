@@ -1,7 +1,7 @@
 # v8 DEFAULT p2 (v7 + lowconf_can_spawn:false; cut 2026-07-13).
 # per-fix variants live in configs/experiments/. Source: see pipeline_manifest sha256.
 # Per-camera tracking (P2) configuration.
-# Mirrors src/identity/p2_tracking/config.py::TrackingConfig defaults — every field is
+# Mirrors src/identity/p2_tracking/config.py::TrackingConfig defaults - every field is
 # listed explicitly so the run manifest is self-documenting and tunable.
 # Loaded by identity.p2_tracking.config.load_tracking_config (rejects unknown keys).
 

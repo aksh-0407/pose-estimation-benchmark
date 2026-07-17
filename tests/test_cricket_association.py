@@ -203,7 +203,7 @@ def test_ground_contact_v3_striding_uses_planted_foot():
     assert np.allclose(pixel, left)
 
 
-# ----------------------------------------------------------------- Wave-5b
+# ------------------------------------------- contested-detection handling
 def _det_at(camera: str, bbox: list[float], index: int = 0) -> Detection3:
     points = np.full((17, 2), [bbox[0] + bbox[2] / 2, bbox[1] + bbox[3]])
     return Detection3(camera, index, bbox, points, np.full(17, 0.9), 0.9, f"trk{index}")
