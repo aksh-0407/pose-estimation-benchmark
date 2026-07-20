@@ -161,7 +161,7 @@ one-frame false detection never mints an identity).
 
 Implementation status (2026-07-17): fix 1 (OC-SORT) is now implemented as a config-selectable option and
 was measured. The others (BoT-SORT CMC, learned ReID, Deep-EIoU, adaptive gates) are still future. The
-CV-model fragility is tracked as [BUG-5](known-bugs.md).
+CV-model fragility is tracked as [BUG-5](../analysis/README.md).
 
 OC-SORT (implemented, measured, off by default). Stage 02 accepts `tracker: bytetrack` (default,
 byte-identical to the baseline above) or `tracker: ocsort` in `configs/02_tracking.yaml`. The OC-SORT

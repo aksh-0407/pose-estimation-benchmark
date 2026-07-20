@@ -93,6 +93,29 @@ def _points_and_conf(pose_3d: dict, joint_count: int) -> tuple[np.ndarray, np.nd
     return pts, conf
 
 
+def _reproj_errors(pose_seq, obs_by_row, conf_min: float) -> list[float]:
+    """Per (frame, joint, reliable-view) reprojection error in pixels for a 3D sequence.
+
+    Projects each finite 3D joint back into every camera that reliably saw it (2D conf >=
+    conf_min) and measures the pixel gap to the observed keypoint. Restricting to reliable
+    views is what makes this a fair before/after measure — a hallucinated low-confidence
+    keypoint (the umpire's edge legs) is never counted, so 'fixing' it can't look like a
+    regression.
+    """
+    errors: list[float] = []
+    for row, cam_obs in enumerate(obs_by_row):
+        pose = pose_seq[row]
+        for projection, kp, conf, _ in cam_obs:
+            for j in range(pose.shape[0]):
+                if conf[j] < conf_min or not np.isfinite(pose[j]).all():
+                    continue
+                x = projection @ np.append(pose[j], 1.0)
+                if abs(x[2]) < 1e-9:
+                    continue
+                errors.append(float(np.hypot(*(x[:2] / x[2] - kp[j]))))
+    return errors
+
+
 def run_refinement(
     input_run_dir: str | Path,
     output_run_dir: str | Path,
@@ -150,6 +173,8 @@ def run_refinement(
     refined_by_id: dict[str, dict[int, np.ndarray]] = {}
     before_seqs: list[np.ndarray] = []
     after_seqs: list[np.ndarray] = []
+    reproj_before: list[float] = []
+    reproj_after: list[float] = []
     for gid, by_frame in per_id_raw.items():
         frames = sorted(by_frame)
         timeline = list(range(frames[0], frames[-1] + 1))
@@ -160,6 +185,7 @@ def run_refinement(
             pts, cf = by_frame[frame]
             seq[row_of[frame]] = pts
             conf[row_of[frame]] = cf
+        obs_by_row = [per_id_obs[gid].get(frame, []) for frame in timeline] if projections else []
 
         if not params.enabled:
             refined = seq
@@ -168,7 +194,6 @@ def run_refinement(
             # Visibility-aware re-lift: fixes joints stretched by a partially-visible view
             # (e.g. an umpire whose legs are only in one camera). Needs the calibration.
             if params.relift and projections:
-                obs_by_row = [per_id_obs[gid].get(frame, []) for frame in timeline]
                 relifted, rconf = relift_sequence(
                     obs_by_row, list(HALPE26_BONES),
                     [tuple(p) for p in HALPE26_SYMMETRIC_BONES],
@@ -186,6 +211,9 @@ def run_refinement(
         refined_by_id[gid] = {frame: refined[row_of[frame]] for frame in frames}
         before_seqs.append(seq[[row_of[f] for f in frames]])
         after_seqs.append(refined[[row_of[f] for f in frames]])
+        if obs_by_row:
+            reproj_before += _reproj_errors(seq, obs_by_row, params.vis_conf)
+            reproj_after += _reproj_errors(refined, obs_by_row, params.vis_conf)
 
     # Write-back pass: rewrite pose_3d/pose_3d_named on every camera record.
     output_prediction_dir = output_run_dir / "predictions"
@@ -220,7 +248,8 @@ def run_refinement(
                 validate_group1_frame(rec, final_handoff=False)
                 handle.write(json.dumps(rec, sort_keys=True, allow_nan=False) + "\n")
 
-    metrics = _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritten)
+    metrics = _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritten,
+                             reproj_before, reproj_after)
     created_at = datetime.now(timezone.utc).isoformat()
     manifest = {
         "schema_version": "refinement_run/v1",
@@ -246,7 +275,8 @@ def run_refinement(
     return metrics
 
 
-def _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritten) -> dict:
+def _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritten,
+                   reproj_before=None, reproj_after=None) -> dict:
     from core.keypoints import HALPE26_BONES
 
     bones = list(HALPE26_BONES)
@@ -259,10 +289,18 @@ def _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritt
         max_cv = float(np.mean([c["max_bone_cv"] for c in cv])) if cv else 0.0
         return mean_jit, p95_jit, max_cv
 
+    def _reproj(errs):
+        if not errs:
+            return None, None, 0
+        a = np.asarray(errs)
+        return float(a.mean()), float(np.percentile(a, 90)), int(a.size)
+
     b_jit, b_p95, b_cv = _agg(before_seqs)
     a_jit, a_p95, a_cv = _agg(after_seqs)
     b_hip, _, _ = _agg(before_seqs, _HIP_JOINTS)
     a_hip, _, _ = _agg(after_seqs, _HIP_JOINTS)
+    rb_mean, rb_p90, rn = _reproj(reproj_before)
+    ra_mean, ra_p90, _ = _reproj(reproj_after)
     return {
         "schema_version": "refinement_metrics/v1",
         "delivery_id": delivery_id,
@@ -274,4 +312,8 @@ def _build_metrics(delivery_id, params, before_seqs, after_seqs, players_rewritt
         "jitter_p95_m_before": b_p95, "jitter_p95_m_after": a_p95,
         "hip_jitter_mean_m_before": b_hip, "hip_jitter_mean_m_after": a_hip,
         "max_bone_cv_before": b_cv, "max_bone_cv_after": a_cv,
+        # Reprojection error (px) against reliably-seen 2D keypoints — the fidelity metric.
+        "reproj_px_mean_before": rb_mean, "reproj_px_mean_after": ra_mean,
+        "reproj_px_p90_before": rb_p90, "reproj_px_p90_after": ra_p90,
+        "reproj_sample_count": rn,
     }

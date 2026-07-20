@@ -2,9 +2,12 @@
 
 Authoritative, structured record of every method tried on the multi-camera cricket 3D-pose and
 identity pipeline, its before/after evidence, its pros and cons, its current status, and whether it is
-on or off by default. This file combines and supersedes the former `wip/methods_log.md` (3D location and
-identity methods) and `docs/pipeline/fixes-log.md` (the v6 to v8.1 fix campaign). Historical version
-names and file paths inside quoted results are accurate as of each dated entry and are not rewritten.
+on or off by default. This is the single authoritative method log: it combines and supersedes the former
+`wip/methods_log.md` (3D location and identity methods), `docs/pipeline/fixes-log.md` (the v6 to v8.1 fix
+campaign), the P1 model/detector study (Part E), and the 2026-07-16 session A/Bs (Part F). Performance
+(speed) findings live separately in [`reference/performance.md`](reference/performance.md); the
+forward-looking backlog is [`roadmap.md`](roadmap.md). Historical version names and file paths inside
+quoted results are accurate as of each dated entry and are not rewritten.
 
 ## How to read this file
 
@@ -38,6 +41,10 @@ names and file paths inside quoted results are accurate as of each dated entry a
 | A3 velocity gate | `emit_velocity_gate` | 05 | 40: emitted teleports 367 to 0, max 2224 to 11.9 m/s, no IDs lost | PENDING (40-confirmed) | off |
 | IMPACT-2 partial drop | `drop_partial_singlecam` | 05 | 40: 13 ghost IDs dropped (462 to 449), agreement held, collisions 0 | PENDING | off |
 | Refine stage | 07_refine (physics FK, hip de-wobble, low-conf refill) | 07 | fixes stretched-limb / backward-knee / hip-wobble on 3D | ACCEPTED | on |
+| Visibility-aware re-lift | `relift` (per-joint conf-gated views; 1-view bone-length ray lift) | 07 | umpire legs (1-view) 2.6 m sideways to 0.9 m straight down; per-delivery reproj +1-3 px | ACCEPTED | on |
+| Group smoothing (face/foot/wrist) | `face_window`/`foot_window`/`mid_window` | 07 | 14_1 head-rel face p95 10.0 to 3.1 mm; heel p95 81 to 3.7 mm; wrist p95 15 to 5.7 mm | ACCEPTED | on |
+| Overall limb/root window sweep | `ma_limb_window` 5 to 9, `ma_root_window` 9 to 13 | 07 | 14_1: jitter mean 6.5 to 6.2 mm (flat), p95 18.6 to 20.7 mm (worse), reproj flat | REJECTED (saturated) | off (window 5/9) |
+| One-Euro limb smoother | `limb_smoother: one_euro` (c1.5, b0.5) | 07 | 3-deliv avg: jitter mean 11.27 to 10.81 mm (-4%), p95 29.4 to 27.6 mm (-6%), reproj flat 11.65 px, +1.2% runtime | PENDING (subset) | off (moving_average) |
 | Roles v1 solver | epoch Hungarian roles | 06 | core-role coverage 24/32 to 29/32 | ACCEPTED | on |
 | Restructure | Halpe-26, single binding-keyed triangulation | all | base for v9; single 3D lift before identity | ACCEPTED | on |
 | distance-R | `use_measurement_covariance` | 05 | 40 (flag OFF): dAgree -0.0013, +71 teleports | ENABLED-INCONCLUSIVE | on |
@@ -66,7 +73,7 @@ names and file paths inside quoted results are accurate as of each dated entry a
 | Tiled P1 (v8 era) | `--tiled-det --nms-thr 0.55` | P1 | +0.76 to +6.02 new boxes/frame, 0 lost | context (see tiling entry) | off in v9 |
 
 Optimization methods (speed only) are recorded separately in
-[`wip/optimization_findings_2026-07-17.md`](../wip/optimization_findings_2026-07-17.md).
+[`reference/performance.md`](reference/performance.md).
 
 ---
 
@@ -77,9 +84,8 @@ runners refactored onto a shared module, the 1982-line renderer split, the globa
 package renamed to stage-05 terms (old YAML keys still load), whole-repo slop and jargon
 purge, and a documentation refresh. Every refactor was verified byte-identical against a
 golden re-run of stages 02 to 07 on delivery CCPL080626M1_1_14_1 (and a 40-frame GPU
-check for P1). The full change ledger with verification evidence is
-[docs/audit/changes.md](audit/changes.md); the defect register is
-[docs/audit/bugs.md](audit/bugs.md) plus [pipeline/known-bugs.md](pipeline/known-bugs.md).
+check for P1). The full change ledger with verification evidence, and the open-defect register, are
+maintained in the repo's internal `wip/` working notes (not part of this hand-over documentation).
 
 One deliberate metric-definition change shipped (nothing else moved any output): the
 global-id diagnostic "feet unusable" guard required exactly 17 confidence values, so
@@ -248,7 +254,7 @@ larger change than reordering the smoothing. Tree: `pipetrack_v91_presmooth`.
 ### Script optimization pass
 
 Six fixes applied to the run scripts before any A/B, verified by compile and dry-run. Full detail in
-`wip/optimization_findings_2026-07-17.md`. Headline: the data-parallel P1 launcher
+`reference/performance.md`. Headline: the data-parallel P1 launcher
 (`run_phase1_parallel.py`) had a broken runner path and failed on every shard; it is fixed and dry-run
 validated, restoring the roughly 2x GPU-throughput lever. Plus thread-oversubscription fixes in the
 render and P1 shards for the 8-core box.
@@ -271,7 +277,7 @@ render and P1 shards for the 8-core box.
   13 dropped, agreement held, collisions 0. PENDING. Drop-only, same safety class as A3.
 - `emit_kalman_posterior`: active but ineffective as a teleport guard (an earlier no-op claim was
   retracted after an isolated off-vs-on A/B showed it does change the emission, but teleports persist with
-  it on). See [`known-bugs.md`](pipeline/known-bugs.md) BUG-1.
+  it on). The effective fix is the A3 emission velocity gate.
 
 ---
 
@@ -414,6 +420,98 @@ settled.
 
 ---
 
+## Part B: 2026-07-18 session — 07 refinement jitter smoothing + reprojection metric
+
+Follows the manager rejection of jittery/stretched 3D output. The re-lift (umpire fix) and the
+face/foot/wrist/hip group smoothing were already accepted; this session asked whether the *full-pose*
+(major-limb) jitter could be reduced further, and added the reprojection-error metric to quantify the
+smoothness-vs-fidelity trade.
+
+### Environment and caveats
+
+Local runs on this laptop, `smoother: moving_average` base (scipy is broken locally, so the box's
+zero-phase Butterworth base could not be exercised here — see the L40S box for the production Butterworth
+path). Measured on 3 of the 8 benchmark deliveries — `CCPL080626M1_1_14_1`, `CCPL080626M1_1_14_7`,
+`CCPL080626M2_1_12_1` — not the full 8/40, so both entries below are subset-measured and PENDING a full
+run + human keep decision. Jitter = mean/p95 frame-to-frame 3D joint displacement (metres). Reproj =
+pixel gap when the refined 3D joint is projected into every camera that *reliably* saw it (2D conf >=
+`vis_conf` 0.5), so a corrected hallucinated keypoint (the umpire's edge legs) is never scored as a
+regression. Both metrics are emitted per delivery in `07_refine/refinement_metrics.json`.
+
+### New metric: reprojection error (baseline stage-04 3D vs refined 3D)
+
+| delivery | jitter mean mm (before to after) | jitter p95 mm | reproj px mean | reproj px p90 |
+|---|---|---|---|---|
+| 14_1 | 9.2 to 6.5 (-29%) | 33.7 to 18.6 (-45%) | 7.9 to 11.1 | 16.7 to 21.2 |
+| 14_7 | 11.1 to 9.9 (-11%) | 33.0 to 26.9 (-18%) | 8.0 to 10.3 | 17.1 to 18.9 |
+| M2 12_1 | 21.1 to 17.4 (-18%) | 53.8 to 42.8 (-20%) | 12.3 to 13.5 | 23.3 to 24.0 |
+
+The +1-3 px reproj rise is the cost of the physics constraints (anatomically-constant rigid bone lengths
+cannot match the per-frame apparent bone lengths of the noisy 2D). It is **independent of the temporal
+smoother**: in A/B B1 below the reproj stayed at 11.6 px whether smoothing was light or heavy, so the
+temporal smoothing is fidelity-free and the whole +3 px is the rigid-bone trade the manager mandated.
+
+### A/B B1 — overall smoothing window sweep (does cranking the global smoother help?)
+
+Base moving-average window on all limb-bone directions and the root trajectory, swept up. Delivery 14_1:
+
+| setting (limb / root window) | jitter mean mm | jitter p95 mm | reproj px |
+|---|---|---|---|
+| 5 / 9 (current) | 6.5 | 18.6 | 11.1 |
+| 7 / 11 | 6.3 | 18.9 | 11.1 |
+| 9 / 13 | 6.2 | 20.7 | 11.1 |
+
+Finding: saturated. Heavier windows move the mean by <0.3 mm and *worsen* p95 (over-smoothing artifacts)
+while reproj is flat. A per-joint ranking of the residual jitter showed it is concentrated in the major
+limbs (thigh `knee<-hip` 11-12 mm, upper arm `elbow<-shoulder` 10-13 mm, shank/forearm) — segments that
+genuinely swing fast during a batting/bowling action. So the residual is largely *real motion*, not noise;
+a fixed low-pass cannot remove it without lagging the swing. **REJECTED** (no gain), window stays 5/9.
+
+### A/B B2 — One-Euro adaptive limb smoother vs the fixed moving average
+
+One-Euro (Casiez et al., CHI 2012): a low-pass whose cutoff rises with joint speed, so it smooths hard
+when a joint is still and stays responsive when it moves fast — exactly the lever B1 lacked. Implemented
+bidirectionally (`one_euro_smooth`) for zero-phase, replacing only the base limb-direction smooth
+(`limb_smoother: one_euro`); the face/foot/wrist group overrides are unchanged. Average over the 3
+deliveries (all AFTER):
+
+| base limb smoother | jitter mean mm | jitter p95 mm | reproj px | wall time / delivery |
+|---|---|---|---|---|
+| moving average (current) | 11.27 | 29.43 | 11.65 | 16.8 s |
+| One-Euro c2.0 b0.7 | 11.02 | 28.45 | 11.63 | 17.4 s |
+| One-Euro c1.5 b0.5 | 10.81 | 27.64 | 11.65 | 16.3 s |
+| One-Euro c3.0 b1.0 | 11.33 | 29.49 | 11.63 | 16.3 s |
+
+Best is c1.5/b0.5: jitter mean -4%, p95 -6%, reproj unchanged, no lag (One-Euro preserves fast motion by
+design). c3.0 is too responsive (== MA); c2.0 in between.
+
+### Compute cost vs output improvement
+
+Isolated micro-benchmark of the pure smoother on a representative sequence (600 frames x 25 bone-direction
+channels x 3 axes, 20 reps):
+
+- moving average: **2.86 ms** / player-sequence (vectorized convolution).
+- One-Euro bidirectional: **200.5 ms** / player-sequence — **~70x** slower, because it is a sequential
+  per-timestep Python loop (vectorized only across the 3 axes) run twice (forward+backward).
+
+In absolute terms that is +197 ms / player, ~1 s / delivery for ~5 players, which is **~1.2% of the
+~16 s/delivery end-to-end refine cost** (the re-lift re-triangulation dominates). So the end-to-end wall
+time is unchanged within noise (16.3-17.4 s), but note the raw-smoother cost is 70x and would become the
+bottleneck if the re-lift were ever optimized or skipped.
+
+Verdict, neutral: a small but effectively-free (in the current pipeline) jitter reduction with no fidelity
+loss. **PENDING** — subset-measured (3/8), and per the working standard the keep/enable decision is
+deferred to human review after a full 8 (and ideally 40) confirmation on the box with the production
+Butterworth base. Default stays `moving_average`.
+
+**Human verdict (2026-07-18): keep the current default as-is — do NOT enable One-Euro, and the window
+sweep stays rejected.** The One-Euro code remains in place as an off-by-default option (`limb_smoother:
+one_euro`) to revisit only if a full 8/40 run on the box shows the -4/-6% jitter holds and the team wants
+it. Nothing about the shipped 07_refine changes: the accepted core (physics FK bone-length + anatomical
+limits, visibility-aware re-lift, face/foot/wrist/hip group smoothing, hip stabilization) stays on.
+
+---
+
 ## Rejected, with the reason (do not revisit without a new signal)
 
 - Tracklet-id lock (per-tracklet id relabel): stabilized IDs by putting a stable wrong-person id on a
@@ -432,6 +530,75 @@ settled.
 
 ## Open levers not yet built or measured
 
-See the consolidated backlog [`wip/open-work.md`](../wip/open-work.md). The highest-value items are
+See the roadmap [`roadmap.md`](roadmap.md). The highest-value items are
 decide-in-3D consumption in stage 05, single-view PnP lift for the roughly 39% single-camera frames, the
 05b stitching under-merge fix, and identity ground truth (currently dropped, all metrics are proxies).
+
+---
+
+## Part E: P1 model & detector selection (RTMPose-X, tiled RTMDet)
+
+Closes the long-open P1 model study (written 2026-07-14). Sources: archived run docs in `runs/`
+(rtmpose-l-body8-full-db32-pb96, rtmpose-x, yolo26x-pose-full-db8, bakeoff_w5), the W5/W5B-LIVE fix
+entries, and meeting/production panels.
+
+### Pose model: RTMPose-X (Halpe-26) is the accepted choice
+
+| Aspect | RTMPose-L (body8, COCO-17) | RTMPose-X (body8, Halpe-26) |
+|---|---|---|
+| Skeleton | 17 joints, no feet | 26 joints: COCO-17 + head/neck/pelvis + 6 foot points |
+| Ground contact | ankle-based only | heel/toe landmarks to `foot_contact_mode: v3` (F4) |
+| Throughput (L40S, plain 640 det) | ~30+ fps | 27.5 fps (134k frames / 82 min) |
+| Identity-era baseline | v5 stack: `_7` agreement 0.498 to 0.600 | v6.0 ground baseline onward: all campaign gains built on X |
+
+Decision drivers (in order):
+1. **Feet.** The entire ground-position channel (z=0 reprojection solve, F4 heel/toe contact,
+   billboard posture anchoring) improves with real foot landmarks. Only the X body8 model
+   ships Halpe-26; there is no COCO-17-only reason to stay on L.
+2. **Accuracy-first mandate**: X is the accuracy flagship; the throughput delta (~10%) is
+   irrelevant next to identity quality on this project.
+3. The per-metric L-vs-X ablation on identical downstream configs was **never run in
+   isolation**, the v5(L) to v6.0(X) jump changed model and campaign era together. If a clean
+   ablation is ever wanted: run the v8.1 chain on an L-based P1 tree and diff the panel. Not
+   currently justified, every accepted result since v6.0 is X-based.
+
+RTMO (one-stage) was evaluated on paper and **rejected**: COCO-17-only heads would lose the
+feet (W5 research note).
+
+### Detector findings (the part that actually moved the needle)
+
+The detector, not the pose model, was the upstream bottleneck:
+- **YOLO26x-pose** (`yolo26x-pose-full-db8`, kept in `data/derived/runs/`): historical
+  comparison run; not adopted (RTMPose mandate + top-down pipeline).
+- **Bake-off (`runs/bakeoff_w5/`)**: tiled RTMDet-m @640 beat native hi-res decisively —
+  RTMDet only detects at its trained object scale (m1280/m2560 lost boxes; t640 was a strict
+  superset, min box height 33 to 12 px). RTMDet-L @1280 marginal.
+- **NMS 0.55** (from 0.3) lets both crossing players survive: +0.10-0.13 cross-camera
+  agreement, the single largest identity gain of the campaign.
+- Accepted production P1: tiled RTMDet-m 4×2 + full frame, NMS 0.55, IoM 0.7, fp16 fast path
+  (worker-side crop prep): **18-25 fps for 9× detector work** on the L40S.
+
+Open follow-up (see [`roadmap.md`](roadmap.md) A9): YOLO26-l / RF-DETR recall-oracle probes through the
+same bake-off harness; clean L-vs-X ablation only if someone needs the number.
+
+---
+
+## Part F: Stabilization-order A/B (2026-07-16) — keep stab-first
+
+Answers the recurring question ("stabilize the 2D first, or triangulate first then smooth the 3D?").
+8_init, isolating only the ordering:
+
+| | ARM A: stab-first (current) | ARM B: raw to 3D-smooth |
+|---|---|---|
+| cross-camera agreement | **0.9160** | 0.9114 |
+| 3D-joint jitter | **0.0105 m** | 0.0117 m |
+| teleports | **258** | 280 |
+| reproj mean / p95 | 3.27 / 6.45 | 3.28 / 6.47 |
+
+**Verdict: keep the current stab-first ordering** — 2D-stabilize-before-triangulate is better on every
+axis (smoother 3D, higher agreement, fewer teleports). Removing per-view pixel jitter *before*
+triangulation prevents the 3D depth-swimming that a post-hoc 3D smoother cannot fully recover. Validates
+the status quo; no change to enable. (The related single-view sticky-hip lift and tracklet-id lock from
+the same session are in the Rejected section above; the 1F teleport-source finding — 88% of emitted
+teleports are single-camera and the `max=1220 m/s` outlier is position-source-invariant, so the real
+lever is the A3 emission velocity gate, not a better hip source — motivates A3 in [`roadmap.md`](roadmap.md).)

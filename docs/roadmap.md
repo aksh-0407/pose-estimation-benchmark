@@ -1,23 +1,18 @@
-# Open work: backlog and guiding principles
+# Roadmap — what to try next
 
-Single source of truth for everything deferred, parked, or pending on the multi-camera cricket 3D-pose
-and identity pipeline. This file combines and supersedes the former
-`Comprehensive_Pipeline_Restructuring_Implementation_Plan.md` (the objectives and guiding principles) and
-`to_do.md` (the concrete A0 to A13 backlog and the B to H sections). Current state:
-`.claude/context/01-current-state.md`. Method history and every A/B: `docs/methods_log.md`. Measured
-diagnosis: `docs/diagnosis/`.
+The forward-looking research and improvement directions for the multi-camera cricket 3D-pose and
+identity pipeline: the quality levers, ranked, with the measured reasoning behind each. This is the
+"what should be tried next" companion to [`methods_log.md`](methods_log.md) (what has been tried and
+tested) and [`analysis/README.md`](analysis/README.md) (the measured diagnosis that motivates these
+levers). Concrete pre-hand-over bug-fix and cleanup work is tracked separately in the internal
+`wip/` register, not here.
 
-Working standard for anything here: flag-gated, flags-off byte-identity proven by execution, before/after
-A/B on all 8 benchmark deliveries (or all 40 for a production claim), accept only a significant
-generalized improvement with no clustering, identity, or same-camera-collision regression. Every
-keep/enable/disable decision is a human decision.
-
-Priority legend: [HIGH] high impact, [MED] medium, [LOW] low or cleanup. Effort: (S)mall, (M)edium,
+Priority legend: [HIGH] high impact · [MED] medium · [LOW] low or cleanup. Effort: (S)mall, (M)edium,
 (L)arge.
 
 ---
 
-## 1. Guiding principles (carried from the restructuring plan)
+## 1. Guiding principles
 
 - Accuracy first. Optimization is secondary and only after the highest-quality pipeline exists, though
   implementations must stay efficient enough to generate mosaics and A/Bs quickly.
@@ -56,7 +51,7 @@ coverage and single-camera gap. A prior sticky-hip attempt (1F) was rejected; Pn
 skeleton is the principled version.
 
 ### A9 [MED] (M) detection recall on the deep field and small subjects. UPDATED this session.
-Status: tiling was tested on the 40-set this session (see `docs/methods_log.md` Part A). Result is
+Status: tiling was tested on the 40-set this session (see [`methods_log.md`](methods_log.md) Part A). Result is
 two-edged: tiled detection raises cross-camera agreement on all 8 hardest deliveries (mean +0.115, cleanly
 attributable to tiling and not NMS) but raises underlying teleport events (+704 total, worst on crowded
 clips) at about 3x GPU cost. No stronger detector weights exist on the box (RTMDet-l/x, RTMO-l, YOLO are
@@ -96,13 +91,13 @@ About 517 flicker events are intra-tracklet global-id flips. Caveat, learned thi
 per-tracklet lock was rejected because it puts a stable wrong-person id on a player. Any lock must act at
 the cross-camera assignment level, not as a post-hoc per-tracklet relabel. Do not repeat the simple lock.
 
-### Flag cleanup [LOW] (S). NEW this session.
+### Flag cleanup [LOW] (S).
 The 40-set flag A/B (methods_log Part A) showed `graph_shape_enabled` is fully inert on all 40 and
 `graph_split_enabled` is a slight agreement drag. Candidate action, pending the human decision: remove or
 disable the inert `graph_shape` and the slightly-negative `graph_split`, keep the teleport-suppressors
 (distance-R, facing gate, adaptive lost window).
 
-### OC-SORT ablation [LOW] (S). NEW this session.
+### OC-SORT ablation [LOW] (S).
 OC-SORT is implemented and config-selectable but net-negative as a whole (methods_log Part A). If
 revisited, disable the aggressive OCR recovery pass and keep only ORU and OCM, then re-A/B. Otherwise it
 stays off.
@@ -123,7 +118,7 @@ height. F15 (3D-informed 05 costs) is subsumed by A0.
 
 ---
 
-## 3. Runs and verification pending
+## 3. Research A/Bs pending
 
 - A3 emit-velocity gate and IMPACT-2 partial-drop: 40-confirmed, off by default, awaiting the human keep
   decision and a before/after mosaic sign-off.
@@ -131,40 +126,15 @@ height. F15 (3D-informed 05 costs) is subsumed by A0.
 - decide-in-3D A/B (pending A0), on 8 then 40.
 - Identity ground truth: dropped. No ground truth exists or is planned; labelling and fine-tuning are off
   the table. Tuning is proxy-guided and the final judgement is human mosaic review.
-- Mosaic sign-off: arbitrate roles end-orientation and keeper-pick ambiguity; spot-check more clips.
 
-## 4. Box and infrastructure
+---
 
-- The box home is `/home/ubuntu`; repo `~/pipetrack`, data `~/bits-pose-data`, env
-  `~/miniconda3/envs/pose-lab/bin/python`.
-- This session's A/B trees under `~/bits-pose-data/derived/40_full/`: `pipetrack_v90` (P1 only),
-  `pipetrack_v91_base` (40-set baseline), `pipetrack_v91_{shape,split,facing,R,lostwin}_off` (flag
-  toggles), `pipetrack_tiledAB`, `pipetrack_nms055AB`, `pipetrack_tiled03` (detector), `pipetrack_v91_ocsort`
-  (tracker). A/B harness and helper scripts in `~/ab_work/`.
-- The box clone was synced to pipetrack_v9 (origin/main) this session; the prior uncommitted state is in a
-  git stash `box-local-presync-pipetrack_v9` and three session-created files are backed up under
-  `~/pipetrack_presync_backup/`.
-- Physical consolidation (deferred, needs sign-off): old large trees still sit in the box home referenced
-  by symlinks. Any move is copy, verify, then delete, never `mv`.
-
-## 5. Consumer, schema, output
-
-- `g1_player_frame/v1` (Halpe-26) is consumer-facing and accepted by the character team; `pose_3d` is
-  per-joint nullable. Coordinate any further schema change with the biomechanics and officiating teams.
-- UE packet export runs per delivery when UE-cm packets are needed.
-- All-40 mosaic batch renders on demand.
-
-## 6. Explicitly deferred by the user
-
-- Laptop conda recovery of the `balltrack` / `quadruped` envs.
-- The `.git` bloat (committed mosaics and docx in history) is accepted; no history rewrite.
-
-## 7. Measured reference facts (do not re-derive)
+## 4. Measured reference facts (do not re-derive)
 
 - Reprojection: panel (RANSAC-inlier, pre-smoothing) 3.07 to 3.56 px; post-smoothing vs all confident 2D
   views mean 6.8, p95 24.5 px; hips worst (11 to 12 px, cross-view keypoint-definition difference). The
   "1 px" figure applies to calibration targets, not pose-model keypoints (own 2D noise 2 to 3 px).
-- Pixel to ground metres: `docs/reference/localization-error.md` (anisotropic, cross about 3 mm/px, depth
+- Pixel to ground metres: `reference/localization-error.md` (anisotropic, cross about 3 mm/px, depth
   25 to 60 mm/px at 5 to 9 degree grazing).
 - Calibration: one session for both matches (team-confirmed), cm-accurate.
 - Box-vs-local panel variance is expected, not a bug: the same code on the two P1 binaries (the L40S fp16
@@ -172,3 +142,6 @@ height. F15 (3D-informed 05 costs) is subsumed by A0.
   algorithm, different detector and pose numerics upstream.
 - Co-observing facing pairs are C1-C4, C2-C6, C3-C5 (they face each other from opposite sides, low
   parallax), not the diametrically-opposite positions. World frame z equals 0 is the ground.
+- Per-camera reprojection (all 40): cam_06 8.5px (cleanest) to cam_07 12.9px (worst); only ~1.5x spread,
+  no pathological camera. Leave-one-camera-out shifts the triangulated hip only 5.7-7.0 cm (robust to
+  losing any one camera). A 2-view estimate differs from full multi-view by ~8 cm mean / 30 cm p95.

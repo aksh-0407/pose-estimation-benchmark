@@ -48,7 +48,7 @@ deliveries) lives in [`src/identity/id_pipeline.py`](src/identity/id_pipeline.py
 - [docs/index.md](docs/index.md): the documentation map.
 - [docs/methods_log.md](docs/methods_log.md): the combined method ledger. Every method tried, its
   before/after A/B, pros and cons, status, and whether it is on or off by default.
-- [wip/open-work.md](wip/open-work.md): the consolidated backlog and guiding principles.
+- [docs/roadmap.md](docs/roadmap.md): the consolidated backlog and guiding principles.
 - [docs/pipeline/](docs/pipeline/README.md): the deep dive, phases, per-phase method analysis, issues,
   and fixes.
 - [docs/rtmpose-x-runbook.md](docs/rtmpose-x-runbook.md), install & run P1 (RTMPose-X) on a

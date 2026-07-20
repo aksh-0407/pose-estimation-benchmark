@@ -2,7 +2,7 @@
 
 - **Purpose:** W9 union-lift iteration probe (_7,_2,_6).
 - **Verdict:** Diagnostic; superseded by v8.1-w9
-- **Full analysis:** fixes-log W9
+- **Full analysis:** methods_log W9
 - Archived: 2026-07-14T07:45:14.838861+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

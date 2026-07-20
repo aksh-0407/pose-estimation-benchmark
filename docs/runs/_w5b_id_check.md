@@ -2,7 +2,7 @@
 
 - **Purpose:** W5b flags-off byte-identity check tree (M2).
 - **Verdict:** Diagnostic only (identity proven)
-- **Full analysis:** fixes-log W5B
+- **Full analysis:** methods_log W5B
 - Archived: 2026-07-14T02:30:48.992399+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

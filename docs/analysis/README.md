@@ -1,17 +1,19 @@
-# docs/diagnosis: 40-delivery production diagnosis
+# docs/analysis: repository audit & 40-delivery diagnosis
 
-A from-scratch, measured diagnosis of the v8.1 production tree (40 deliveries) answering: many IDs, ID
-switching, non-smooth output, teleports, cross-camera ID splits. Every number was measured on the real
-output by the scripts checked in here.
+The measured analytical study of the pipeline — the combined audit + diagnosis of where the system is
+strong, where it is weak, and why. A from-scratch, measured diagnosis of the v8.1 production tree (40
+deliveries) answering: many IDs, ID switching, non-smooth output, teleports, cross-camera ID splits.
+Every number was measured on the real output by the scripts checked in here.
 
 Current state after pipetrack_v9 and the 2026-07-16 to 2026-07-17 A/B session:
 `11-v9-state-and-2026-07-session.md`. Start there for what is current; files 00 to 10 are the original
 2026-07-14 diagnosis and remain valid as the measured root-cause analysis.
 
-Meeting-ready single-file summary (pipeline processes plus diagnosis plus Q&A):
-`../pipeline/meeting-debug-reference.md`.
-Method ledger with every A/B, pros and cons: `../methods_log.md`.
-Prioritized fixes and backlog: `../../wip/open-work.md`.
+Companion docs:
+- Method ledger with every A/B, pros and cons: `../methods_log.md`.
+- What to try next (the improvement directions these findings motivate): `../roadmap.md`.
+- The concrete code-defect register and pre-hand-over cleanup plan are tracked internally (not in the
+  hand-over docs): see the repo's `wip/` working notes.
 
 ## Read order
 | File | What |
@@ -42,4 +44,4 @@ mean-over-fragments emission bug) while the 3D skeletons are smooth-but-sparse; 
 split identity is real and concentrated on the geometrically hard cameras (cam_04 end-on,
 cam_07 panoramic). Everything scales with the **single-camera fraction**, it's a
 detection/coverage problem first, an identity-algorithm problem second. Fixes, cheap-first,
-are in `../../wip/open-work.md`.
+are in `../roadmap.md`.

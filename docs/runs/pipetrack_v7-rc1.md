@@ -2,7 +2,7 @@
 
 - **Purpose:** First composed v7 release candidate.
 - **Verdict:** Rejected (H3 binding collapse; root-caused)
-- **Full analysis:** fixes-log v7-rc1
+- **Full analysis:** methods_log v7-rc1
 - Archived: 2026-07-14T02:30:49.007509+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

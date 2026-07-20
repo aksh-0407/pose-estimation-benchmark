@@ -2,7 +2,7 @@
 
 - **Purpose:** lowconf_can_spawn=false probe (_5,_6,_7,M2).
 - **Verdict:** Adopted into v8.0 (strict improvement)
-- **Full analysis:** fixes-log GRAND ANALYSIS v2
+- **Full analysis:** methods_log GRAND ANALYSIS v2
 - Archived: 2026-07-14T02:30:48.990588+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

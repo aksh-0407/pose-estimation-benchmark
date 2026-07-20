@@ -2,7 +2,7 @@
 
 - **Purpose:** Composed v8 candidate: tiled+NMS55 x8, v7 stack, W6.
 - **Verdict:** Superseded by v8.0 (adds no-spawn)
-- **Full analysis:** fixes-log GRAND ANALYSIS v2
+- **Full analysis:** methods_log GRAND ANALYSIS v2
 - Archived: 2026-07-14T02:30:49.017709+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

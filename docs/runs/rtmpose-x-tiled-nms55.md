@@ -2,7 +2,7 @@
 
 - **Purpose:** Tiled NMS-0.55 P1 probe (_7+M2).
 - **Verdict:** Superseded by tiled-w5-full
-- **Full analysis:** fixes-log W5B-LIVE
+- **Full analysis:** methods_log W5B-LIVE
 - Archived: 2026-07-14T02:30:49.020258+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

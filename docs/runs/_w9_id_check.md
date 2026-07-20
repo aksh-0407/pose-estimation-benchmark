@@ -2,7 +2,7 @@
 
 - **Purpose:** W9 flags-off byte-identity tree (M2).
 - **Verdict:** Diagnostic (identity proven)
-- **Full analysis:** fixes-log W9
+- **Full analysis:** methods_log W9
 - Archived: 2026-07-14T07:45:14.839678+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

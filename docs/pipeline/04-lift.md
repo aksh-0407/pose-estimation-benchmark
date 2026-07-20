@@ -87,7 +87,7 @@ An optional **IRLS-Huber** polish on the inlier re-fit: after RANSAC picks the i
 *marginal* inlier camera by its pixel residual (the same robust-averaging idea used for the ground
 plane in `robust_fuse_ground`). Forces the per-joint reference loop so the fast batched kernels stay
 **bit-identical when the flag is off**. Effect is marginal (reproj p95 6.61 to 6.56 px) because RANSAC +
-DLT is already robust, kept as an option, not enabled. See [fixes-log](fixes-log.md).
+DLT is already robust, kept as an option, not enabled. See [fixes-log](../methods_log.md).
 
 > **In plain words:** a gentle extra "trust the cleaner cameras a bit more" step. Barely moves the
 > numbers here because the earlier RANSAC step already did most of that job.
@@ -146,7 +146,7 @@ DLT is already robust, kept as an option, not enabled. See [fixes-log](fixes-log
 | #1 decide-in-3D |  **PARTIAL** | the covariance path above is the *measurement* half | full 3D tracking (3D KF + 3D re-ID) **NOT DONE** |
 | 1C robust IRLS-Huber refit |  **BUILT** (used in candidate stack) | `--tri-robust-refit` | ~neutral (reproj p95 6.61 to 6.56); kept as option |
 | #5 offline Butterworth filter |  **AVAILABLE** | `--smoother butterworth` | opt-in for the offline render path |
-| #2 single-view PnP lift | **NOT DONE** |, | the ~39% single-camera coverage gap ([BUG-7](known-bugs.md)); 1F sticky-hip was a **rejected** narrower attempt |
+| #2 single-view PnP lift | **NOT DONE** |, | the ~39% single-camera coverage gap ([BUG-7](../analysis/README.md)); 1F sticky-hip was a **rejected** narrower attempt |
 | #4 airborne handling | **NOT DONE** |, | z=0 grazing error on jumps |
 | #6 gate skeletal-prior fill | **NOT DONE** |, | fabrication risk on long single-view stretches |
 
@@ -161,4 +161,4 @@ DLT is already robust, kept as an option, not enabled. See [fixes-log](fixes-log
 | 5 | **Gate skeletal-prior fill**, cap how long a joint may be prior-filled and flag it, or prefer the single-view PnP lift. | severity 1/3 | Avoids emitting fabricated limbs on long single-view stretches. | Low |, |
 
 Cross-phase: fix 1 here is the enabler for 03's splittable clustering and 05's 3D tracking, see
-[`wip/open-work.md`](../../wip/open-work.md).
+[`roadmap.md`](../roadmap.md).

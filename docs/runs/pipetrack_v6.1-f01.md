@@ -2,7 +2,7 @@
 
 - **Purpose:** Wave-0 A/B: P1.5 stabilization wired (F1).
 - **Verdict:** Accepted into v7 lineage
-- **Full analysis:** fixes-log F1
+- **Full analysis:** methods_log F1
 - Archived: 2026-07-14T02:30:48.997812+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

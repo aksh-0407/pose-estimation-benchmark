@@ -42,7 +42,7 @@ one of two:
   - **Facing-pair epipolar degeneracy.** cam_01-cam_04 is a *facing pair* (co-observing, near
     head-on). The epipolar constraint is near-degenerate, so the geometry cue that normally
     binds two cameras' detections is weak exactly here. This is the documented "facing-pair
-    ceiling" (`docs/critical-analysis/status-report.md` §3.2). cam_01-cam_04 is the single
+    ceiling" (`methods_log.md` §3.2). cam_01-cam_04 is the single
     biggest disagreeing pair across all 40 (5030 events).
   - **Grazing ground projection.** End-on, a player's bbox-bottom projects to the ground with
     ~1 m depth error, so the ground-distance cue that P3 fuses is noisy for cam_04 to its
@@ -77,7 +77,7 @@ split identity to extra distinct ids (over-mint) to the id also appears as the "
 ghost in the render to and if a later merge *does* fire late, the seam becomes an emitted
 teleport (`04-...`). So this issue feeds both the "many IDs" and the "teleport" complaints.
 
-## Fix direction (see ../../wip/open-work.md items A4, A5)
+## Fix direction (see ../roadmap.md items A4, A5)
 - **Geometry-aware association weighting**: down-weight the ground-distance cue for grazing
   cameras (cam_04 end-on, cam_07) by their calibrated depth-uncertainty, and *up-weight* the
   cross-view triangulation-consistency test (union-lift) which is the facing-pair-capable cue.

@@ -46,7 +46,7 @@ count honest but can **delete a short real fragment** (a briefly-seen fielder) r
 stitch it, a silent recall loss on the periphery. Worth auditing which ids get dropped on the
 C-band clips.
 
-## Fix direction (see ../../wip/open-work.md items A3, A6)
+## Fix direction (see ../roadmap.md items A3, A6)
 - Reduce over-mint at the source by fixing split identity (05), so P4b has fewer fragments to
   gamble on.
 - Make the stitcher **conservative about spatial gaps** (absolute-metres cap, not

@@ -2,7 +2,7 @@
 
 - **Purpose:** Tiled NMS-0.55 P1, all 8 benchmark deliveries (KEPT - v8 input).
 - **Verdict:** Current best RTMPose P1
-- **Full analysis:** fixes-log GRAND ANALYSIS v2
+- **Full analysis:** methods_log GRAND ANALYSIS v2
 - Archived: 2026-07-14T02:30:49.020415+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

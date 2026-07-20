@@ -2,7 +2,7 @@
 
 - **Purpose:** Wave-1 correctness batch (F3-F8).
 - **Verdict:** Accepted into v7 lineage
-- **Full analysis:** fixes-log W1
+- **Full analysis:** methods_log W1
 - Archived: 2026-07-14T02:30:48.999929+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

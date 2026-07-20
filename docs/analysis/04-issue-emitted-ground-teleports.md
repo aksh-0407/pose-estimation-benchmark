@@ -73,7 +73,7 @@ zero-phase Butterworth. The single-camera and mis-associated observations that t
 P4 ground track are simply **dropped** by P6 (hence coverage 0.48-0.92, `08-...`). So the 3D
 skeleton is the trustworthy positional output today; the P4 ground dot is not.
 
-## Fix direction (see ../../wip/open-work.md items A2, A3)
+## Fix direction (see ../roadmap.md items A2, A3)
 - **Do not emit `np.mean` of multi-modal points.** If an id has ≥2 observations > (say) 2 m
   apart in a frame, that is a bug flag, not a position, emit the Kalman posterior only, or
   the observation closest to the prior, and log the split.

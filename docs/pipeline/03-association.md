@@ -184,7 +184,7 @@ players. The over-merge guards (a confident-disagreement `veto`, the asymmetric 
 same-camera cannot-link) are untouched, so loosening the *positive* cap can't fuse two provably-different
 people. **40-delivery result:** agreement 0.853 to **0.883**, central-player under-merge 11% to **6%**,
 colocated ghost pairs 5 to **0**, same-camera collisions **0**. (Full walk-through in
-[fixes-log](fixes-log.md); the tool that root-caused it is `tools/diagnosis/coverage_audit.py`.)
+[fixes-log](../methods_log.md); the tool that root-caused it is `tools/diagnosis/coverage_audit.py`.)
 
 > **In plain words:** on facing pairs only one clue (feet) is trustworthy, but the old rule refused to
 > let one strong clue count for much. Raising that ceiling lets a confident feet-match merge the player
@@ -263,14 +263,14 @@ from run manifests. Real status of the §11 fixes:
 |---|---|---|---|
 | cap fix (1.5 to 3.5) |  **ENABLED, ACCEPTED** | `graph_llr_positive_cap: 3.5` | 40-conf: agreement 0.853 to 0.883, under-merge 11 to 6%, coloc 5 to 0 |
 | #1 pose-shape to primary |  **ENABLED** | `graph_shape_enabled: true` (F11 corroboration round) | **OFF-vs-ON (8_init): INERT** (off = byte-identical). Harmless; likely active on 40-set hard clips, needs 40-hard A/B |
-| #2 splittable clustering |  **ENABLED (conservative)** | `graph_split_enabled: true`, torso 30px / frac 0.6 | **OFF-vs-ON (8_init): INERT** (no chimeras in these 8 to split). Real test = chimera-heavy 40-set clips. Sub-threshold residual: [BUG-3](known-bugs.md) |
+| #2 splittable clustering |  **ENABLED (conservative)** | `graph_split_enabled: true`, torso 30px / frac 0.6 | **OFF-vs-ON (8_init): INERT** (no chimeras in these 8 to split). Real test = chimera-heavy 40-set clips. Sub-threshold residual: [BUG-3](../analysis/README.md) |
 | #3 parallax-adaptive gate |  **ENABLED** | `graph_facing_gate_scale: 1.3` (widens facing-pair gate) | **OFF-vs-ON (8_init): INERT** (gate not binding after the cap fix). Real test = low-parallax 40-set clips |
 | (feeds 05) covariance emit |  **ENABLED** | `emit_ground_cov: true` to 05 `use_measurement_covariance` | see 05 |
 | #4 self-supervised cross-view | **NOT DONE** |, | future |
 | #5 cue cold-start robustify |  **PARTIAL** | `calibration_mode: auto` (anchor relax + cross-delivery prior) |, |
 
 - **03-1 (C07 image size), VERIFIED NOT A BUG.** `load_image_sizes_from_drive` returns cam_07's true
-  3776×960 native size; the `config.image_w/h` default is dead (no consumers). See [known-bugs](known-bugs.md).
+  3776×960 native size; the `config.image_w/h` default is dead (no consumers). See [known-bugs](../analysis/README.md).
 - **The OFF-vs-ON A/B (running)** disables `graph_shape_enabled` / `graph_split_enabled` /
   `graph_facing_gate_scale` one at a time on 8_init to measure whether each **earns its place** (does
   turning it off make agreement/teleports/ids worse?). Verdicts land when it completes; the rejected
@@ -304,4 +304,4 @@ from run manifests. Real status of the §11 fixes:
 | 5 | **Robustify cue cold-start**, widen the isolation window / borrow a cross-delivery prior when `<3` anchors. | severity 1/3 | Crowded deliveries currently lose their calibrated cues. | Low-Medium |, |
 
 Cross-phase: ID-1 / ID-5 / V2-L1 are the top of the whole-pipeline roadmap, see
-[`wip/open-work.md`](../../wip/open-work.md).
+[`roadmap.md`](../roadmap.md).

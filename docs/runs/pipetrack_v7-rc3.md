@@ -2,7 +2,7 @@
 
 - **Purpose:** P1.5 isolation (no stabilization).
 - **Verdict:** Rejected (worse worst-clip floor)
-- **Full analysis:** fixes-log GRAND ANALYSIS
+- **Full analysis:** methods_log GRAND ANALYSIS
 - Archived: 2026-07-14T02:30:49.011626+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

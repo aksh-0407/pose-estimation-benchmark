@@ -7,11 +7,11 @@ logs.
 ## Repo evidence anchors
 
 **Measured results / issue logs (the source of every metric quoted):**
-- `../diagnosis/09-per-phase-issue-register.md`, identity failure modes ID-1…ID-6 with per-delivery evidence.
-- `../diagnosis/README.md`, `../diagnosis/README.md`, 3D-location issues (12 to resolved/open).
+- `../analysis/09-per-phase-issue-register.md`, identity failure modes ID-1…ID-6 with per-delivery evidence.
+- `../analysis/README.md`, `../analysis/README.md`, 3D-location issues (12 to resolved/open).
 - `../../wip/methods_log.md`, accept/reject lab notebook (M0…M11; z0_reproj win, calibration audit).
-- `../diagnosis/README.md`, SOTA-mapped redesign + the empirical A/B pivot.
-- `implementation_plan.md`, `wip/open-work.md`, `CHANGELOG.md`, plan, deferred work, round-by-round history.
+- `../analysis/README.md`, SOTA-mapped redesign + the empirical A/B pivot.
+- `implementation_plan.md`, `roadmap.md`, `CHANGELOG.md`, plan, deferred work, round-by-round history.
 - Committed metrics: `data/derived/<dataset>/pipetrack_v<num>/**/{association_metrics,global_id_metrics,stabilization_metrics}.json`.
 
 **Key code locations:**

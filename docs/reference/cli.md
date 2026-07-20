@@ -44,7 +44,7 @@ Common flags: `--dataset`, `--version`, `--deliveries`, `--output-tree`, `--arti
 | `python tools/sync_model_store.py` | after asset changes | Regenerate `models/<id>/` metadata + checksums. |
 | `python tools/audit_repo.py --fail` | before commit | Fail if weights/frames/outputs/videos got tracked. |
 | `python tools/dataset_layout.py <dir>` | ad hoc | Summarise an arbitrary dataset tree. |
-| `tools/diagnosis/*` | analysis | The 40-delivery diagnosis scripts (see [../diagnosis/](../diagnosis/README.md)). |
+| `tools/diagnosis/*` | analysis | The 40-delivery diagnosis scripts (see [../analysis/](../analysis/README.md)). |
 | `tools/detector_bakeoff/*` | experiments | Detector recall bake-off harness. |
 | `tools/archive_run_docs.py` | before deletion | Archive a run tree to `docs/runs/<run>.md`. |
 

@@ -2,7 +2,7 @@
 
 - **Purpose:** ACCEPTED v8.0 default tree (KEPT).
 - **Verdict:** Current default
-- **Full analysis:** fixes-log GRAND ANALYSIS v2
+- **Full analysis:** methods_log GRAND ANALYSIS v2
 - Archived: 2026-07-14T07:45:14.835233+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

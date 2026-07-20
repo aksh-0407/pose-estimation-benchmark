@@ -121,7 +121,7 @@ instead of the raw ground point, and is advertised as *the* teleport guard. An i
 no-op), **but teleports still persist** (33/8-set, 367/40-set): it is an **active yet ineffective**
 guard, because the χ²-gated posterior still follows the mis-associated measurement (permissive gate +
 distance-blind `R`). The hard drop-gate **A3** is what actually removes the teleports. See
-[known-bugs](known-bugs.md) BUG-1.
+[known-bugs](../analysis/README.md) BUG-1.
 
 ### 3d. Stitching, `stitching.py` (min-cost-flow path cover)
 
@@ -181,7 +181,7 @@ classic global data-association method of [Zhang, Li & Nevatia, CVPR 2008](https
   Whether it *measurably helps* is **inconclusive** (OFF-vs-ON: teleports 258 to 269, agreement noise-level) , 
   keep/disable is a human decision, not resolved by the agent.
 - **KP-1 (severity 2/3) `emit_kalman_posterior` ineffective as a teleport guard**, on in production, teleports
-  persist; see [known-bugs](known-bugs.md).
+  persist; see [known-bugs](../analysis/README.md).
 - **ID-2b (severity 1/3) Conservative 05b gates**, too tight to bridge real occlusion gaps.
 - **05-1 (severity 1/3) Overfitting risk**, constants tuned on one short delivery.
 
@@ -201,7 +201,7 @@ earlier drafts read the code defaults (off) not the YAML (on). Verified from run
 | A3 emitted velocity-gate |  **BUILT, 40-conf** (off in prod, on in candidate stack) | `emit_velocity_gate` | teleports 367 to 0, no ids lost, recommend enable |
 | 1A hip emission |  **BUILT, neutral** (off in prod) | `emit_ground_source: triangulated_hip` | ~teleport-neutral; option |
 | IMPACT-2 partial-drop |  **BUILT, 40-conf clean** (off in prod) | `drop_partial_singlecam` | 13 ghosts dropped, agreement held; awaiting mosaic verdict |
-| `emit_kalman_posterior` |  **ON but INEFFECTIVE** | `emit_kalman_posterior: true` | active (differs 8/8) yet teleports persist, [known-bugs BUG-1](known-bugs.md) |
+| `emit_kalman_posterior` |  **ON but INEFFECTIVE** | `emit_kalman_posterior: true` | active (differs 8/8) yet teleports persist, [known-bugs BUG-1](../analysis/README.md) |
 | #3 track-in-3D (full) | **NOT DONE** |, | needs the 3D KF + 3D re-ID wiring |
 | #4 loosen 05b stitching | **NOT DONE** |, | `stitched_id_switch_proxy≈0` (under-merges) |
 | #7 identity ground truth | **NOT DONE** |, | all identity metrics are proxies without it |
@@ -218,4 +218,4 @@ earlier drafts read the code defaults (off) not the YAML (on). Verified from run
 | 6 | **Get identity ground truth** (hand-label a few hundred frames on 2-3 deliveries incl. `_7`/M2) to report real MOTA/IDF1/HOTA instead of proxies. | severity 2/3 | Every identity number today is a proxy; without labels, tuning is guesswork. | Medium (labelling) | HOTA [2009.07736] |
 
 Cross-phase: ID-2 / ID-3 sit just under 03's ID-1 / ID-5; several fixes depend on the 04 triangulation
-covariance, see [`wip/open-work.md`](../../wip/open-work.md).
+covariance, see [`roadmap.md`](../roadmap.md).

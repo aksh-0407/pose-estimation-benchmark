@@ -2,7 +2,7 @@
 
 - **Purpose:** Contested-camera weighting composed A/B.
 - **Verdict:** No-op proven (P1 NMS 0.3 caps same-cam IoU)
-- **Full analysis:** fixes-log W5B
+- **Full analysis:** methods_log W5B
 - Archived: 2026-07-14T02:30:49.013695+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

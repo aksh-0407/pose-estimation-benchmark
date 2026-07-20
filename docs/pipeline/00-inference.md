@@ -128,8 +128,9 @@ outputs the 26 joint locations.
   > questions, "how far along the x-ruler is the elbow? how far along the y-ruler?", and can point
   > *between* pixel marks, so joints land more precisely.
 - **RTMPose-X** is the largest, most accurate variant in the family, trained on the **Body8** dataset
-  with the **Halpe-26** skeleton. We deliberately chose the accuracy-first model (see the
-  [RTMPose mandate](../../wip/), P1 stays RTMPose, do not switch to YOLO-pose).
+  with the **Halpe-26** skeleton. We deliberately chose the accuracy-first model (the RTMPose mandate: P1
+  stays RTMPose, do not switch to YOLO-pose; see [`../methods_log.md`](../methods_log.md) Part E for the
+  model/detector study).
 
 ### 4c. Skeleton, Halpe-26 ([:586](../../src/core/inference/run_phase1_rtmpose_inference.py#L586), `player_records:622`)
 
@@ -180,7 +181,7 @@ oversubscription, fixed with prefetch overlap and thread caps, not a model chang
 
 ## 7. Known issues (severity, 1 low to 3 high)
 
-These feed the [known-bugs tracker](known-bugs.md).
+These feed the [known-bugs tracker](../analysis/README.md).
 
 - **P1-1 (severity 3/3) Detector-recall bound.** RTMDet-m @0.3 misses dark/distant/occluded subjects.
   *Evidence:* the association layer contains dedicated machinery, `synthetic tracklets`,
@@ -209,7 +210,7 @@ placeholders), so fixes 1 and 2 as model swaps need a download first and are not
 recall gap is a scale problem, not a threshold problem (missing distant and dark players score near zero,
 not just under the threshold), so fix 3 (adaptive `bbox_thr`) would recover little; tiling, which
 re-scales distant subjects to the detector's trained size, is the correctly targeted lever. Feet-as-ground
-and SmoothNet remain future. The detector-recall bound is tracked as [BUG-4](known-bugs.md); the tiling
+and SmoothNet remain future. The detector-recall bound is tracked as [BUG-4](../analysis/README.md); the tiling
 A/B detail is in [`../methods_log.md`](../methods_log.md) Part A.
 
 | # | Fix | Priority | Why | Effort | Source |
@@ -220,4 +221,4 @@ A/B detail is in [`../methods_log.md`](../methods_log.md) Part A.
 | 4 | **Use the Halpe-26 feet** as the primary ground-contact joint everywhere, replacing the bbox-bottom fallback. | severity 2/3 | Feet are already computed; using them tightens the 3D ground solve for free. | Low-Medium; `geometry.py`. | Pose2Sim |
 | 5 | **Learned temporal 2D refinement (SmoothNet)** as a complement to stage 01's One-Euro filter for long occlusion-burst jitter. | severity 1/3 | One-Euro is causal/local; SmoothNet fixes long-range bursts it can't. | Medium; offline model. | SmoothNet [2112.13715] |
 
-See the cross-phase priorities in [`wip/open-work.md`](../../wip/open-work.md).
+See the cross-phase priorities in [`roadmap.md`](../roadmap.md).

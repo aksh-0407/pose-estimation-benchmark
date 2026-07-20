@@ -94,5 +94,5 @@ panel, skeletons coloured by stable global ID. A top-down-only view is `--mode g
 
 - Understand *why* each stage does what it does, and where it's weak to the
   [pipeline reference](pipeline/README.md) and [architecture](architecture.md).
-- The current measured issues to [diagnosis/](diagnosis/README.md); the fix backlog  to 
-  [wip/open-work.md](../wip/open-work.md).
+- The current measured issues to [diagnosis/](analysis/README.md); the fix backlog  to 
+  [roadmap.md](roadmap.md).

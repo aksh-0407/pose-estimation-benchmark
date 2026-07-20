@@ -110,5 +110,5 @@ The dominant failure mode, end to end (measured, `diagnosis/09`):
 > emitted teleports + colour flicker; **06** drops the same frames to 3D coverage gaps.
 
 Identity, not location, is the current quality ceiling. The prioritized fixes are in
-[`wip/open-work.md`](../wip/open-work.md); the measured 40-delivery diagnosis is in
-[`diagnosis/`](diagnosis/README.md).
+[`roadmap.md`](roadmap.md); the measured 40-delivery diagnosis is in
+[`diagnosis/`](analysis/README.md).

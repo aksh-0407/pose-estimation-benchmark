@@ -2,7 +2,7 @@
 
 - **Purpose:** Wave-3 stack (F9a covariance, F10 R, F11 shape, F12 posture stitch).
 - **Verdict:** Accepted into v7 lineage
-- **Full analysis:** fixes-log W3
+- **Full analysis:** methods_log W3
 - Archived: 2026-07-14T02:30:49.002022+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

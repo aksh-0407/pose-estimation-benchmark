@@ -35,9 +35,9 @@ mosaics place players correctly but their IDs swap and fragment. In rough priori
    kit-robust re-ID embedding are the substitutes to invest in.
 4. **Teleports**, an ID jumps to a different nearby person in crowds/occlusion.
 
-The open issues, their evidence, and prioritised fixes are enumerated per phase in the
-[pipeline reference](pipeline/README.md) and in the measured [diagnosis/](diagnosis/README.md) (
-`wip/3d_location_issues_v2.md`.
+The open issues, their evidence, and prioritised improvement directions are enumerated per phase in the
+[pipeline reference](pipeline/README.md), the measured [analysis/](analysis/README.md), and the
+[roadmap](roadmap.md).
 
 ## The levers the code already gives you
 

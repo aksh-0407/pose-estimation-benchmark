@@ -116,7 +116,7 @@ terms first, then pipeline terms, then data-layout terms.
   metric.
 - **Verdict / usability rubric**: the composite grade over agreement, emitted
   smoothness, persistence, and parsimony printed per delivery (see
-  docs/diagnosis/10-verdict-redesign.md).
+  docs/analysis/10-verdict-redesign.md).
 - **Byte-identical**: the refactor verification standard used across the
   codebase: re-running a stage produces bit-for-bit identical predictions and
   metrics (timestamps and embedded paths excluded).

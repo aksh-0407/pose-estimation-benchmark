@@ -2,7 +2,7 @@
 
 - **Purpose:** Wave-3b asymmetric-R refinement.
 - **Verdict:** Accepted into v7 lineage
-- **Full analysis:** fixes-log W3b/W4
+- **Full analysis:** methods_log W3b/W4
 - Archived: 2026-07-14T02:30:49.004112+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

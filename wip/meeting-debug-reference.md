@@ -3,7 +3,7 @@
 **One-page-per-section, skimmable, meeting-ready. Written 2026-07-14 for a live debug
 session.** Part 1 explains every process we currently run. Part 2 is the fresh 40-delivery
 diagnosis (measured on the L40S production tree). Part 3 is anticipated Q&A. Deep detail:
-`docs/diagnosis/` (issue-by-issue) and `docs/critical-analysis/fixes-log.md` (every A/B).
+`docs/analysis/` (issue-by-issue) and `docs/methods_log.md` (every A/B).
 
 ---
 
@@ -46,7 +46,7 @@ people, must be 0, and is 0 everywhere), **coloc** (split-ID tripwire), 3D **rep
 
 # PART 2, What's actually wrong (measured on all 40, 2026-07-14)
 
-Full evidence + scripts: `docs/diagnosis/`. Headline numbers were measured on the real
+Full evidence + scripts: `docs/analysis/`. Headline numbers were measured on the real
 output, not read off the panel.
 
 ### 2.1 The panel says "fail" on 27/40, but that verdict is misleading
@@ -55,20 +55,20 @@ fires (roster_max=15, we mint at most 16). And the teleport metric runs on **raw
 bbox-bottom foot projections averaged across cameras**, *not* on our emitted track, so it is
 dominated by grazing-angle foot noise on single-camera players. Proof: `M2_2_4_1` scores
 agreement **0.992** (identity essentially perfect) yet 158 teleports to `fail`. **So "27 fails"
-overstates how broken we are.** (`docs/diagnosis/03-...`)
+overstates how broken we are.** (`docs/analysis/03-...`)
 
 ### 2.2 …but the emitted ground track *does* genuinely teleport (the user is right)
 The delivered `ground_tracks.jsonl` has **1528 non-physical single-frame jumps (>25 m/s)**
 across the 40, peaks of 140-1500 m/s. Cause: after we stitch/merge IDs we emit the **mean of
 all fragment positions** for that ID in a frame (`runner.py:348`); when one ID briefly holds
 two observations (concurrent disjoint cameras, or a cross-field stitch), the emitted point
-oscillates between them. **This is a 05 emission bug, fixable.** (`docs/diagnosis/04-...`)
+oscillates between them. **This is a 05 emission bug, fixable.** (`docs/analysis/04-...`)
 
 ### 2.3 The 3D skeletons (04 lift) are smooth but sparse
 The triangulated 3D output, our actual 3D deliverable, is clean (pelvis p95 1.6-3.8 m/s,
 ~0 big jumps) because it only triangulates where ≥2 cameras agree. The price is **coverage
 0.48-0.92 (median 0.80)**: single-camera players get no 3D. So today the **3D skeleton is the
-trustworthy positional channel; the flat ground dot is not.** (`docs/diagnosis/08-...`)
+trustworthy positional channel; the flat ground dot is not.** (`docs/analysis/08-...`)
 
 ### 2.4 Cross-camera split identity is real (same person, different ID in one camera)
 19-87 % of multi-camera ground clusters carry >1 ID. The odd-camera-out is systematically
@@ -77,17 +77,17 @@ the **hard camera: cam_04 (end-on, grazing) and cam_07 (panoramic)**. Concrete:
 the facing pair cam_01-cam_04 the epipolar geometry is degenerate, kit colour is dead
 (d′≈0), bone-ratios abstain, so only the **ground-distance** cue is live, and it is exactly
 the cue that's noisy on a grazing camera. The hard cameras have no strong binding cue.
-(`docs/diagnosis/05-...`)
+(`docs/analysis/05-...`)
 
 ### 2.5 Visible ID-switch flicker exists but is modest
 A stable per-camera tracklet flips its global ID **517 times total across 40** (~13/delivery);
 ~5.5 tracklets/delivery flicker. It's the same root as split identity, 03/05 re-decides
-membership per frame instead of locking it per tracklet. (`docs/diagnosis/07-...`)
+membership per frame instead of locking it per tracklet. (`docs/analysis/07-...`)
 
 ### 2.6 "Many IDs" is mostly a metric non-issue, but leaves scars
 Final IDs are 9-16 vs roster 15, in range. But internally 05a **over-mints** (e.g. P001-P024
 for ~15 people) and stitches down, and **each stitch seam is a teleport risk**.
-(`docs/diagnosis/06-...`)
+(`docs/analysis/06-...`)
 
 ### 2.7 The one structural fact behind all of it
 **Everything scales with the single-camera fraction.** A single-camera player can't be
@@ -96,7 +96,7 @@ triangulated (no 3D), has a noisy foot position (teleport), and can't be cross-c
 and are worst on every axis; clean first overs `M1_1_14_*` run 0.39-0.65 and behave. **This is
 a detection/coverage problem first, an identity-algorithm problem second.**
 
-### Where it works / partially works / fails (grades: `docs/diagnosis/02-...`)
+### Where it works / partially works / fails (grades: `docs/analysis/02-...`)
 - **Cleanest**: `M1_1_16_4` (0 emitted big jumps, agreement 0.951, coverage 0.91),
   `M1_1_17_2`, `M1_1_14_1`.
 - **Core-good, periphery-noisy (most deliveries)**: batsman/bowler/keeper solid; deep
@@ -132,7 +132,7 @@ simultaneously fixes teleports, split IDs, and 3D coverage. (2.7)
 **Q: Is calibration the problem?**
 A: No, it's cm-accurate (ball reproj p95 ≤ 4.5 px), flat 3.07-3.56 px across all 40, team
 confirmed one session. Camera spread is even. The error floor is 2D pose-model noise (2-3 px,
-hips worst), not calibration. (`wip/open-work.md` §H)
+hips worst), not calibration. (`docs/roadmap.md` §H)
 
 **Q: Are we minting garbage IDs / colliding people?**
 A: Same-camera collisions are **0 everywhere** (hard invariant held). Final ID counts are in
@@ -142,4 +142,4 @@ roster range. The internal over-mint is cleaned by stitching. (2.6)
 A: (1) Fix 05 emission (drop mean-over-fragments, velocity-gate, damp single-cam) to kills the
 visible teleports. (2) Fix the verdict/teleport metric to stop mislabeling 27 deliveries.
 (3) Attack split ID at cam_04/cam_07 (depth-aware association + F16 lift). Prioritized list
-with code pointers: `wip/open-work.md`.
+with code pointers: `docs/roadmap.md`.

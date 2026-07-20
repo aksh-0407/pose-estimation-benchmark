@@ -2,7 +2,7 @@
 
 - **Purpose:** Frozen ground baseline of the fix campaign (v5 configs, RTMPose-X P1).
 - **Verdict:** Baseline (superseded by v8.0)
-- **Full analysis:** fixes-log F0
+- **Full analysis:** methods_log F0
 - Archived: 2026-07-14T02:30:48.995706+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

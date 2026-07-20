@@ -2,7 +2,7 @@
 
 - **Purpose:** Tiled NMS-0.55 + contested-0.30 (_7+M2).
 - **Verdict:** Contested rejected (-0.08 agreement)
-- **Full analysis:** fixes-log W5B-LIVE
+- **Full analysis:** methods_log W5B-LIVE
 - Archived: 2026-07-14T02:30:49.016408+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

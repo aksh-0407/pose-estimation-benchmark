@@ -23,13 +23,14 @@ cross-camera identity, then 3D pose and ground location, then roles, then the mo
 | [troubleshooting.md](troubleshooting.md) | …something broke (model download, env, CUDA). |
 | [shared-data.md](shared-data.md) | …a downstream group needs to consume a run's outputs. |
 
-## Status & analysis
+## Status, analysis & roadmap
 
 | Doc | What it is |
 | --- | ---------- |
-| [methods_log.md](methods_log.md) | The combined method ledger: every method tried, its before/after A/B, pros and cons, status, and whether it is on or off by default. |
-| [../wip/open-work.md](../wip/open-work.md) | The single consolidated backlog and guiding principles, everything deferred, parked, or pending (the prioritized algorithm fix list A0 to A13). |
-| [diagnosis/README.md](diagnosis/README.md) | The measured 40-delivery production diagnosis (teleports, split identity, coverage), plus the v9 and 2026-07-session current state. |
+| [methods_log.md](methods_log.md) | The single method ledger: every method tried, its before/after A/B, pros and cons, status, and whether it is on or off by default. |
+| [roadmap.md](roadmap.md) | What to try next: the ranked algorithm/quality levers (A0–A13) with the reasoning behind each. |
+| [analysis/README.md](analysis/README.md) | The measured audit + 40-delivery diagnosis (teleports, split identity, coverage), plus the v9 and 2026-07-session current state. |
+| [reference/performance.md](reference/performance.md) | Performance / throughput findings on the L40S box (accuracy-neutral speedups). |
 
 ## The pipeline at a glance
 

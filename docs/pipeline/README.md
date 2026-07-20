@@ -4,7 +4,7 @@ Documentation of every stage: what it does, **how the algorithms actually work**
 is followed by an "In plain words" intuition, written to be followable without a computer-vision
 background), what's been tried, and its current measured state. Read
 [`../architecture.md`](../architecture.md) first for the shared concepts (rig, calibration, contract,
-metrics). Defects found while writing these docs live in [`known-bugs.md`](known-bugs.md).
+metrics). The measured analysis of the pipeline's issues is in [`../analysis/`](../analysis/README.md).
 
 Latest (2026-07-17, the combined ledger is [`../methods_log.md`](../methods_log.md)):
 - Accepted and on: `graph_llr_positive_cap` 1.5 to 3.5 in [03](03-association.md), the facing-pair
@@ -18,14 +18,14 @@ Latest (2026-07-17, the combined ledger is [`../methods_log.md`](../methods_log.
 - The five shipped flags, measured on all 40 for the first time: `graph_shape_enabled` is inert,
   `graph_split_enabled` is a slight drag, and distance-R, the facing gate, and the adaptive lost window
   each suppress real teleport events. Decisions deferred to human review.
-- Correction still in force: `emit_kalman_posterior` is not an effective teleport guard (teleports persist
-  with it on), see [known-bugs.md](known-bugs.md) BUG-1.
+- Correction still in force: `emit_kalman_posterior` is on but not an effective teleport guard (teleports
+  persist with it on); the effective fix is the A3 emission velocity gate — see [`../methods_log.md`](../methods_log.md).
 
 ## What production actually runs (verified from `run_manifest.json`)
 
 Read the YAML, not the dataclass defaults. Many flags are `False` in `config.py` but overridden to `True`
-in `configs/*.yaml`, and the shipped pipeline uses the YAML. This gap is tracked as
-[known-bugs NB-2](known-bugs.md); it caused earlier docs to mislabel enabled features as not done. The
+in `configs/*.yaml`, and the shipped pipeline uses the YAML. Always read the YAML, not the dataclass
+defaults (reading `config.py` alone has mislabeled enabled features as not done). The
 pipeline already runs a rich stack:
 
 | stage | ENABLED in production (`configs/*.yaml`) | NOT enabled (candidate flags, off) |
@@ -34,7 +34,7 @@ pipeline already runs a rich stack:
 | **04** | robust RANSAC+DLT, occlusion/prior fill, EMA; covariance emission | full decide-in-3D tracking; PnP single-view lift |
 | **05** | `use_measurement_covariance` (distance-R), `adaptive_lost_window`, `emit_kalman_posterior`*, roster-cap, pose-veto | `emit_ground_source: triangulated_hip` (1A), `drop_partial_singlecam` (IMPACT-2), `emit_velocity_gate` (A3) |
 
-\* on but ineffective ([BUG-1](known-bugs.md)). Each stage doc's **"Fix-implementation status"** section
+\* on but ineffective (see [`../methods_log.md`](../methods_log.md)). Each stage doc's **"Fix-implementation status"** section
 maps every proposed fix to its real state (enabled / candidate / not-done) with verdicts.
 
 Each stage consumes an `--input-run-dir` and writes an `--output-run-dir` (canonical run
@@ -83,13 +83,13 @@ colocated-id pairs 0. Emitted teleports **0** with A3 enabled (were up to 155/cl
 the dominant ceiling: facing-pair split identity (**03**, partially fixed) and single-camera coverage
 (**P1**/**04**) are the root drivers; the teleports A3 removes at emission trace back to id-level
 mis-assignments whose *root* levers are the distance-blind Kalman `R` (**05**) and merge-only clustering
-(**03**), see [`known-bugs.md`](known-bugs.md). Measured breakdown in
-[`../diagnosis/`](../diagnosis/README.md); prioritized fixes in [`wip/open-work.md`](../../wip/open-work.md).
+(**03**). Measured breakdown in [`../analysis/`](../analysis/README.md); improvement directions in
+[`../roadmap.md`](../roadmap.md).
 
 ## History and trackers
 
 - [`../methods_log.md`](../methods_log.md): the combined method ledger (every change, its before/after, pros
   and cons, status, and default). Supersedes the former per-stage fixes-log.
-- [`known-bugs.md`](known-bugs.md): defects and latent issues found while documenting the pipeline.
+- [`../analysis/`](../analysis/README.md): the measured audit + diagnosis of the pipeline's issues.
+- [`../roadmap.md`](../roadmap.md): the ranked improvement directions.
 - [`references.md`](references.md): external papers and code anchors.
-- [`meeting-debug-reference.md`](meeting-debug-reference.md): a meeting-ready debug walkthrough.

@@ -2,7 +2,7 @@
 
 - **Purpose:** RTMPose-X P1 at plain 640 detection (8 deliveries).
 - **Verdict:** Superseded by tiled-w5-full
-- **Full analysis:** fixes-log F0/W5
+- **Full analysis:** methods_log F0/W5
 - Archived: 2026-07-14T02:30:49.020115+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

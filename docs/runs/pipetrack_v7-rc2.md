@@ -2,7 +2,7 @@
 
 - **Purpose:** Re-composed v7 on fixed code; stitcher live first time.
 - **Verdict:** Accepted as v7 default (superseded by v8.0)
-- **Full analysis:** fixes-log v7-rc2 + GRAND ANALYSIS
+- **Full analysis:** methods_log v7-rc2 + GRAND ANALYSIS
 - Archived: 2026-07-14T02:30:49.009593+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

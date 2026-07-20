@@ -2,7 +2,7 @@
 
 - **Purpose:** ACCEPTED v8.1 reference (KEPT): W9 union-lift + colocated merges over v8.0.
 - **Verdict:** Current local reference
-- **Full analysis:** fixes-log W9
+- **Full analysis:** methods_log W9
 - Archived: 2026-07-14T07:45:14.837864+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

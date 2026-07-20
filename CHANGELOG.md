@@ -24,12 +24,12 @@ Run layout is per delivery: `<run>/<DELIVERY>/{00_inference,01_stabilization,...
 Production reference (40 deliveries, v8.1 panel that v9 builds on): mean cross-camera agreement 0.862,
 reprojection 3.07 to 3.56 px, same-camera collisions 0, colocated-id pairs 0 on 38 of 40. Identity remains
 the dominant quality ceiling (facing-pair split identity, single-camera coverage). Open work:
-[`wip/open-work.md`](wip/open-work.md). Measured 40-delivery diagnosis: [`docs/diagnosis/`](docs/diagnosis/README.md).
+[`docs/roadmap.md`](docs/roadmap.md). Measured 40-delivery diagnosis: [`docs/analysis/`](docs/analysis/README.md).
 
 ## 2026-07-16 to 2026-07-17: optimization and A/B campaign
 
 Post-v9-push work on the L40S box. Full detail in [`docs/methods_log.md`](docs/methods_log.md) Part A and
-[`wip/optimization_findings_2026-07-17.md`](wip/optimization_findings_2026-07-17.md).
+[`docs/reference/performance.md`](docs/reference/performance.md).
 
 - Script optimization: six fixes to the run scripts. The data-parallel P1 launcher
   (`run_phase1_parallel.py`) had a broken runner path and failed on every shard; fixed and dry-run

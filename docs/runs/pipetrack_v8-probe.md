@@ -2,7 +2,7 @@
 
 - **Purpose:** Phase C: tiled NMS-0.3 P1 through v7 stack (_7+M2).
 - **Verdict:** Hold verdict; superseded by nms55
-- **Full analysis:** fixes-log W5-C
+- **Full analysis:** methods_log W5-C
 - Archived: 2026-07-14T02:30:49.017063+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

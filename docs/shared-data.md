@@ -46,7 +46,7 @@ Each stage folder holds `predictions/*.jsonl` (one file per camera, one record p
 - **Quality**, `track_confidence`, `single_camera`, and the run's `*_metrics.json`.
 
 Same-camera collisions are 0 by construction; identity/coverage caveats and current numbers are in
-[diagnosis/](diagnosis/README.md).
+[diagnosis/](analysis/README.md).
 
 ## Unreal Engine packets
 

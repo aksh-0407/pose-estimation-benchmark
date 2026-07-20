@@ -113,7 +113,7 @@ corrupt the 3D?* We tested it directly (A/B on 8_init):
 
 **Verdict: keep stabilize-first, it wins on every axis.** Removing per-camera pixel jitter *before*
 triangulation prevents 3D "depth-swimming" that a post-hoc 3D smoother can't fully undo. The worry is
-not borne out. (Details in [fixes-log](fixes-log.md).)
+not borne out. (Details in [fixes-log](../methods_log.md).)
 
 > **In plain words:** clean each camera's 2D first, *then* combine into 3D, that beats combining
 > noisy 2D and trying to clean the 3D afterward. Cleaning early wins.
@@ -153,7 +153,7 @@ not borne out. (Details in [fixes-log](fixes-log.md).)
 ## 8. Fix-implementation status + candidate fixes (priority-ordered)
 
 > **Implementation status (2026-07-16):** stage 01 **is wired into the driver** (`src/main.py`, gated by
-> `--enable-stabilization`), it is **opt-in**, not on by default (that's fix #2 / [BUG-8](known-bugs.md)).
+> `--enable-stabilization`), it is **opt-in**, not on by default (that's fix #2 / [BUG-8](../analysis/README.md)).
 > The other listed fixes (pose-cosine tiebreaker, per-joint cutoff, SmoothNet) are **NOT DONE**, future.
 
 | # | Fix | Priority | Why | Effort | Source |

@@ -3,7 +3,7 @@
 Current-state addendum to the 40-delivery diagnosis. It records where the pipeline stands after the
 pipetrack_v9 restructure, every method measured in the post-v9 A/B session, the failures, and the levers
 that can now be tried. The full per-method ledger with pros and cons is `docs/methods_log.md`; the
-prioritized backlog is `wip/open-work.md`; known bugs are `docs/pipeline/known-bugs.md`.
+prioritized backlog is `roadmap.md`; known bugs are `analysis/README.md`.
 
 ## 1. Final state after pipetrack_v9
 
@@ -91,12 +91,12 @@ teleports. Status REJECTED as implemented, off by default. Possible ablation: di
 Six run-script fixes verified by compile and dry-run. The data-parallel P1 launcher had a broken runner
 path and failed on every shard; fixed and dry-run validated, restoring the roughly 2x GPU-throughput
 lever. Plus render and P1-shard thread-oversubscription fixes for the 8-core box. Detail in
-`wip/optimization_findings_2026-07-17.md`. These do not change pipeline decisions (fix 4, the render
+`reference/performance.md`. These do not change pipeline decisions (fix 4, the render
 CPU-decode switch, may change render pixels marginally but touches no metric).
 
 ## 3. Levers that can now be tried (updated)
 
-Highest value first, full list in `wip/open-work.md`:
+Highest value first, full list in `roadmap.md`:
 - Decide-in-3D consumption in stage 05 (A0), plus re-triangulate per global id to recover the v8-to-v9
   `tri_cov` drop. The top item.
 - Single-view PnP lift (A8) for the roughly 39% single-camera frames.
@@ -108,7 +108,7 @@ Highest value first, full list in `wip/open-work.md`:
 
 ## 4. Known bugs and metric caveats (pointer)
 
-See `docs/pipeline/known-bugs.md`. The key caveats: the raw teleport proxy reacts to noisy single-camera
+See `analysis/README.md`. The key caveats: the raw teleport proxy reacts to noisy single-camera
 foot projections rather than the emitted trajectory (A1 in the backlog is the metric fix); the
 `emit_kalman_posterior` guard is active but ineffective as a teleport guard (BUG-1); and the dataclass
 defaults for several flags disagree with the shipped YAML, which caused an earlier on-vs-on A/B error

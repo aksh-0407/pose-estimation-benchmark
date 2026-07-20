@@ -2,7 +2,7 @@
 
 - **Purpose:** Detector-only recall bake-off (5 candidates, _7+M2 sampled).
 - **Verdict:** t640 tiled won; native hi-res dead
-- **Full analysis:** fixes-log W5
+- **Full analysis:** methods_log W5
 - Archived: 2026-07-14T02:30:48.992607+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

@@ -85,6 +85,10 @@ class RefineParams:
     filter_order: int = 4
     ma_root_window: int = 9         # moving-average windows (odd -> centred/zero-phase)
     ma_limb_window: int = 5         # 5 = last year's proven window
+    limb_smoother: str = "moving_average"  # base limb-direction smoother: "moving_average" | "one_euro"
+    oe_min_cutoff: float = 2.0      # One-Euro: floor cutoff Hz (heavier smoothing when still)
+    oe_beta: float = 0.7            # One-Euro: speed coupling (higher -> more responsive to fast motion)
+    oe_d_cutoff: float = 1.0        # One-Euro: derivative cutoff Hz
     face_window: int = 21           # face bones (nose/eyes/ears/head) are ~rigid + tiny ->
                                     # smooth their direction hard to kill facial jitter
     face_cutoff_hz: float = 1.5     # butterworth equivalent for the face group
@@ -348,6 +352,58 @@ def moving_average_smooth(sequence_xyz: np.ndarray, window: int) -> np.ndarray:
     return out
 
 
+def _one_euro_pass(seg: np.ndarray, dt: float, min_cutoff: float, beta: float, d_cutoff: float) -> np.ndarray:
+    """Causal One-Euro pass over one finite segment ``(L, 3)``, vectorized across the 3 axes."""
+    out = np.empty_like(seg)
+    out[0] = seg[0]
+    x_prev = seg[0].copy()
+    dx_prev = np.zeros(seg.shape[1])
+    two_pi = 2.0 * np.pi
+    a_d = 1.0 / (1.0 + (1.0 / (two_pi * max(d_cutoff, 1e-6))) / dt)
+    for t in range(1, len(seg)):
+        dx = (seg[t] - x_prev) / dt
+        dx_hat = dx_prev + a_d * (dx - dx_prev)
+        cutoff = min_cutoff + beta * np.abs(dx_hat)          # per-axis, speed-adaptive
+        alpha = 1.0 / (1.0 + (1.0 / (two_pi * np.maximum(cutoff, 1e-6))) / dt)
+        x_hat = x_prev + alpha * (seg[t] - x_prev)
+        out[t] = x_hat
+        x_prev, dx_prev = x_hat, dx_hat
+    return out
+
+
+def one_euro_smooth(sequence_xyz: np.ndarray, *, fps: float, min_cutoff: float,
+                    beta: float, d_cutoff: float) -> np.ndarray:
+    """Zero-phase One-Euro smoothing over a ``(T, C, 3)`` sequence (scipy-free).
+
+    The One-Euro filter (Casiez et al., CHI 2012) is a low-pass whose cutoff *rises with the
+    signal speed*: it smooths hard when a joint is slow/still (kills jitter) and stays
+    responsive when it moves fast (no lag on a swing). Run forward+backward and averaged so
+    it is zero-phase like the moving average; applied per contiguous finite segment so NaN
+    gaps are never bridged.
+    """
+    seq = np.asarray(sequence_xyz, dtype=float)
+    if seq.ndim != 3 or seq.shape[2] != 3:
+        raise ValueError("sequence_xyz must have shape (T, C, 3)")
+    dt = 1.0 / max(fps, 1e-6)
+    out = seq.copy()
+    frames, channels, _ = seq.shape
+    for c in range(channels):
+        finite = np.isfinite(seq[:, c]).all(axis=1)
+        start = None
+        for t in range(frames + 1):
+            inside = t < frames and finite[t]
+            if inside and start is None:
+                start = t
+            elif not inside and start is not None:
+                seg = seq[start:t, c]
+                if seg.shape[0] >= 2:
+                    fwd = _one_euro_pass(seg, dt, min_cutoff, beta, d_cutoff)
+                    bwd = _one_euro_pass(seg[::-1], dt, min_cutoff, beta, d_cutoff)[::-1]
+                    out[start:t, c] = 0.5 * (fwd + bwd)
+                start = None
+    return out
+
+
 def fk_smooth(sequence: np.ndarray, bones, target, *, params: "RefineParams") -> np.ndarray:
     """Bone-length-preserving zero-phase smoothing.
 
@@ -363,11 +419,17 @@ def fk_smooth(sequence: np.ndarray, bones, target, *, params: "RefineParams") ->
 
     if params.smoother == "moving_average":
         root_s = moving_average_smooth(root[:, None, :], params.ma_root_window)[:, 0, :]
-        dirs_s = moving_average_smooth(dirs, params.ma_limb_window)
     else:
         root_s = butterworth_smooth(
             root[:, None, :], fps=params.fps, cutoff_hz=params.root_cutoff_hz, order=params.filter_order
         )[:, 0, :]
+    # Base limb-direction smoothing: adaptive One-Euro, or the fixed low-pass.
+    if params.limb_smoother == "one_euro":
+        dirs_s = one_euro_smooth(dirs, fps=params.fps, min_cutoff=params.oe_min_cutoff,
+                                 beta=params.oe_beta, d_cutoff=params.oe_d_cutoff)
+    elif params.smoother == "moving_average":
+        dirs_s = moving_average_smooth(dirs, params.ma_limb_window)
+    else:
         dirs_s = butterworth_smooth(
             dirs, fps=params.fps, cutoff_hz=params.limb_cutoff_hz, order=params.filter_order
         )

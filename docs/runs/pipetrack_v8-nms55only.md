@@ -2,7 +2,7 @@
 
 - **Purpose:** Tiled NMS-0.55 ablation without contested (_7+M2).
 - **Verdict:** Winner; became v8 detection spec
-- **Full analysis:** fixes-log W5B-LIVE
+- **Full analysis:** methods_log W5B-LIVE
 - Archived: 2026-07-14T02:30:49.015727+00:00 (data tree deleted after archival)
 
 ## Manifest / provenance

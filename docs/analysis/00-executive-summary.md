@@ -87,7 +87,7 @@ Full table: `02-per-delivery-categorization.md`. Summary:
 
 ## What to change (pointer)
 
-Prioritized, evidence-backed change list: `../../wip/open-work.md`. Top three:
+Prioritized, evidence-backed change list: `../roadmap.md`. Top three:
 1. Fix the emitted ground teleports (P4 emission: per-id velocity gate + drop the
    mean-over-fragments; single-cam foot damping). Biggest visible-quality win.
 2. Fix the verdict/teleport metric so it measures the emitted trajectory on multi-cam

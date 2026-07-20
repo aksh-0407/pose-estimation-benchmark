@@ -35,7 +35,7 @@ renderers read the same `loaders` module, so each file format is parsed in one p
   overlay, a 20-colour max-separation palette, roles shown **only** in the roster panel, and
   suppressed players dropped. The bird's-eye dots expose stage-05 emitted teleports; colour
   flicker exposes stage-03/05 ID switches (517 across the 40-delivery set,
-  `../diagnosis/07-issue-2d-id-switch-flicker.md`).
+  `../analysis/07-issue-2d-id-switch-flicker.md`).
 
 **Driver exit-code convention** (`src/main.py`): a stage exiting 0 succeeded; stages
 `03_association` and `05_global_id` may exit 1 to signal a warn/fail *verdict* while still
